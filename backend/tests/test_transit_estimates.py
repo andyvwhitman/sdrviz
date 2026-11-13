@@ -230,3 +230,51 @@ def test_clock_progress_never_passes_a_stop_after_the_next_one():
     progress = clock_progress(legs, at(8, 30))
     assert progress == Progress(1, False)
     assert leg_states(legs, progress) == ["passed", "next", "upcoming"]
+
+
+# --- BE-8: implausible delays are flagged, a missing next stop is explained --------------------------
+
+
+@pytest.mark.parametrize(
+    ("delay_s", "suspect"),
+    [
+        (None, False),
+        (12 * 3600, False),  # exactly 12 h late is still believable
+        (12 * 3600 + 1, True),
+        (6 * 3600, False),  # a real six hour delay (Auto Train) is not flagged
+        (-30 * 60, False),
+        (-30 * 60 - 1, True),
+        (0, False),
+    ],
+)
+def test_delay_suspect_thresholds(delay_s, suspect):
+    from app.transit.models import Vehicle
+
+    vehicle = Vehicle(id="a", source="s", agency="a", lat=0, lon=0, delay_s=delay_s, stale_after_s=60)
+    assert vehicle.delay_suspect is suspect
+    assert vehicle.model_dump()["delay_s"] == delay_s  # never clamped
+    assert vehicle.model_dump()["delay_suspect"] is suspect
+
+
+def test_next_stop_unavailable_says_why(amtrak):
+    load(amtrak, live_train(wash_arr=at(8, 37), wash_dep=at(8, 37)))
+    [vehicle] = amtrak.vehicles(NOW)
+    assert vehicle.next_stop and vehicle.next_stop_unavailable is None
+    done = live_train(wash_arr=at(8, 37), wash_dep=at(8, 37), statuses=("Departed", "Departed", "Departed"))
+    load(amtrak, done)
+    [vehicle] = amtrak.vehicles(NOW)
+    assert (vehicle.next_stop, vehicle.next_stop_unavailable) == (None, "terminated")
+    load(amtrak, {**done, "stations": []})  # a train Amtraker lists with no stops at all
+    [vehicle] = amtrak.vehicles(NOW)
+    assert (vehicle.next_stop, vehicle.next_stop_unavailable) == (None, "no stop data")
+
+
+def test_gtfs_vehicle_without_a_trip_has_no_stop_data(tmp_path):
+    p = GtfsProvider(SourceConfig(id="t", name="Test", agency="Test"), tmp_path)
+    p.static = GtfsStatic.from_zip(make_zip(LAYOVER_FILES))
+    p.positions = [VehiclePosition("cab", "unknown-trip", None, 39.0, -76.8, None, None, NOW)]
+    [vehicle] = p.vehicles(NOW)
+    assert (vehicle.next_stop, vehicle.next_stop_unavailable) == (None, "no stop data")
+    p.positions = [VehiclePosition("cab", "g171", "R9", 39.0, -76.8, None, None, at(12), stop_sequence=4)]
+    [vehicle] = p.vehicles(at(12))  # past its last stop
+    assert (vehicle.next_stop, vehicle.next_stop_unavailable) == (None, "terminated")

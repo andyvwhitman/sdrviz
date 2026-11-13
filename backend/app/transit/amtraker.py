@@ -12,7 +12,7 @@ from datetime import UTC, date, datetime, timedelta
 
 import httpx
 
-from .estimates import Leg, Progress, StateBasis, clock_progress, departure_delay, leg_states, next_leg
+from .estimates import Leg, Progress, StateBasis, clock_progress, departure_delay, leg_states, next_leg, no_next_stop
 from .gtfs_provider import GtfsProvider, interleave
 from .gtfs_rt import StopUpdate, TripUpdate
 from .models import (
@@ -253,6 +253,7 @@ class AmtrakerProvider(GtfsProvider):
             progress, _ = self._live_progress(t, legs, now)
             states = leg_states(legs, progress)
             delay = self._current_delay(legs, states)
+            next_stop = self._live_next_stop(t, legs, states)
             route_id = self._route_by_name.get((t.get("routeName") or "").lower())
             out.append(
                 Vehicle(
@@ -272,7 +273,8 @@ class AmtrakerProvider(GtfsProvider):
                     speed_mph=t.get("velocity"),
                     delay_s=delay,
                     status=delay_status(delay),
-                    next_stop=self._live_next_stop(t, legs, states),
+                    next_stop=next_stop,
+                    next_stop_unavailable=None if next_stop else no_next_stop(legs),
                     position="realtime",
                     updated=measured,
                     age_s=max(0, round((now - measured).total_seconds())) if measured else None,

@@ -12,7 +12,7 @@ from datetime import UTC, date, datetime, timedelta
 
 import httpx
 
-from .estimates import Leg, Progress, StateBasis, clock_progress, departure_delay, leg_states, next_leg
+from .estimates import Leg, Progress, StateBasis, clock_progress, departure_delay, leg_states, next_leg, no_next_stop
 from .geometry import Bbox, Path, bounds, follow_shapes
 from .gtfs_rt import AlertInfo, TripUpdate, VehiclePosition, parse_alerts, parse_trip_updates, parse_vehicle_positions
 from .gtfs_static import Trip as StaticTrip
@@ -563,6 +563,7 @@ class GtfsProvider(Provider):
             delay_s=delay,
             status=delay_status(delay),
             next_stop=next_stop,
+            next_stop_unavailable=None if next_stop else no_next_stop(legs),
             position="realtime",
             updated=updated,
             age_s=max(0, round((now - updated).total_seconds())) if updated else None,
@@ -626,6 +627,7 @@ class GtfsProvider(Provider):
         if position is None:
             return None
         lat, lon, bearing = path.at(position[0])
+        next_stop = self._next_stop(full, leg_states(full, clock_progress(full, now)))
         route = self._route_of(trip)
         delay = next((leg.delay for leg in legs if leg.leave and leg.leave > now and leg.delay is not None), None)
         updated = self.state.realtime_updated or now
@@ -646,7 +648,8 @@ class GtfsProvider(Provider):
             speed_mph=round(speed, 1),
             delay_s=delay,
             status=delay_status(delay),
-            next_stop=self._next_stop(full, leg_states(full, clock_progress(full, now))),
+            next_stop=next_stop,
+            next_stop_unavailable=None if next_stop else no_next_stop(full),
             position="estimated",
             updated=updated,
             age_s=max(0, round((now - updated).total_seconds())),

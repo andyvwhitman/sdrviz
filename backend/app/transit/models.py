@@ -6,6 +6,8 @@ from typing import Literal
 from pydantic import BaseModel, computed_field, model_validator
 
 ON_TIME_S = 120  # |delay| under two minutes counts as on time
+SUSPECT_LATE_S = 12 * 3600  # a delay beyond this late is flagged (a real 6 hour delay is not)
+SUSPECT_EARLY_S = 30 * 60  # ...and one beyond this early: trains do not run half an hour ahead
 
 
 def delay_status(delay_s: int | None) -> Literal["on_time", "late", "early", "unknown"]:
@@ -41,6 +43,7 @@ class Vehicle(BaseModel):
     delay_s: int | None = None  # positive = late
     status: Literal["on_time", "late", "early", "unknown"] = "unknown"
     next_stop: NextStop | None = None
+    next_stop_unavailable: str | None = None  # why `next_stop` is null: "no stop data" or "terminated"
     position: Literal["realtime", "estimated"] = "realtime"
     updated: datetime | None = None
     age_s: int | None = None
@@ -50,6 +53,12 @@ class Vehicle(BaseModel):
     @property
     def stale(self) -> bool:
         return self.age_s is not None and self.age_s > self.stale_after_s
+
+    @computed_field
+    @property
+    def delay_suspect(self) -> bool:
+        """The delay is implausible (over 12 h late or 30 min early). Never clamped: it is only flagged."""
+        return self.delay_s is not None and (self.delay_s > SUSPECT_LATE_S or self.delay_s < -SUSPECT_EARLY_S)
 
 
 class TripStop(BaseModel):

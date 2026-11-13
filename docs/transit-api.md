@@ -352,3 +352,14 @@ Rows are sorted by `estimated ?? scheduled`. They come from the same computation
 for scheduled trips of the station's own source (an Amtrak station lists Amtrak trains that run through it, a MARC
 station MARC trains; a group board has both). Trips without a shape in the feed have no passes. A cold request for a
 station on the Northeast Corridor takes about 0.3 s, later ones under 0.1 s.
+
+### Delay outlier flag and next-stop reason (BE-8)
+
+Two new `Vehicle` fields; `delay_s` is never clamped.
+
+- `delay_suspect: boolean`: true when `delay_s` is more than 12 h late or more than 30 min early (constants
+  `SUSPECT_LATE_S` / `SUSPECT_EARLY_S` in `transit/models.py`). A real six hour delay (Auto Train) is not flagged;
+  Sudbury's "-56 MIN" is. false when `delay_s` is null. The client may mark the value, never hide it.
+- `next_stop_unavailable: string | null`: why `next_stop` is null: `"no stop data"` (the train has no known stops: no
+  scheduled trip matched and no stop list in the feed) or `"terminated"` (it has passed all of them). null when
+  `next_stop` is set.

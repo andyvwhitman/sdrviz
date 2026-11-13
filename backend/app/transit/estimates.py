@@ -107,3 +107,8 @@ def leg_states(legs: list[Leg], progress: Progress) -> list[str]:
 def next_leg(legs: list[Leg], states: list[str]) -> Leg | None:
     """The first stop not yet passed: where the train is standing, or the one it is heading for."""
     return next((leg for leg, state in zip(legs, states, strict=True) if state in ("current", "next")), None)
+
+
+def no_next_stop(legs: list[Leg]) -> str | None:
+    """Why a train has no next stop: it has no stops to go by, or it has passed them all."""
+    return "terminated" if legs else "no stop data"

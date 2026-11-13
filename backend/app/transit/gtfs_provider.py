@@ -8,11 +8,11 @@ import asyncio
 import logging
 import time
 from collections import Counter
-from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
 
 import httpx
 
+from .estimates import Leg, Progress, StateBasis, clock_progress, departure_delay, leg_states, next_leg
 from .geometry import Path, follow_shapes
 from .gtfs_rt import AlertInfo, TripUpdate, VehiclePosition, parse_alerts, parse_trip_updates, parse_vehicle_positions
 from .gtfs_static import Trip as StaticTrip
@@ -43,56 +43,13 @@ BEFORE_START = timedelta(hours=1)  # a trip counts as "today's" from an hour bef
 AFTER_END = timedelta(hours=3)  # ...to three hours after its last, to tell today's run from yesterday's
 
 
-@dataclass
-class Leg:
-    """One stop of a trip on one service day: scheduled and estimated times."""
-
-    stop_id: str
-    seq: int
-    arr_s: datetime | None
-    dep_s: datetime | None
-    arr_d: int | None = None  # delay seconds at arrival / departure
-    dep_d: int | None = None
-    skipped: bool = False
-
-    @property
-    def arr_e(self) -> datetime | None:
-        return self.arr_s + timedelta(seconds=self.arr_d) if self.arr_s and self.arr_d is not None else None
-
-    @property
-    def dep_e(self) -> datetime | None:
-        return self.dep_s + timedelta(seconds=self.dep_d) if self.dep_s and self.dep_d is not None else None
-
-    @property
-    def arrive(self) -> datetime | None:
-        return self.arr_e or self.arr_s
-
-    @property
-    def leave(self) -> datetime | None:
-        return self.dep_e or self.dep_s
-
-    @property
-    def delay(self) -> int | None:
-        return self.dep_d if self.dep_d is not None else self.arr_d
-
-
-def leg_states(legs: list[Leg], now: datetime) -> list[str]:
-    states, found_next = [], False
-    for leg in legs:
-        arrive, leave = leg.arrive, leg.leave or leg.arrive
-        if leg.skipped:
-            states.append("skipped")
-        elif leave is not None and leave <= now:
-            states.append("passed")
-        elif arrive is not None and arrive <= now:
-            states.append("current")
-            found_next = False
-        elif not found_next:
-            states.append("next")
-            found_next = True
-        else:
-            states.append("upcoming")
-    return states
+def _stop_index(legs: list[Leg], position: VehiclePosition) -> int | None:
+    """The leg a vehicle position stands at or heads for, by stop sequence else stop id (None: it does not say)."""
+    if position.stop_sequence is not None:
+        return next((i for i, leg in enumerate(legs) if leg.seq >= position.stop_sequence), len(legs))
+    if position.stop_id is not None:
+        return next((i for i, leg in enumerate(legs) if leg.stop_id == position.stop_id), None)
+    return None
 
 
 def merge_order(sequences: list[list[str]]) -> list[str]:
@@ -116,6 +73,8 @@ class GtfsProvider(Provider):
         self.place_stops: dict[str, list[str]] = {}
         self.motion = MotionTracker()
         self._paths: dict[str, Path] = {}
+        self._by_trip: dict[str, VehiclePosition] = {}
+        self._by_trip_of: list[VehiclePosition] | None = None
 
     @property
     def has_realtime(self) -> bool:
@@ -233,13 +192,14 @@ class GtfsProvider(Provider):
     # --- trips -----------------------------------------------------------------
 
     def _schedule_of(self, trip_id: str, day_start: datetime):
-        """A function giving the scheduled time of the stop a realtime update is about."""
+        """A function giving the scheduled arrival or departure of the stop a realtime update is about."""
         times = self.static.stop_times.get(trip_id, [])
 
-        def schedule_of(u) -> datetime | None:
+        def schedule_of(u, departing: bool) -> datetime | None:
             for st in times:
                 if (st.sequence == u.sequence) if u.sequence is not None else (st.stop_id == u.stop_id):
-                    secs = st.departure if st.departure is not None else st.arrival
+                    first, second = (st.departure, st.arrival) if departing else (st.arrival, st.departure)
+                    secs = first if first is not None else second
                     return day_start + timedelta(seconds=secs) if secs is not None else None
             return None
 
@@ -269,13 +229,21 @@ class GtfsProvider(Provider):
         update = self.update_for(trip_id, day)
         schedule_of = self._schedule_of(trip_id, start)
         legs = []
-        for st in feed.stop_times.get(trip_id, []):
+        times = feed.stop_times.get(trip_id, [])
+        for index, st in enumerate(times):
             arr = start + timedelta(seconds=st.arrival) if st.arrival is not None else None
             dep = start + timedelta(seconds=st.departure) if st.departure is not None else None
             leg = Leg(st.stop_id, st.sequence, arr or dep, dep or arr)
             if update:
+                own = update.stop_for(st.sequence, st.stop_id)
                 leg.arr_d = update.delay_at(st.sequence, st.stop_id, schedule_of, False)
-                leg.dep_d = update.delay_at(st.sequence, st.stop_id, schedule_of, True)
+                leg.dep_d = departure_delay(
+                    leg.arr_d,
+                    update.delay_at(st.sequence, st.stop_id, schedule_of, True),
+                    reported=bool(own and own.reports_departure),
+                    first=index == 0,
+                    last=index == len(times) - 1,
+                )
                 leg.skipped = update.canceled or any(
                     u.skipped and ((u.sequence == st.sequence) if u.sequence is not None else (u.stop_id == st.stop_id))
                     for u in update.stops
@@ -294,12 +262,24 @@ class GtfsProvider(Provider):
     def _route_of(self, trip: StaticTrip | None):
         return self.static.routes.get(trip.route_id) if trip else None
 
-    @staticmethod
-    def _next_stop_of(legs: list[Leg], states: list[str]) -> Leg | None:
-        return next((leg for leg, state in zip(legs, states, strict=True) if state == "next"), None)
+    def progress(self, trip_id: str, day: date, legs: list[Leg], now: datetime) -> tuple[Progress, StateBasis]:
+        """How far a trip has got: from its vehicle's stop when that position is fresh, else from the clock."""
+        position = self._position_of(trip_id)
+        if position and day == self.trip_day(self.static.trips[trip_id], now):
+            updated = position.timestamp or self.state.realtime_updated
+            fresh = updated and (now - updated).total_seconds() <= self.source.stale_after_s
+            if fresh and (index := _stop_index(legs, position)) is not None:
+                return Progress(index, position.at_stop), "position"
+        return clock_progress(legs, now), "clock"
 
-    def _next_stop(self, legs: list[Leg], now: datetime) -> NextStop | None:
-        leg = self._next_stop_of(legs, leg_states(legs, now))
+    def _position_of(self, trip_id: str) -> VehiclePosition | None:
+        if self._by_trip_of is not self.positions:
+            self._by_trip = {p.trip_id: p for p in self.positions if p.trip_id}
+            self._by_trip_of = self.positions
+        return self._by_trip.get(trip_id)
+
+    def _next_stop(self, legs: list[Leg], states: list[str]) -> NextStop | None:
+        leg = next_leg(legs, states)
         if leg is None:
             return None
         station = self._station(leg.stop_id)
@@ -330,7 +310,7 @@ class GtfsProvider(Provider):
                     track=self.track_for(trip_id, now.date(), u.stop_id or ""),
                 )
             )
-        for stop, state in zip(stops, leg_states(legs, now), strict=True):
+        for stop, state in zip(stops, leg_states(legs, clock_progress(legs, now)), strict=True):
             stop.state = state
         first = next((s.dep_estimated or s.arr_estimated for s in stops if s.dep_estimated or s.arr_estimated), now)
         return Trip(
@@ -356,6 +336,7 @@ class GtfsProvider(Provider):
         day = day or self.trip_day(trip, now)
         legs = self.legs(trip_id, day)
         route = self._route_of(trip)
+        progress, basis = self.progress(trip_id, day, legs, now)
         stops = [
             TripStop(
                 stop_id=self.station_gid(leg.stop_id),
@@ -368,8 +349,9 @@ class GtfsProvider(Provider):
                 delay_s=leg.delay,
                 track=self.track_for(trip_id, day, leg.stop_id),
                 state=state,
+                state_basis=basis,
             )
-            for leg, state in zip(legs, leg_states(legs, now), strict=True)
+            for leg, state in zip(legs, leg_states(legs, progress), strict=True)
         ]
         vehicle = next((v for v in self.vehicles(now) if v.trip_id == self.gid(trip_id)), None)
         return Trip(
@@ -416,10 +398,11 @@ class GtfsProvider(Provider):
         trip = feed.trips.get(p.trip_id) if p.trip_id else None
         route_id = p.route_id or (trip.route_id if trip else None)
         route = feed.routes.get(route_id) if route_id else None
-        legs, delay = [], None
+        legs, delay, next_stop = [], None, None
         if trip and trip.id in feed.stop_times:
             day = self.trip_day(trip, now)
             legs = self.legs(trip.id, day)
+            next_stop = self._next_stop(legs, leg_states(legs, self.progress(trip.id, day, legs, now)[0]))
             if update := self.update_for(trip.id, day):
                 delay = update.current_delay(self._schedule_of(trip.id, feed.midnight(day)))
         key = self._key(p)
@@ -441,7 +424,7 @@ class GtfsProvider(Provider):
             speed_mph=p.speed_mph if p.speed_mph is not None else self.motion.speed_mph(key),
             delay_s=delay,
             status=delay_status(delay),
-            next_stop=self._next_stop(legs, now) if legs else None,
+            next_stop=next_stop,
             position="realtime",
             updated=updated,
             age_s=max(0, round((now - updated).total_seconds())) if updated else None,
@@ -477,6 +460,7 @@ class GtfsProvider(Provider):
 
     def _interpolate(self, trip: StaticTrip, day: date, legs: list[Leg], now: datetime) -> Vehicle | None:
         feed = self.static
+        full = legs
         legs = [leg for leg in legs if leg.stop_id in feed.stops and not leg.skipped]
         if len(legs) < 2 or not (legs[0].leave and legs[-1].arrive) or not legs[0].leave <= now < legs[-1].arrive:
             return None
@@ -524,7 +508,7 @@ class GtfsProvider(Provider):
             speed_mph=round(speed, 1),
             delay_s=delay,
             status=delay_status(delay),
-            next_stop=self._next_stop(self.legs(trip.id, day), now),
+            next_stop=self._next_stop(full, leg_states(full, clock_progress(full, now))),
             position="estimated",
             updated=updated,
             age_s=max(0, round((now - updated).total_seconds())),
@@ -614,19 +598,14 @@ class GtfsProvider(Provider):
         feed = self.static
         times = feed.stop_times[trip_id]
         st = times[index]
-        update = self.update_for(trip_id, day)
-        schedule_of = self._schedule_of(trip_id, start)
         route = self._route_of(trip)
-        skipped = bool(
-            update
-            and (
-                update.canceled
-                or any(
-                    u.skipped and ((u.sequence == st.sequence) if u.sequence is not None else (u.stop_id == st.stop_id))
-                    for u in update.stops
-                )
-            )
-        )
+        live = self.update_for(trip_id, day) or self._position_of(trip_id)
+        legs = self.legs(trip_id, day) if live else None
+        if legs:  # realtime: estimates and state come from the same legs and progress as the trip page
+            progress, basis = self.progress(trip_id, day, legs, now)
+            state = leg_states(legs, progress)[index]
+        else:
+            basis = "clock"
         for departing, rows in ((True, departures), (False, arrivals)):
             if (index == len(times) - 1) if departing else (index == 0):
                 continue
@@ -638,11 +617,18 @@ class GtfsProvider(Provider):
             if secs is None:
                 continue
             scheduled = start + timedelta(seconds=secs)
-            delay = update.delay_at(st.sequence, st.stop_id, schedule_of, departing) if update else None
+            leg = legs[index] if legs else None
+            delay = (leg.dep_d if departing else leg.arr_d) if leg else None
             estimated = scheduled + timedelta(seconds=delay) if delay is not None else None
             shown = estimated or scheduled
             if not lo <= shown <= hi:
                 continue
+            if leg and leg.skipped:
+                row_state = "cancelled"
+            elif leg:
+                row_state = "passed" if state == "passed" or (state == "current" and not departing) else "upcoming"
+            else:
+                row_state = "passed" if shown <= now else "upcoming"
             other = times[-1] if departing else times[0]
             rows.append(
                 BoardRow(
@@ -656,7 +642,8 @@ class GtfsProvider(Provider):
                     estimated=estimated,
                     delay_s=delay,
                     track=self.track_for(trip_id, day, st.stop_id),
-                    state="cancelled" if skipped else ("passed" if shown <= now else "upcoming"),
+                    state=row_state,
+                    state_basis=basis,
                 )
             )
 

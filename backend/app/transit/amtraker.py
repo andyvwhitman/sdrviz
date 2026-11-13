@@ -12,6 +12,7 @@ from datetime import UTC, date, datetime, timedelta
 
 import httpx
 
+from .estimates import Leg, Progress, StateBasis, clock_progress, departure_delay, leg_states, next_leg
 from .gtfs_provider import GtfsProvider
 from .gtfs_rt import StopUpdate, TripUpdate
 from .models import (
@@ -180,6 +181,54 @@ class AmtrakerProvider(GtfsProvider):
             return (stop.get("platform") or None) if stop else None
         return None
 
+    # --- stops, as Amtraker lists them -----------------------------------------
+
+    @staticmethod
+    def _live_legs(train: dict) -> list[Leg]:
+        """The train's own stops as legs (Amtraker's scheduled and estimated times, departures corrected)."""
+        stops = _stops(train)
+        legs = []
+        for index, s in enumerate(stops):
+            sch_arr, sch_dep = _time(s.get("schArr")), _time(s.get("schDep"))
+            arr, dep = _time(s.get("arr")), _time(s.get("dep"))
+            arr_s, dep_s = sch_arr or sch_dep, sch_dep or sch_arr
+            arr_d = round(((arr or dep) - arr_s).total_seconds()) if arr_s and (arr or dep) else None
+            dep_d = round(((dep or arr) - dep_s).total_seconds()) if dep_s and (dep or arr) else None
+            dep_d = departure_delay(
+                arr_d,
+                dep_d,
+                reported=bool(dep and dep != arr),
+                first=index == 0,
+                last=index == len(stops) - 1,
+            )
+            legs.append(Leg(s["code"], index + 1, arr_s, dep_s, arr_d, dep_d))
+        return legs
+
+    def _fresh(self, train: dict, now: datetime) -> bool:
+        """Whether the train's position is recent enough (the source's stale limit) to say where it is."""
+        measured = _time(train.get("lastValTS")) or _time(train.get("updatedAt"))
+        return measured is not None and (now - measured).total_seconds() <= self.source.stale_after_s
+
+    def _live_progress(self, train: dict, legs: list[Leg], now: datetime) -> tuple[Progress, StateBasis]:
+        """Progress over `legs` (the train's own stops, or the static trip's): Amtraker's stop statuses while the
+        position is fresh, else the clock."""
+        if not self._fresh(train, now):
+            return clock_progress(legs, now), "clock"
+        stops = _stops(train)
+        ahead = next((s for s in stops if s.get("status") != "Departed"), None)
+        if ahead is None:
+            return Progress(len(legs)), "position"
+        index = next((i for i, leg in enumerate(legs) if leg.stop_id == ahead["code"]), None)
+        if index is None:  # a stop of the schedule that Amtraker does not list
+            return clock_progress(legs, now), "clock"
+        return Progress(index, ahead.get("status") == "Station"), "position"
+
+    def progress(self, trip_id: str, day: date, legs: list[Leg], now: datetime) -> tuple[Progress, StateBasis]:
+        match = self._matched.get((trip_id, day))
+        if match is None:
+            return super().progress(trip_id, day, legs, now)
+        return self._live_progress(match[0], legs, now)
+
     # --- vehicles and trips -------------------------------------------------------
 
     def _train(self, train_id: str) -> dict | None:
@@ -194,7 +243,10 @@ class AmtrakerProvider(GtfsProvider):
             seen = _time(t.get("updatedAt")) or measured
             if seen and now - seen > STALE_POSITION:
                 continue
-            delay = self._current_delay(t)
+            legs = self._live_legs(t)
+            progress, _ = self._live_progress(t, legs, now)
+            states = leg_states(legs, progress)
+            delay = self._current_delay(legs, states)
             route_id = self._route_by_name.get((t.get("routeName") or "").lower())
             out.append(
                 Vehicle(
@@ -214,7 +266,7 @@ class AmtrakerProvider(GtfsProvider):
                     speed_mph=t.get("velocity"),
                     delay_s=delay,
                     status=delay_status(delay),
-                    next_stop=self._live_next_stop(t),
+                    next_stop=self._live_next_stop(t, legs, states),
                     position="realtime",
                     updated=measured,
                     age_s=max(0, round((now - measured).total_seconds())) if measured else None,
@@ -223,58 +275,45 @@ class AmtrakerProvider(GtfsProvider):
             )
         return out
 
-    @staticmethod
-    def _next_live(train: dict) -> dict | None:
-        return next((s for s in _stops(train) if s.get("status") != "Departed"), None)
-
-    def _live_next_stop(self, train: dict) -> NextStop | None:
-        stop = self._next_live(train)
-        if stop is None:
+    def _live_next_stop(self, train: dict, legs: list[Leg], states: list[str]) -> NextStop | None:
+        leg = next_leg(legs, states)
+        if leg is None:
             return None
+        stop = _stops(train)[leg.seq - 1]
         return NextStop(
             stop_id=self.station_gid(stop["code"]),
             name=stop["name"],
             eta=_time(stop.get("arr") or stop.get("dep")),
-            scheduled=_time(stop.get("schArr") or stop.get("schDep")),
+            scheduled=leg.arr_s,
         )
 
-    def _current_delay(self, train: dict) -> int | None:
+    @staticmethod
+    def _current_delay(legs: list[Leg], states: list[str]) -> int | None:
         """Lateness at the next stop the train has not yet left."""
-        stop = self._next_live(train)
-        if stop is None:
-            return None
-        sched, est = _time(stop.get("schArr") or stop.get("schDep")), _time(stop.get("arr") or stop.get("dep"))
-        return round((est - sched).total_seconds()) if sched and est else None
+        leg = next_leg(legs, states)
+        return leg.arr_d if leg else None
 
     def trip(self, trip_id: str, now: datetime, day: date | None = None) -> Trip | None:
         train = self._train(trip_id)
         if train is None:
             return super().trip(trip_id, now, day)
-        stops, found_next = [], False
-        for seq, s in enumerate(_stops(train), 1):
-            status = s.get("status")
-            if status == "Departed":
-                state = "passed"
-            elif status == "Station":
-                state = "current"
-            elif not found_next:
-                state, found_next = "next", True
-            else:
-                state = "upcoming"
-            sched = _time(s.get("schArr") or s.get("schDep"))
-            est = _time(s.get("arr") or s.get("dep"))
+        legs = self._live_legs(train)
+        progress, basis = self._live_progress(train, legs, now)
+        stops = []
+        for s, leg, state in zip(_stops(train), legs, leg_states(legs, progress), strict=True):
             stops.append(
                 TripStop(
                     stop_id=self.station_gid(s["code"]),
                     name=s["name"],
-                    seq=seq,
+                    seq=leg.seq,
                     arr_scheduled=_time(s.get("schArr")),
                     arr_estimated=_time(s.get("arr")),
                     dep_scheduled=_time(s.get("schDep")),
-                    dep_estimated=_time(s.get("dep")),
-                    delay_s=round((est - sched).total_seconds()) if sched and est else None,
+                    dep_estimated=leg.dep_e if s.get("schDep") else _time(s.get("dep")),
+                    delay_s=leg.delay,
                     track=s.get("platform") or None,
                     state=state,
+                    state_basis=basis,
                 )
             )
         first = stops[0] if stops else None
@@ -301,20 +340,21 @@ class AmtrakerProvider(GtfsProvider):
         for t in self.trains:
             if t["trainID"] in matched:
                 continue
-            stops = _stops(t)
-            for index, stop in enumerate(stops):
+            stops, legs = _stops(t), self._live_legs(t)
+            progress, basis = self._live_progress(t, legs, now)
+            states = leg_states(legs, progress)
+            for index, (stop, leg) in enumerate(zip(stops, legs, strict=True)):
                 if stop["code"] not in members:
                     continue
                 for departing, rows in ((True, departures), (False, arrivals)):
                     if (index == len(stops) - 1) if departing else (index == 0):
                         continue
-                    key = ("schDep", "dep") if departing else ("schArr", "arr")
-                    scheduled = _time(stop.get(key[0]))
-                    estimated = _time(stop.get(key[1]))
+                    scheduled = _time(stop.get("schDep" if departing else "schArr"))
+                    estimated = leg.dep_e if departing else leg.arr_e
                     if scheduled is None or not lo <= (estimated or scheduled) <= hi:
                         continue
                     other = stops[-1] if departing else stops[0]
-                    delay = round((estimated - scheduled).total_seconds()) if estimated else None
+                    done = states[index] == "passed" or (states[index] == "current" and not departing)
                     rows.append(
                         BoardRow(
                             trip_id=self.gid(t["trainID"]),
@@ -325,9 +365,10 @@ class AmtrakerProvider(GtfsProvider):
                             headsign=other["name"],
                             scheduled=scheduled,
                             estimated=estimated,
-                            delay_s=delay,
+                            delay_s=leg.dep_d if departing else leg.arr_d,
                             track=stop.get("platform") or None,
-                            state="passed" if (estimated or scheduled) <= now else "upcoming",
+                            state="passed" if done else "upcoming",
+                            state_basis=basis,
                             added=True,
                         )
                     )

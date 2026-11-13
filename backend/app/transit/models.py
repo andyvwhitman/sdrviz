@@ -63,6 +63,7 @@ class TripStop(BaseModel):
     delay_s: int | None = None
     track: str | None = None
     state: Literal["passed", "current", "next", "upcoming", "skipped"] = "upcoming"
+    state_basis: Literal["position", "clock"] = "clock"  # position = from the train's fresh position; clock = estimated
 
 
 class Alert(BaseModel):
@@ -138,6 +139,7 @@ class BoardRow(BaseModel):
     delay_s: int | None = None
     track: str | None = None
     state: Literal["passed", "upcoming", "cancelled"]
+    state_basis: Literal["position", "clock"] = "clock"  # position = from the train's fresh position; clock = estimated
     added: bool = False  # realtime shows this train but the schedule has no such trip
 
 

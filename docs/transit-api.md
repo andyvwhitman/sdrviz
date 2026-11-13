@@ -202,3 +202,35 @@ Amtrak code (`st:was`, `st:ncr`, `st:bwi`, `st:bal`, `st:abe`, `st:rkv`, `st:hfy
   ungrouped stations of different sources within 300 m (`distance`), or with the same normalised name within 1 km
   (`name`, which wins when both hold; "station", "amtrak", "marc", "vre", "rail" are ignored, word order is not).
   Closest first, recomputed when a feed reloads. For the Settings page; nothing is applied automatically.
+
+## Sprint 1 additions (v1.4)
+
+All additive; nothing was removed.
+
+### Departure estimates (BE-1)
+
+`dep_estimated` / `delay_s` on departures no longer repeat the arrival estimate. For a stop that is neither first nor
+last, the estimated departure is `max(scheduled departure, estimated arrival + scheduled dwell)`, which is the
+scheduled departure plus the arrival delay, never earlier than scheduled (a layover is not assumed to absorb delay). If
+the feed reports a departure of its own (Amtraker `dep` different from `arr`; a GTFS-RT departure different from the
+arrival), a later-than-scheduled value is trusted and an earlier one is clamped to the schedule. The first stop keeps
+the feed's departure (it may leave early); the last stop has no departure and keeps its arrival delay. Rule:
+`BoardRow.delay_s` for departures and `TripStop.delay_s` (departure delay where the stop has a departure, else
+arrival delay) use this value; arrival rows keep the arrival delay. One implementation (`transit/estimates.py`) serves
+the Amtraker and GTFS-RT paths.
+
+### Passed / current state from position (BE-2)
+
+`TripStop.state` and `BoardRow.state` now come from how far the train has really got, the same for the trip page, the
+station board and `Vehicle.next_stop`:
+
+- `TripStop.state_basis` and `BoardRow.state_basis`: `"position" | "clock"`. `position`: the train's position is
+  fresh (age within its source's `stale_after_s`) and says which stop is next (Amtraker's per-stop status; GTFS-RT
+  `current_stop_sequence` / `stop_id` / `current_status` of the vehicle position, as MBTA sends). `clock`: no usable
+  position (stale, missing, or the feed gives no stop), so the state is derived from the estimated times and is an
+  estimate.
+- A stop after the train's next stop is never `passed` (`passed` stops are always a prefix of the trip).
+- `Vehicle.next_stop` is the first stop that is not `passed` (the stop the train stands at, or the one it is heading
+  for), so it equals the first `current` / `next` stop of `/trips/{id}`. This changes MARC / VRE / MBTA: while a train
+  stands at a stop, `next_stop` is that stop (as Amtrak already did) instead of the one after.
+- Board rows: a train standing at a stop (`current`) has `passed` as an arrival row and `upcoming` as a departure row.

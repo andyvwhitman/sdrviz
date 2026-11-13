@@ -9,6 +9,7 @@ from google.transit import gtfs_realtime_pb2
 CANCELED = gtfs_realtime_pb2.TripDescriptor.CANCELED
 ADDED = gtfs_realtime_pb2.TripDescriptor.ADDED
 SKIPPED = gtfs_realtime_pb2.TripUpdate.StopTimeUpdate.SKIPPED
+STOPPED_AT = gtfs_realtime_pb2.VehiclePosition.STOPPED_AT
 MPS_TO_MPH = 2.236936
 
 
@@ -21,6 +22,13 @@ class StopUpdate:
     arrival_delay: int | None
     departure_delay: int | None
     skipped: bool = False
+
+    @property
+    def reports_departure(self) -> bool:
+        """Whether the update has a departure of its own, not just the arrival repeated."""
+        if self.departure_delay is not None:
+            return self.departure_delay != self.arrival_delay
+        return self.departure_time is not None and self.departure_time != self.arrival_time
 
     def delay_for(self, scheduled: datetime | None, departing: bool) -> int | None:
         """This update's lateness: its delay field, else its absolute time against the scheduled time."""
@@ -43,30 +51,42 @@ class TripUpdate:
     delay: int | None = None  # trip-level delay, when the feed gives one
     stops: list[StopUpdate] = field(default_factory=list)
 
+    def stop_for(self, sequence: int, stop_id: str) -> "StopUpdate | None":
+        """The update about one stop, if the feed has one."""
+        return next(
+            (u for u in self.stops if ((u.sequence == sequence) if u.sequence is not None else (u.stop_id == stop_id))),
+            None,
+        )
+
     def delay_at(
-        self, sequence: int, stop_id: str, schedule_of: Callable[["StopUpdate"], datetime | None], departing: bool
+        self,
+        sequence: int,
+        stop_id: str,
+        schedule_of: Callable[["StopUpdate", bool], datetime | None],
+        departing: bool,
     ) -> int | None:
         """Seconds late at a stop: its own update if there is one, else the last earlier update carries forward.
 
-        `schedule_of` gives the scheduled time of the stop an update is about, to turn absolute times into delays.
+        `schedule_of(update, departing)` gives the scheduled arrival or departure of the stop an update is about, to
+        turn absolute times into delays.
         """
         carried: int | None = None
         for u in self.stops:
             if u.sequence is not None and u.sequence > sequence:
                 break
-            delay = u.delay_for(schedule_of(u), departing)
+            delay = u.delay_for(schedule_of(u, departing), departing)
             if delay is not None:
                 carried = delay
             if (u.sequence == sequence) if u.sequence is not None else (u.stop_id == stop_id):
                 break
         return carried if carried is not None else self.delay
 
-    def current_delay(self, schedule_of: Callable[[StopUpdate], datetime | None]) -> int | None:
+    def current_delay(self, schedule_of: Callable[[StopUpdate, bool], datetime | None]) -> int | None:
         """The delay at the next stop that has one: how late the train is running now."""
         for u in self.stops:
-            delay = u.delay_for(schedule_of(u), departing=True)
+            delay = u.delay_for(schedule_of(u, True), departing=True)
             if delay is None:
-                delay = u.delay_for(schedule_of(u), departing=False)
+                delay = u.delay_for(schedule_of(u, False), departing=False)
             if delay is not None:
                 return delay
         return self.delay
@@ -82,6 +102,9 @@ class VehiclePosition:
     bearing: float | None
     speed_mph: float | None
     timestamp: datetime | None
+    stop_sequence: int | None = None  # the stop it stands at or heads for, when the feed says
+    stop_id: str | None = None
+    at_stop: bool = False  # STOPPED_AT that stop
 
 
 def parse_trip_updates(data: bytes) -> dict[str, TripUpdate]:
@@ -136,6 +159,9 @@ def parse_vehicle_positions(data: bytes) -> list[VehiclePosition]:
                 bearing=v.position.bearing if v.position.HasField("bearing") else None,
                 speed_mph=v.position.speed * MPS_TO_MPH if v.position.HasField("speed") else None,
                 timestamp=datetime.fromtimestamp(v.timestamp, UTC) if v.timestamp else None,
+                stop_sequence=v.current_stop_sequence if v.HasField("current_stop_sequence") else None,
+                stop_id=v.stop_id or None,
+                at_stop=v.HasField("current_status") and v.current_status == STOPPED_AT,
             )
         )
     return vehicles

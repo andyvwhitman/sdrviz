@@ -6,6 +6,7 @@
   import type { Snippet } from "svelte";
   import * as fmt from "$lib/hud/fmt";
   import { compactChips, headerChips, statusFrom, type ChipSpec, type StatusSpec } from "$lib/hud/chips";
+  import { transitChips } from "$lib/hud/transitChips";
   import { params } from "$lib/params";
   import { parseUtcOffset } from "$lib/time";
   import { live } from "$lib/stores/live.svelte";
@@ -13,6 +14,7 @@
   import { session } from "$lib/stores/session.svelte";
   import { shell } from "$lib/stores/shell.svelte";
   import { stage } from "$lib/stores/stage.svelte";
+  import { transit } from "$lib/stores/transit.svelte";
   import { ui } from "$lib/stores/ui.svelte";
   import { FIRST_DATA_WAIT_S, retryInfo } from "$lib/ws/link";
   import type { Route } from "../../routes";
@@ -41,6 +43,8 @@
     if (blank) return [{ text: `FEEDS ${fmt.BLANK}`, kind: "nominal" }, { text: `ASR ${fmt.BLANK}`, kind: "nominal" }];
     if (!state) return [];
     const all = headerChips(state, { txChip: true });
+    // the transit feeds' own chips, while the map is polling them
+    if (transit.active) all.push(...transitChips({ sources: transit.sources, fetchedAt: transit.fetchedAt, failed: transit.failed, now: transit.now }));
     return narrow ? compactChips(all) : all;
   });
 

@@ -9,7 +9,7 @@ export interface ChipSpec {
   text: string;
   kind: ChipKind;
   /** which header chip this is, for the narrow-header collapse */
-  id?: "feeds" | "asr" | "keyed";
+  id?: "feeds" | "asr" | "keyed" | "transit";
   /** tooltip; the narrow-header collapse puts the full text here */
   title?: string;
   glyph?: GlyphState;
@@ -59,16 +59,19 @@ const SEVERITY: ChipKind[] = ["nominal", "degraded", "acked", "fault"];
 export function compactChips(chips: ChipSpec[]): ChipSpec[] {
   const feeds = chips.find((c) => c.id === "feeds");
   const asr = chips.find((c) => c.id === "asr");
+  const transit = feeds ? chips.filter((c) => c.id === "transit") : [];
   const out: ChipSpec[] = [];
   for (const chip of chips) {
+    if (transit.includes(chip)) continue; // folded into the FEEDS chip below
     if (chip.id === "keyed") {
       const channels = chip.text.split(" · ").length - 1;
       out.push({ ...chip, text: `KEYED · ${channels}`, title: chip.text });
     } else if (chip === asr && feeds) {
       continue;
     } else if (chip === feeds && asr) {
-      const worst = [feeds, asr].reduce((a, b) => (SEVERITY.indexOf(b.kind) > SEVERITY.indexOf(a.kind) ? b : a));
-      out.push({ ...worst, id: "feeds", text: `${feeds.text} · ${asr.text}` });
+      const worst = [feeds, asr, ...transit].reduce((a, b) => (SEVERITY.indexOf(b.kind) > SEVERITY.indexOf(a.kind) ? b : a));
+      const note = transit.length ? { text: `${feeds.text} · ${asr.text} · TRANSIT`, title: transit.map((c) => c.text).join(" · ") } : { text: `${feeds.text} · ${asr.text}` };
+      out.push({ ...worst, id: "feeds", ...note });
     } else {
       out.push(chip);
     }

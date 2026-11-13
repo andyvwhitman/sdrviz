@@ -1,8 +1,11 @@
 import { api } from "$lib/api/client";
-import type { Line, Stop, Vehicle } from "$lib/types/transit";
+import type { Line, Stop, TransitSourceStatus, Vehicle } from "$lib/types/transit";
+import { TRANSIT_POLL_MS } from "$lib/hud/transitChips";
 import { type Bbox, bboxParam, bucketZoom, snapBbox, zoomBucket } from "../../screens/map/lib/transitView";
 
-const POLL_MS = 15_000;
+const POLL_MS = TRANSIT_POLL_MS;
+/** the clock the header chips age the data against */
+const TICK_MS = 5_000;
 /** Wait for a pan or zoom to settle before asking for the layers. */
 const LAYER_DEBOUNCE_MS = 300;
 const LAYER_CACHE_MAX = 40;
@@ -26,12 +29,20 @@ class TransitStore {
   /** the last poll failed (the server is unreachable); an agency feed being down just yields no vehicles */
   failed = $state(false);
 
+  /** each source's state, polled with the vehicles, for the header chips */
+  sources = $state.raw<Pick<TransitSourceStatus, "agency" | "enabled" | "status">[]>([]);
+  /** ticks while the map polls, so "older than two polls" is noticed when the polls stop coming */
+  now = $state(Date.now());
+  /** a screen that draws transit data is open and polling */
+  active = $state(false);
+
   /** the route lines and stops of the last view that finished loading */
   lines = $state.raw<Line[]>([]);
   stops = $state.raw<Stop[]>([]);
 
   #users = 0;
   #timer: ReturnType<typeof setInterval> | undefined;
+  #tick: ReturnType<typeof setInterval> | undefined;
   #layerTimer: ReturnType<typeof setTimeout> | undefined;
   #wanted = "";
   #cache = new Map<string, Layers>();
@@ -39,18 +50,23 @@ class TransitStore {
   /** Start polling (reference counted); returns the stop function, for `onMount`. */
   start(): () => void {
     if (this.#users++ === 0) {
+      this.active = true;
       void this.refresh();
       this.#timer = setInterval(() => void this.refresh(), POLL_MS);
+      this.#tick = setInterval(() => (this.now = Date.now()), TICK_MS);
     }
     return () => {
       if (--this.#users === 0) {
+        this.active = false;
         clearInterval(this.#timer);
+        clearInterval(this.#tick);
         clearTimeout(this.#layerTimer);
       }
     };
   }
 
   async refresh(): Promise<void> {
+    api.transit.sources().then((sources) => (this.sources = sources), () => {}); // the chips are decoration
     try {
       this.vehicles = await api.transit.vehicles();
       this.fetchedAt = Date.now();

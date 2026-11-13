@@ -181,12 +181,15 @@ export interface Board {
   attribution: string[];
 }
 
+/** GET /transit/sources: a source with its read-only `status` (the fields the map reads; docs/transit-api.md has the rest) */
 export interface TransitSourceStatus {
   id: string;
   agency: string;
   kind: string;
-  state: "starting" | "ok" | "error";
-  static_error: string | null;
-  realtime_error: string | null;
-  vehicles: number;
+  enabled: boolean;
+  status: {
+    state: "ok" | "stale" | "error" | "disabled" | "loading" | "warming";
+    error: string | null;
+    rt_updated_at: string | null;
+  };
 }

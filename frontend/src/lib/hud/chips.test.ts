@@ -48,3 +48,12 @@ describe("compactChips", () => {
     expect(joined?.kind).toBe("fault");
   });
 });
+
+describe("compactChips with transit chips", () => {
+  it("folds them into the FEEDS chip and lists them in the tooltip", () => {
+    const transit = [{ id: "transit" as const, text: "AMTRAK WARMING", kind: "degraded" as const }];
+    const out = compactChips([...headerChips(stateWith()), ...transit]);
+    expect(out).toHaveLength(1);
+    expect(out[0]).toMatchObject({ text: "FEEDS 4/4 · ASR OK · TRANSIT", kind: "degraded", title: "AMTRAK WARMING" });
+  });
+});

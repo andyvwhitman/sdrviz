@@ -110,7 +110,8 @@ describe.each(SCENARIOS)("scenario %s", (name) => {
   it("headerChips match", () => {
     const state = scenario(name);
     for (const txChip of [false, true]) {
-      const normalise = (c: { text: string; kind?: string; glyph?: string; onset?: boolean }) => ({ glyph: undefined, onset: undefined, ...c, kind: c.kind ?? "nominal" });
+      // `id` is ours (the narrow header collapse); the mockup has none
+      const normalise = ({ id: _id, ...c }: { id?: string; text: string; kind?: string; glyph?: string; onset?: boolean }) => ({ glyph: undefined, onset: undefined, ...c, kind: c.kind ?? "nominal" });
       expect(headerChips(state, { txChip }).map(normalise)).toEqual(HUD.headerChips(state, { txChip }).map(normalise));
     }
   });

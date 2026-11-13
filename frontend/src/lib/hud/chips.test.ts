@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { headerChips } from "./chips";
+import { compactChips, headerChips } from "./chips";
 
 const row = (aar: string, off_bank: boolean) => ({ aar, off_bank });
 const stateWith = (...active: ReturnType<typeof row>[]) =>
@@ -20,5 +20,31 @@ describe("KEYED chip", () => {
 
   it("an all off-bank key-up has no empty channel slots", () => {
     expect(keyed(row("CH66", true))).toBe("KEYED · +1 OFF-BANK");
+  });
+});
+
+describe("compactChips", () => {
+  const chips = (...active: ReturnType<typeof row>[]) => headerChips(stateWith(...active), { txChip: true });
+
+  it("shows a KEYED count and keeps the full list in the tooltip", () => {
+    const keyed = compactChips(chips(row("CH22", false), row("CH12", false))).find((c) => c.id === "keyed");
+    expect(keyed?.text).toBe("KEYED · 2");
+    expect(keyed?.title).toBe("KEYED · CH22 · CH12");
+  });
+
+  it("counts an off-bank key-up as one", () => {
+    expect(compactChips(chips(row("CH22", false), row("CH66", true))).find((c) => c.id === "keyed")?.text).toBe("KEYED · 2");
+  });
+
+  it("joins FEEDS and ASR into one chip", () => {
+    const out = compactChips(chips());
+    expect(out.map((c) => c.text)).toEqual(["FEEDS 4/4 · ASR OK"]);
+  });
+
+  it("takes the worse state of the two", () => {
+    const state = stateWith();
+    state.system.decoder = { state: "fault", queue: 0 } as never;
+    const joined = compactChips(headerChips(state)).find((c) => c.id === "feeds");
+    expect(joined?.kind).toBe("fault");
   });
 });

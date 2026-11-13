@@ -27,7 +27,7 @@
 <svelte:window onkeydown={keys} />
 
 {#each chips as chip}
-  <Chip text={chip.text} kind={chip.kind} glyph={chip.glyph} onset={chip.onset} />
+  <Chip text={chip.text} kind={chip.kind} glyph={chip.glyph} onset={chip.onset} title={chip.title} />
 {/each}
 {#if reconnecting}<Chip text="RECONNECTING" kind="offline" />{/if}
 {#if audio.soloCount}<Chip text="SOLO {audio.soloCount}" kind="active" />{/if}

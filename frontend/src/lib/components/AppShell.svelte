@@ -5,13 +5,14 @@
    */
   import type { Snippet } from "svelte";
   import * as fmt from "$lib/hud/fmt";
-  import { headerChips, statusFrom, type ChipSpec, type StatusSpec } from "$lib/hud/chips";
+  import { compactChips, headerChips, statusFrom, type ChipSpec, type StatusSpec } from "$lib/hud/chips";
   import { params } from "$lib/params";
   import { parseUtcOffset } from "$lib/time";
   import { live } from "$lib/stores/live.svelte";
   import { link } from "$lib/stores/link.svelte";
   import { session } from "$lib/stores/session.svelte";
   import { shell } from "$lib/stores/shell.svelte";
+  import { stage } from "$lib/stores/stage.svelte";
   import { ui } from "$lib/stores/ui.svelte";
   import { FIRST_DATA_WAIT_S, retryInfo } from "$lib/ws/link";
   import type { Route } from "../../routes";
@@ -19,6 +20,9 @@
   import HeaderNav from "./HeaderNav.svelte";
   import StatusLine from "./StatusLine.svelte";
   import TitleBlock from "./TitleBlock.svelte";
+
+  /** at this stage width and below the header chips collapse so they never meet the tabs */
+  const NARROW_HEADER_PX = 1440;
 
   interface Props {
     route: Route;
@@ -32,9 +36,12 @@
   const blank = $derived(params.force === "loading" || params.force === "connecting");
 
   // the same chips on every screen, the orange KEYED chip included
+  const narrow = $derived(stage.width <= NARROW_HEADER_PX);
   const chips = $derived.by((): ChipSpec[] => {
     if (blank) return [{ text: `FEEDS ${fmt.BLANK}`, kind: "nominal" }, { text: `ASR ${fmt.BLANK}`, kind: "nominal" }];
-    return state ? headerChips(state, { txChip: true }) : [];
+    if (!state) return [];
+    const all = headerChips(state, { txChip: true });
+    return narrow ? compactChips(all) : all;
   });
 
   const zone = $derived(state?.tz.name ?? "EST");
@@ -60,7 +67,7 @@
   });
 </script>
 
-<header class="hud-header">
+<header class="hud-header" class:hud-header--narrow={narrow}>
   <div class="hud-header__left">
     <span class="hud-mark">SDRVIZ</span>
     <span class="hud-screen-name">{route.name}</span>

@@ -8,6 +8,10 @@ export type ChipKind = "nominal" | "active" | "armed" | "degraded" | "fault" | "
 export interface ChipSpec {
   text: string;
   kind: ChipKind;
+  /** which header chip this is, for the narrow-header collapse */
+  id?: "feeds" | "asr" | "keyed";
+  /** tooltip; the narrow-header collapse puts the full text here */
+  title?: string;
   glyph?: GlyphState;
   /** fault onset pulse */
   onset?: boolean;
@@ -23,15 +27,15 @@ export function headerChips(state: ChipState, { txChip = false } = {}): ChipSpec
   const { header, faults, degraded } = state;
   const chips: ChipSpec[] = [];
 
-  if (faults.some((f) => !f.acked)) chips.push({ text: header.feeds_chip, kind: "fault", glyph: "fault", onset: true });
-  else if (faults.length) chips.push({ text: header.feeds_chip, kind: "acked", glyph: "fault" });
-  else if (header.feeds_chip_state === "stale" || degraded.length) chips.push({ text: header.feeds_chip, kind: "degraded", glyph: "stale" });
-  else chips.push({ text: header.feeds_chip, kind: "nominal" });
+  if (faults.some((f) => !f.acked)) chips.push({ id: "feeds", text: header.feeds_chip, kind: "fault", glyph: "fault", onset: true });
+  else if (faults.length) chips.push({ id: "feeds", text: header.feeds_chip, kind: "acked", glyph: "fault" });
+  else if (header.feeds_chip_state === "stale" || degraded.length) chips.push({ id: "feeds", text: header.feeds_chip, kind: "degraded", glyph: "stale" });
+  else chips.push({ id: "feeds", text: header.feeds_chip, kind: "nominal" });
 
   const decoder = state.system?.decoder ?? { state: "ok", queue: 0 };
-  if (decoder.state === "ok") chips.push({ text: "ASR OK", kind: "nominal" });
-  else if (decoder.state === "fault") chips.push({ text: header.asr_chip || "ASR FAULT", kind: "fault", glyph: "fault" });
-  else chips.push({ text: header.asr_chip || `ASR BACKLOG ${decoder.queue}`, kind: "degraded" });
+  if (decoder.state === "ok") chips.push({ id: "asr", text: "ASR OK", kind: "nominal" });
+  else if (decoder.state === "fault") chips.push({ id: "asr", text: header.asr_chip || "ASR FAULT", kind: "fault", glyph: "fault" });
+  else chips.push({ id: "asr", text: header.asr_chip || `ASR BACKLOG ${decoder.queue}`, kind: "degraded" });
 
   if (header.disk_chip) chips.push({ text: header.disk_chip, kind: "degraded" });
   if (header.host_chip) chips.push({ text: header.host_chip, kind: "degraded" });
@@ -41,9 +45,35 @@ export function headerChips(state: ChipState, { txChip = false } = {}): ChipSpec
     const onBank = keyed.filter((a) => !a.off_bank).map((a) => a.aar);
     const offBank = keyed.length - onBank.length;
     const parts = offBank ? [...onBank, `+${offBank} OFF-BANK`] : onBank;
-    chips.push({ text: `KEYED · ${parts.join(" · ")}`, kind: "tx", glyph: "tx" });
+    chips.push({ id: "keyed", text: `KEYED · ${parts.join(" · ")}`, kind: "tx", glyph: "tx" });
   }
   return chips;
+}
+
+const SEVERITY: ChipKind[] = ["nominal", "degraded", "acked", "fault"];
+
+/**
+ * The header on a narrow stage: KEYED shows a count (the channel list moves to the tooltip) and FEEDS and ASR
+ * share one chip that takes the worse of their two states.
+ */
+export function compactChips(chips: ChipSpec[]): ChipSpec[] {
+  const feeds = chips.find((c) => c.id === "feeds");
+  const asr = chips.find((c) => c.id === "asr");
+  const out: ChipSpec[] = [];
+  for (const chip of chips) {
+    if (chip.id === "keyed") {
+      const channels = chip.text.split(" · ").length - 1;
+      out.push({ ...chip, text: `KEYED · ${channels}`, title: chip.text });
+    } else if (chip === asr && feeds) {
+      continue;
+    } else if (chip === feeds && asr) {
+      const worst = [feeds, asr].reduce((a, b) => (SEVERITY.indexOf(b.kind) > SEVERITY.indexOf(a.kind) ? b : a));
+      out.push({ ...worst, id: "feeds", text: `${feeds.text} · ${asr.text}` });
+    } else {
+      out.push(chip);
+    }
+  }
+  return out;
 }
 
 export type StatusTone = "c-fault" | "c-stale" | "c-ink-2";

@@ -332,4 +332,23 @@ TripStop (pass entry) {
   the past; otherwise `upcoming`. There is no `current` / `next` for a pass.
 - Works for scheduled trips (`/trips/amtrak:316975`, MARC) and for the live id of an Amtrak train matched to a
   scheduled trip (`/trips/amtrak:2122-13`). Added / realtime-only trips (no scheduled trip) have no passes.
-- The Amtrak static shapes are kept in memory for this (thinned to 25 m, about 8 MB).
+- The Amtrak static shapes are kept in memory for this (thinned to 25 m, about 13 MB).
+
+### Non-stop passes on station boards (BE-6)
+
+`GET /transit/stations/{id}?passing=1` adds `passing: PassRow[]` to the `StationBoard`. Without the parameter
+`passing` is an empty list. `departures` and `arrivals` are unchanged and never contain a pass. The same `back`,
+`ahead`, `date`, `agency` and `source` rules apply; a group (or member id) takes the union of its members.
+
+```
+PassRow { trip_id: string,             // the id a trip page takes (live id for a running Amtrak train)
+          source: string, train: string | null, route_name: string | null, agency: string,
+          headsign: string | null, origin: string | null, destination: string | null,
+          scheduled: string,           // approximate (interpolated along the track), same as TripStop.pass_scheduled
+          estimated: string | null,    // with the live delay; null without realtime
+          delay_s: number | null, state: "passed" | "upcoming", state_basis: "position" | "clock", approx: true }
+```
+Rows are sorted by `estimated ?? scheduled`. They come from the same computation as the trip page's passes (BE-5),
+for scheduled trips of the station's own source (an Amtrak station lists Amtrak trains that run through it, a MARC
+station MARC trains; a group board has both). Trips without a shape in the feed have no passes. A cold request for a
+station on the Northeast Corridor takes about 0.3 s, later ones under 0.1 s.

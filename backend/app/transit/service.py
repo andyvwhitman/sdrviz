@@ -26,6 +26,7 @@ from .models import (
     MergeGroup,
     MergeMember,
     Merges,
+    PassRow,
     RouteBrief,
     RouteInfo,
     StationBoard,
@@ -99,6 +100,7 @@ def merge_boards(group: StationGroup, boards: list[StationBoard]) -> StationBoar
         routes=list(routes.values()),
         departures=sorted((r for b in boards for r in b.departures), key=_row_time),
         arrivals=sorted((r for b in boards for r in b.arrivals), key=_row_time),
+        passing=sorted((r for b in boards for r in b.passing), key=_row_time),
         alerts=list(alerts.values()),
     )
 
@@ -108,18 +110,19 @@ def filter_board(board: StationBoard, agency: str | None, source: str | None) ->
     if not (agency or source):
         return board
 
-    def keep(row: BoardRow) -> bool:
+    def keep(row: BoardRow | PassRow) -> bool:
         return (not agency or row.agency.lower() == agency.lower()) and (not source or row.source == source)
 
     return board.model_copy(
         update={
             "departures": [r for r in board.departures if keep(r)],
             "arrivals": [r for r in board.arrivals if keep(r)],
+            "passing": [r for r in board.passing if keep(r)],
         }
     )
 
 
-def _row_time(row: BoardRow) -> datetime:
+def _row_time(row: BoardRow | PassRow) -> datetime:
     return row.estimated or row.scheduled
 
 
@@ -350,6 +353,7 @@ class TransitService:
         on: date | None = None,
         agency: str | None = None,
         source: str | None = None,
+        passing: bool = False,
     ) -> StationBoard | None:
         now = now or datetime.now(UTC)
         back, ahead = timedelta(minutes=back_min), timedelta(minutes=ahead_min)
@@ -361,14 +365,14 @@ class TransitService:
                     continue
                 stations = dict.fromkeys(provider.station_id(s) for s in stop_ids)  # a station once, not per platform
                 for local in stations:
-                    if board := provider.station_board(local, now, back, ahead, on):
+                    if board := provider.station_board(local, now, back, ahead, on, passing):
                         boards.append(board)
             if not boards:
                 return None
             board = merge_boards(group, boards)
         else:
             found = self._split(gid)
-            board = found[0].station_board(found[1], now, back, ahead, on) if found else None
+            board = found[0].station_board(found[1], now, back, ahead, on, passing) if found else None
             if board is None:
                 return None
         return filter_board(board, agency, source)

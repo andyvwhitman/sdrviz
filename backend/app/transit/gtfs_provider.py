@@ -13,7 +13,7 @@ from datetime import UTC, date, datetime, timedelta
 import httpx
 
 from .estimates import Leg, Progress, StateBasis, clock_progress, departure_delay, leg_states, next_leg
-from .geometry import Path, follow_shapes
+from .geometry import Bbox, Path, bounds, follow_shapes
 from .gtfs_rt import AlertInfo, TripUpdate, VehiclePosition, parse_alerts, parse_trip_updates, parse_vehicle_positions
 from .gtfs_static import Trip as StaticTrip
 from .models import (
@@ -21,6 +21,7 @@ from .models import (
     BoardEntry,
     BoardRow,
     NextStop,
+    PassRow,
     StationBoard,
     Stop,
     Timetable,
@@ -32,7 +33,7 @@ from .models import (
     Vehicle,
     delay_status,
 )
-from .passes import PassPoint, find_passes, pass_estimated, pass_time
+from .passes import BOX_DEG, PassPoint, find_passes, pass_estimated, pass_time
 from .places import StopPoint, assign_stops
 from .provider import Provider, entry_status
 from .tracking import MPS_TO_MPH, MotionTracker
@@ -51,6 +52,11 @@ def _stop_index(legs: list[Leg], position: VehiclePosition) -> int | None:
     if position.stop_id is not None:
         return next((i for i, leg in enumerate(legs) if leg.stop_id == position.stop_id), None)
     return None
+
+
+def _pad(box: Bbox) -> Bbox:
+    west, south, east, north = box
+    return west - BOX_DEG, south - BOX_DEG, east + BOX_DEG, north + BOX_DEG
 
 
 def interleave(stops: list[TripStop], passes: list[tuple[str, TripStop]]) -> list[TripStop]:
@@ -87,6 +93,8 @@ class GtfsProvider(Provider):
         self._paths: dict[str, Path] = {}
         self._passes: dict[tuple, list[PassPoint]] = {}
         self._station_points: dict[str, tuple[float, float]] = {}
+        self._passing_at: dict[str, list[tuple[str, PassPoint]]] = {}
+        self._shape_boxes: dict[str, Bbox] = {}
         self._by_trip: dict[str, VehiclePosition] = {}
         self._by_trip_of: list[VehiclePosition] | None = None
 
@@ -409,6 +417,12 @@ class GtfsProvider(Provider):
             self._passes[key] = find_passes(self._path(trip, legs), stops, candidates) if usable else []
         return self._passes[key]
 
+    @staticmethod
+    def _pass_state(point: PassPoint, progress: Progress, at: datetime, now: datetime) -> str:
+        """`passed` once the train has reached the stop after the pass, or (between the two) when `at` is past."""
+        reached = progress.index > point.after + 1 or (progress.index == point.after + 1 and progress.at_stop)
+        return "passed" if reached or (progress.index == point.after + 1 and at <= now) else "upcoming"
+
     def pass_stops(self, trip_id: str, day: date, now: datetime) -> list[tuple[str, TripStop]]:
         """(stop id of the stop it follows, pass entry) for each station a scheduled trip runs through."""
         trip, legs = self.static.trips[trip_id], self.legs(trip_id, day)
@@ -421,27 +435,81 @@ class GtfsProvider(Provider):
             if time is None or gid in trip_stops:
                 continue
             estimated = pass_estimated(time)
-            past = progress.index > point.after + 1 or (
-                progress.index == point.after + 1 and (progress.at_stop or (estimated or time.scheduled) <= now)
+            entry = TripStop(
+                stop_id=gid,
+                name=self._station_name(point.station_id),
+                seq=0,
+                kind="pass",
+                pass_scheduled=time.scheduled,
+                pass_estimated=estimated,
+                approx=True,
+                delay_s=time.delay_s,
+                state=self._pass_state(point, progress, estimated or time.scheduled, now),
+                state_basis=basis,
             )
-            entries.append(
-                (
-                    self.station_gid(legs[point.after].stop_id),
-                    TripStop(
-                        stop_id=gid,
-                        name=self._station_name(point.station_id),
-                        seq=0,
-                        kind="pass",
-                        pass_scheduled=time.scheduled,
-                        pass_estimated=estimated,
-                        approx=True,
-                        delay_s=time.delay_s,
-                        state="passed" if past else "upcoming",
-                        state_basis=basis,
-                    ),
-                )
-            )
+            entries.append((self.station_gid(legs[point.after].stop_id), entry))
         return entries
+
+    def passing_at(self, station_id: str) -> list[tuple[str, PassPoint]]:
+        """(trip id, pass) for every scheduled trip that runs through the station without stopping, any day."""
+        if station_id not in self._passing_at:
+            feed = self.static
+            lat, lon = feed.stations[station_id].lat, feed.stations[station_id].lon
+            found = []
+            for trip_id, trip in feed.trips.items():
+                times = feed.stop_times.get(trip_id)
+                if not times or trip.shape_id not in feed.shapes:
+                    continue
+                west, south, east, north = self._shape_box(trip.shape_id)
+                if not (south <= lat <= north and west <= lon <= east):
+                    continue
+                if station_id in {feed.station_of.get(t.stop_id, t.stop_id) for t in times}:
+                    continue
+                found += [(trip_id, p) for p in self.pass_points(trip, times) if p.station_id == station_id]
+            self._passing_at[station_id] = found
+        return self._passing_at[station_id]
+
+    def _shape_box(self, shape_id: str) -> Bbox:
+        if shape_id not in self._shape_boxes:
+            self._shape_boxes[shape_id] = _pad(bounds(self.static.shapes[shape_id]))
+        return self._shape_boxes[shape_id]
+
+    def _pass_rows(self, station_id: str, days: list[date], now: datetime, lo: datetime, hi: datetime) -> list[PassRow]:
+        """Trains running through the station in the window, from the same pass computation as the trip page."""
+        feed, rows = self.static, []
+        for trip_id, point in self.passing_at(station_id):
+            trip = feed.trips[trip_id]
+            for day in days:
+                if trip.service_id not in feed.services_on(day):
+                    continue
+                legs = self.legs(trip_id, day)
+                time = pass_time(legs, point)
+                if time is None or any(leg.skipped for leg in legs):
+                    continue
+                estimated = pass_estimated(time)
+                shown = estimated or time.scheduled
+                if not lo <= shown <= hi:
+                    continue
+                progress, basis = self.progress(trip_id, day, legs, now)
+                route = self._route_of(trip)
+                rows.append(
+                    PassRow(
+                        trip_id=self.gid(self.row_trip_id(trip_id, day)),
+                        source=self.source.id,
+                        train=trip.number,
+                        route_name=route.name if route else None,
+                        agency=self.source.agency,
+                        headsign=self._station_name(legs[-1].stop_id),
+                        origin=self._station_name(legs[0].stop_id),
+                        destination=self._station_name(legs[-1].stop_id),
+                        scheduled=time.scheduled,
+                        estimated=estimated,
+                        delay_s=time.delay_s,
+                        state=self._pass_state(point, progress, shown, now),
+                        state_basis=basis,
+                    )
+                )
+        return rows
 
     # --- vehicles --------------------------------------------------------------
 
@@ -587,7 +655,7 @@ class GtfsProvider(Provider):
 
     # --- stations --------------------------------------------------------------
 
-    def station_board(self, stop_id, now, back, ahead, on: date | None = None):
+    def station_board(self, stop_id, now, back, ahead, on: date | None = None, passing: bool = False):
         feed = self.static
         if feed is None:
             return super().station_board(stop_id, now, back, ahead)
@@ -625,12 +693,15 @@ class GtfsProvider(Provider):
         departures += extra_departures
         arrivals += extra_arrivals
         key = lambda r: r.estimated or r.scheduled  # noqa: E731
+        days = [today - timedelta(days=1), today, today + timedelta(days=1)]
+        passes = self._pass_rows(station_id, days, now, lo, hi) if passing else []
         return StationBoard(
             stop=stop,
             canonical_id=stop.id,
             routes=self.route_briefs(route_ids),
             departures=sorted(departures, key=key),
             arrivals=sorted(arrivals, key=key),
+            passing=sorted(passes, key=key),
             alerts=self.alerts_for(now, stop_ids=members),
         )
 
@@ -769,6 +840,8 @@ class GtfsProvider(Provider):
         self._paths.clear()
         self._passes.clear()
         self._station_points = {}
+        self._passing_at.clear()
+        self._shape_boxes.clear()
         self.remap_places()
 
     def remap_places(self) -> None:

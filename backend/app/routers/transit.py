@@ -158,6 +158,7 @@ def station(
     date: date | None = None,
     agency: str | None = None,
     source: str | None = None,
+    passing: Annotated[bool, Query(description="also list trains that run through without stopping")] = False,
 ) -> StationBoard:
     """Departures and arrivals at a station: a group (`st:was`), or any stop id (`<source>:<stop_id>`).
 
@@ -166,7 +167,9 @@ def station(
     keep only that operator's rows.
     """
     found = (
-        rt.transit.station(stop_id, back_min=back, ahead_min=ahead, on=date, agency=agency, source=source)
+        rt.transit.station(
+            stop_id, back_min=back, ahead_min=ahead, on=date, agency=agency, source=source, passing=passing
+        )
         if rt.transit
         else None
     )

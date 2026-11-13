@@ -326,7 +326,13 @@ class Provider:
         return None
 
     def station_board(
-        self, stop_id: str, now: datetime, back: timedelta, ahead: timedelta, day: date | None = None
+        self,
+        stop_id: str,
+        now: datetime,
+        back: timedelta,
+        ahead: timedelta,
+        day: date | None = None,
+        passing: bool = False,
     ) -> StationBoard | None:
         """Lines sources know a station's name and routes, but have no departures."""
         station = self.station_rec(stop_id)

@@ -151,12 +151,32 @@ class BoardRow(BaseModel):
     added: bool = False  # realtime shows this train but the schedule has no such trip
 
 
+class PassRow(BaseModel):
+    """A train that runs through a station without stopping (listed apart from departures and arrivals)."""
+
+    trip_id: str
+    source: str
+    train: str | None = None
+    route_name: str | None = None
+    agency: str
+    headsign: str | None = None
+    origin: str | None = None
+    destination: str | None = None
+    scheduled: datetime  # approximate: interpolated along the track
+    estimated: datetime | None = None
+    delay_s: int | None = None
+    state: Literal["passed", "upcoming"]
+    state_basis: Literal["position", "clock"] = "clock"
+    approx: bool = True
+
+
 class StationBoard(BaseModel):
     stop: Stop
     canonical_id: str  # the id to address this station by: its group (`st:was`), else the stop's own id
     routes: list[RouteBrief]
     departures: list[BoardRow]
     arrivals: list[BoardRow]
+    passing: list[PassRow] = []  # only with `?passing=1`; never mixed into departures or arrivals
     alerts: list[Alert] = []
 
 

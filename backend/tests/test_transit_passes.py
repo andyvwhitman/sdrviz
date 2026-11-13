@@ -1,5 +1,7 @@
 """Non-stop passes: stations a train runs through without stopping, on trips and (BE-6) on station boards."""
 
+from datetime import timedelta
+
 import pytest
 from google.transit import gtfs_realtime_pb2
 
@@ -141,3 +143,51 @@ def test_pass_points_are_cached_per_stopping_pattern(provider):
     trip, legs = provider.static.trips["express"], provider.legs("express", NOW.date())
     first = provider.pass_points(trip, legs)
     assert provider.pass_points(trip, legs) is first and [p.station_id for p in first] == ["C"]
+
+
+# --- BE-6: the station board's passing list ---------------------------------------------------------
+
+
+def board(p, station="C", now=None, passing=True, **kwargs):
+    return p.station_board(station, now or at(8), timedelta(hours=1), timedelta(hours=3), passing=passing, **kwargs)
+
+
+def test_passing_trains_are_listed_apart_from_departures_and_arrivals(provider):
+    b = board(provider)
+    [row] = b.passing
+    assert (row.trip_id, row.train, row.route_name, row.agency, row.source) == ("t:express", "171", "Line", "Test", "t")
+    assert (row.origin, row.destination, row.headsign) == ("Stop A", "Stop D", "Stop D")
+    assert row.scheduled == at(8, 26) and row.estimated is None and row.approx and row.state == "upcoming"
+    assert {r.train for r in b.departures + b.arrivals} == {"100"}
+    assert "171" not in {r.train for r in b.departures + b.arrivals}  # a pass is never a departure or an arrival
+
+
+def test_passing_is_empty_unless_asked_for(provider):
+    assert board(provider, passing=False).passing == []
+    assert board(provider, "B").passing == []  # every train stops at B
+
+
+def test_passing_follows_the_window_and_the_date(provider):
+    assert board(provider, now=at(12)).passing == []  # 08:26 is long gone
+    assert [r.state for r in board(provider, now=at(8, 40)).passing] == ["passed"]  # within `back`
+    on_date = provider.station_board("C", at(23), timedelta(0), timedelta(minutes=1), on=NOW.date(), passing=True)
+    assert [r.scheduled for r in on_date.passing] == [at(8, 26)]  # a whole service day, whatever the clock
+    tomorrow = NOW.date() + timedelta(days=3)  # a Monday: the weekday service runs again
+    assert provider.station_board("C", at(23), timedelta(0), timedelta(minutes=1), on=tomorrow, passing=True).passing
+
+
+def test_passing_rows_carry_the_live_delay(provider):
+    provider.trip_updates = parse_trip_updates(delayed("express", seq2=300, seq3=300))
+    [row] = board(provider).passing
+    assert (row.estimated, row.delay_s) == (at(8, 31), 300)
+
+
+def test_passing_through_the_service_takes_the_union_and_filters(provider, tmp_path):
+    from app.transit import TransitService
+
+    service = TransitService([], tmp_path, [])
+    service.providers = {"t": provider}
+    found = service.station("t:C", at(8), passing=True)
+    assert [r.train for r in found.passing] == ["171"]
+    assert service.station("t:C", at(8), passing=True, agency="nobody").passing == []
+    assert service.station("t:C", at(8)).passing == []

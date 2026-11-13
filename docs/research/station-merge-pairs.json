@@ -1,0 +1,722 @@
+[
+ {
+  "feed": "septa",
+  "amtrak_id": "ARD",
+  "amtrak": "Ardmore Amtrak Station",
+  "other_id": "90518",
+  "other": "Ardmore",
+  "m": 0
+ },
+ {
+  "feed": "septa",
+  "amtrak_id": "EXT",
+  "amtrak": "Exton Amtrak",
+  "other_id": "90504",
+  "other": "Exton",
+  "m": 0
+ },
+ {
+  "feed": "septa",
+  "amtrak_id": "PHN",
+  "amtrak": "North Philadelphia Amtrak Station",
+  "other_id": "90711",
+  "other": "North Philadelphia Amtrak",
+  "m": 0
+ },
+ {
+  "feed": "mnr",
+  "amtrak_id": "CRT",
+  "amtrak": "Croton-Harmon Amtrak Station",
+  "other_id": "33",
+  "other": "Croton-Harmon",
+  "m": 0
+ },
+ {
+  "feed": "septa",
+  "amtrak_id": "DOW",
+  "amtrak": "Downingtown Amtrak",
+  "other_id": "90502",
+  "other": "Downingtown",
+  "m": 1
+ },
+ {
+  "feed": "septa",
+  "amtrak_id": "NRK",
+  "amtrak": "Newark Amtrak",
+  "other_id": "90201",
+  "other": "Newark DE",
+  "m": 1
+ },
+ {
+  "feed": "septa",
+  "amtrak_id": "PAO",
+  "amtrak": "Paoli Amtrak Station",
+  "other_id": "90506",
+  "other": "Paoli",
+  "m": 1
+ },
+ {
+  "feed": "septa",
+  "amtrak_id": "WIL",
+  "amtrak": "Wilmington",
+  "other_id": "90203",
+  "other": "Wilmington",
+  "m": 1
+ },
+ {
+  "feed": "metrolink",
+  "amtrak_id": "CWT",
+  "amtrak": "Chatsworth",
+  "other_id": "103",
+  "other": "Chatsworth",
+  "m": 1
+ },
+ {
+  "feed": "metra",
+  "amtrak_id": "GLN",
+  "amtrak": "Glenview Amtrak Station",
+  "other_id": "GLENVIEW",
+  "other": "Glenview",
+  "m": 4
+ },
+ {
+  "feed": "mbta",
+  "amtrak_id": "BOS",
+  "amtrak": "Boston",
+  "other_id": "place-sstat",
+  "other": "South Station",
+  "m": 7
+ },
+ {
+  "feed": "mbta",
+  "amtrak_id": "BBY",
+  "amtrak": "Boston",
+  "other_id": "place-bbsta",
+  "other": "Back Bay",
+  "m": 9
+ },
+ {
+  "feed": "metra",
+  "amtrak_id": "SMT",
+  "amtrak": "Summit Amtrak",
+  "other_id": "SUMMIT",
+  "other": "Summit",
+  "m": 10
+ },
+ {
+  "feed": "sunrail",
+  "amtrak_id": "KIS",
+  "amtrak": "Kissimmee Amtrak Station",
+  "other_id": "23",
+  "other": "Kissimmee",
+  "m": 10
+ },
+ {
+  "feed": "marc",
+  "amtrak_id": "BAL",
+  "amtrak": "Baltimore Penn Station",
+  "other_id": "11980",
+  "other": "PENN STATION MARC",
+  "m": 12
+ },
+ {
+  "feed": "vre",
+  "amtrak_id": "QAN",
+  "amtrak": "Quantico Amtrak",
+  "other_id": "00000000000000000000000000000009",
+  "other": "Quantico",
+  "m": 13
+ },
+ {
+  "feed": "mbta",
+  "amtrak_id": "FRA",
+  "amtrak": "Framingham Amtrak",
+  "other_id": "place-WML-0214",
+  "other": "Framingham",
+  "m": 13
+ },
+ {
+  "feed": "metrolink",
+  "amtrak_id": "SNC",
+  "amtrak": "San Juan Capistrano Amtrak Station",
+  "other_id": "153",
+  "other": "San Juan Capistrano",
+  "m": 14
+ },
+ {
+  "feed": "metrolink",
+  "amtrak_id": "RIV",
+  "amtrak": "Riverside",
+  "other_id": "123",
+  "other": "Riverside - Downtown",
+  "m": 16
+ },
+ {
+  "feed": "sunrail",
+  "amtrak_id": "DLD",
+  "amtrak": "Deland",
+  "other_id": "25",
+  "other": "DeLand",
+  "m": 18
+ },
+ {
+  "feed": "sounder",
+  "amtrak_id": "EDM",
+  "amtrak": "Edmonds",
+  "other_id": "SN02",
+  "other": "Edmonds Station",
+  "m": 19
+ },
+ {
+  "feed": "caltrain",
+  "amtrak_id": "SCC",
+  "amtrak": "Santa Clara Amtrak",
+  "other_id": "santa_clara",
+  "other": "Santa Clara Caltrain Station",
+  "m": 21
+ },
+ {
+  "feed": "vre",
+  "amtrak_id": "MSS",
+  "amtrak": "Manassas Amtrak Station",
+  "other_id": "00000000000000000000000000000011",
+  "other": "Manassas",
+  "m": 22
+ },
+ {
+  "feed": "vre",
+  "amtrak_id": "BCV",
+  "amtrak": "Burke Centre Amtrak",
+  "other_id": "0000000000000000000000000000000F",
+  "other": "Burke Centre",
+  "m": 23
+ },
+ {
+  "feed": "mbta",
+  "amtrak_id": "HHL",
+  "amtrak": "Haverhill Amtrak",
+  "other_id": "place-WR-0329",
+  "other": "Haverhill",
+  "m": 23
+ },
+ {
+  "feed": "mbta",
+  "amtrak_id": "WOR",
+  "amtrak": "Worcester Union Station",
+  "other_id": "place-WML-0442",
+  "other": "Worcester",
+  "m": 23
+ },
+ {
+  "feed": "metrolink",
+  "amtrak_id": "SNP",
+  "amtrak": "San Clemente Pier Amtrak",
+  "other_id": "133",
+  "other": "San Clemente Pier",
+  "m": 23
+ },
+ {
+  "feed": "marc",
+  "amtrak_id": "ABE",
+  "amtrak": "Aberdeen Amtrak Station",
+  "other_id": "11977",
+  "other": "ABERDEEN MARC",
+  "m": 24
+ },
+ {
+  "feed": "metra",
+  "amtrak_id": "NPV",
+  "amtrak": "Naperville Amtrak Station",
+  "other_id": "NAPERVILLE",
+  "other": "Naperville",
+  "m": 24
+ },
+ {
+  "feed": "mbta",
+  "amtrak_id": "PVD",
+  "amtrak": "Providence",
+  "other_id": "place-NEC-1851",
+  "other": "Providence",
+  "m": 26
+ },
+ {
+  "feed": "metra",
+  "amtrak_id": "HMW",
+  "amtrak": "Homewood",
+  "other_id": "HOMEWOOD",
+  "other": "Homewood",
+  "m": 26
+ },
+ {
+  "feed": "marc",
+  "amtrak_id": "HFY",
+  "amtrak": "Harpers Ferry Amtrak",
+  "other_id": "11942",
+  "other": "HARPERS FERRY W VA MARC",
+  "m": 27
+ },
+ {
+  "feed": "marc",
+  "amtrak_id": "MRB",
+  "amtrak": "Martinsburg Amtrak Station",
+  "other_id": "11940",
+  "other": "MARTINSBURG W VA MARC",
+  "m": 28
+ },
+ {
+  "feed": "metrolink",
+  "amtrak_id": "VNC",
+  "amtrak": "Van Nuys",
+  "other_id": "113",
+  "other": "Van Nuys",
+  "m": 29
+ },
+ {
+  "feed": "metrolink",
+  "amtrak_id": "NRG",
+  "amtrak": "Northridge",
+  "other_id": "167",
+  "other": "Northridge",
+  "m": 30
+ },
+ {
+  "feed": "metrolink",
+  "amtrak_id": "OXN",
+  "amtrak": "Oxnard",
+  "other_id": "168",
+  "other": "Oxnard",
+  "m": 31
+ },
+ {
+  "feed": "marc",
+  "amtrak_id": "RKV",
+  "amtrak": "Rockville Amtrak",
+  "other_id": "11954",
+  "other": "ROCKVILLE MARC",
+  "m": 35
+ },
+ {
+  "feed": "marc",
+  "amtrak_id": "BWI",
+  "amtrak": "Bwi Thurgood Marshall Airport Station",
+  "other_id": "11984",
+  "other": "BWI RAIL STATION MARC",
+  "m": 38
+ },
+ {
+  "feed": "vre",
+  "amtrak_id": "FBG",
+  "amtrak": "Fredericksburg Amtrak",
+  "other_id": "0000000000000000000000000000000C",
+  "other": "Fredericksburg",
+  "m": 38
+ },
+ {
+  "feed": "vre",
+  "amtrak_id": "WDB",
+  "amtrak": "Woodbridge Amtrak",
+  "other_id": "00000000000000000000000000000007",
+  "other": "Woodbridge",
+  "m": 38
+ },
+ {
+  "feed": "mnr",
+  "amtrak_id": "YNY",
+  "amtrak": "Yonkers Amtrak Station",
+  "other_id": "18",
+  "other": "Yonkers",
+  "m": 41
+ },
+ {
+  "feed": "metrolink",
+  "amtrak_id": "GDL",
+  "amtrak": "Glendale Amtrak",
+  "other_id": "106",
+  "other": "Glendale",
+  "m": 41
+ },
+ {
+  "feed": "mnr",
+  "amtrak_id": "STS",
+  "amtrak": "New Haven",
+  "other_id": "151",
+  "other": "New Haven-State St",
+  "m": 42
+ },
+ {
+  "feed": "metra",
+  "amtrak_id": "LAG",
+  "amtrak": "La Grange Amtrak",
+  "other_id": "LAGRANGE",
+  "other": "LaGrange Road",
+  "m": 42
+ },
+ {
+  "feed": "metrolink",
+  "amtrak_id": "OSD",
+  "amtrak": "Oceanside",
+  "other_id": "144",
+  "other": "Oceanside",
+  "m": 42
+ },
+ {
+  "feed": "metrolink",
+  "amtrak_id": "SIM",
+  "amtrak": "Simi Valley Amtrak",
+  "other_id": "112",
+  "other": "Simi Valley",
+  "m": 42
+ },
+ {
+  "feed": "vre",
+  "amtrak_id": "ALX",
+  "amtrak": "Alexandria",
+  "other_id": "00000000000000000000000000000004",
+  "other": "Alexandria",
+  "m": 45
+ },
+ {
+  "feed": "mnr",
+  "amtrak_id": "NRO",
+  "amtrak": "New Rochelle Amtrak Station",
+  "other_id": "108",
+  "other": "New Rochelle",
+  "m": 47
+ },
+ {
+  "feed": "tre",
+  "amtrak_id": "FTW",
+  "amtrak": "Fort Worth",
+  "other_id": "28251",
+  "other": "FORT WORTH CENTRAL STATION",
+  "m": 47
+ },
+ {
+  "feed": "sunrail",
+  "amtrak_id": "ORL",
+  "amtrak": "Orlando",
+  "other_id": "8",
+  "other": "Orlando Health/Amtrak",
+  "m": 49
+ },
+ {
+  "feed": "metra",
+  "amtrak_id": "CHI",
+  "amtrak": "Chicago Union Station",
+  "other_id": "CUS",
+  "other": "Chicago Union Station",
+  "m": 51
+ },
+ {
+  "feed": "metrolink",
+  "amtrak_id": "POS",
+  "amtrak": "Pomona Amtrak",
+  "other_id": "120",
+  "other": "Pomona - Downtown",
+  "m": 51
+ },
+ {
+  "feed": "sunrail",
+  "amtrak_id": "WPK",
+  "amtrak": "Winter Park Amtrak Station",
+  "other_id": "5",
+  "other": "Winter Park",
+  "m": 51
+ },
+ {
+  "feed": "metrolink",
+  "amtrak_id": "FUL",
+  "amtrak": "Fullerton Amtrak Station",
+  "other_id": "174",
+  "other": "Fullerton",
+  "m": 59
+ },
+ {
+  "feed": "metrolink",
+  "amtrak_id": "SNA",
+  "amtrak": "Santa Ana",
+  "other_id": "154",
+  "other": "Santa Ana",
+  "m": 59
+ },
+ {
+  "feed": "mbta",
+  "amtrak_id": "RTE",
+  "amtrak": "Route 128 Amtrak Station",
+  "other_id": "place-NEC-2173",
+  "other": "Route 128",
+  "m": 63
+ },
+ {
+  "feed": "metrolink",
+  "amtrak_id": "MPK",
+  "amtrak": "Moorpark Amtrak",
+  "other_id": "108",
+  "other": "Moorpark",
+  "m": 65
+ },
+ {
+  "feed": "sounder",
+  "amtrak_id": "EVR",
+  "amtrak": "Everett Amtrak Station",
+  "other_id": "SN04",
+  "other": "Everett Station",
+  "m": 67
+ },
+ {
+  "feed": "vre",
+  "amtrak_id": "WAS",
+  "amtrak": "Washington Union Station",
+  "other_id": "00000000000000000000000000000001",
+  "other": "Union Station",
+  "m": 68
+ },
+ {
+  "feed": "mbta",
+  "amtrak_id": "WOB",
+  "amtrak": "Woburn Amtrak Station",
+  "other_id": "place-NHRML-0127",
+  "other": "Anderson/Woburn",
+  "m": 68
+ },
+ {
+  "feed": "metrolink",
+  "amtrak_id": "SNB",
+  "amtrak": "San Bernardino",
+  "other_id": "124",
+  "other": "San Bernardino Depot",
+  "m": 70
+ },
+ {
+  "feed": "septa",
+  "amtrak_id": "TRE",
+  "amtrak": "Trenton",
+  "other_id": "90701",
+  "other": "Trenton Transit Center",
+  "m": 71
+ },
+ {
+  "feed": "mbta",
+  "amtrak_id": "BON",
+  "amtrak": "Boston",
+  "other_id": "place-north",
+  "other": "North Station",
+  "m": 74
+ },
+ {
+  "feed": "metrolink",
+  "amtrak_id": "IRV",
+  "amtrak": "Irvine",
+  "other_id": "140",
+  "other": "Irvine",
+  "m": 77
+ },
+ {
+  "feed": "caltrain",
+  "amtrak_id": "SJC",
+  "amtrak": "San Jose",
+  "other_id": "sj_diridon",
+  "other": "San Jose Diridon Station",
+  "m": 77
+ },
+ {
+  "feed": "lirr",
+  "amtrak_id": "NYP",
+  "amtrak": "Ny Moynihan Train Hall At Penn Station",
+  "other_id": "237",
+  "other": "Penn Station",
+  "m": 79
+ },
+ {
+  "feed": "mnr",
+  "amtrak_id": "STM",
+  "amtrak": "Stamford Amtrak Station",
+  "other_id": "124",
+  "other": "Stamford",
+  "m": 81
+ },
+ {
+  "feed": "mnr",
+  "amtrak_id": "BRP",
+  "amtrak": "Bridgeport Amtrak Station",
+  "other_id": "140",
+  "other": "Bridgeport",
+  "m": 84
+ },
+ {
+  "feed": "metrolink",
+  "amtrak_id": "CML",
+  "amtrak": "Camarillo Amtrak",
+  "other_id": "166",
+  "other": "Camarillo",
+  "m": 85
+ },
+ {
+  "feed": "sounder",
+  "amtrak_id": "TAC",
+  "amtrak": "Tacoma",
+  "other_id": "SS07",
+  "other": "Tacoma Dome Station",
+  "m": 85
+ },
+ {
+  "feed": "metra",
+  "amtrak_id": "JOL",
+  "amtrak": "Joliet Gateway Center",
+  "other_id": "JOLIET",
+  "other": "Joliet",
+  "m": 86
+ },
+ {
+  "feed": "marc",
+  "amtrak_id": "NCR",
+  "amtrak": "New Carrollton Amtrak Station",
+  "other_id": "11988",
+  "other": "NEW CARROLLTON MARC",
+  "m": 87
+ },
+ {
+  "feed": "tre",
+  "amtrak_id": "DAL",
+  "amtrak": "Dallas",
+  "other_id": "22748",
+  "other": "EBJ UNION STATION",
+  "m": 91
+ },
+ {
+  "feed": "metrolink",
+  "amtrak_id": "BBK",
+  "amtrak": "Burbank",
+  "other_id": "102",
+  "other": "Burbank - Downtown",
+  "m": 95
+ },
+ {
+  "feed": "frontrunner",
+  "amtrak_id": "SLC",
+  "amtrak": "Salt Lake City",
+  "other_id": "21771",
+  "other": "Salt Lake Central Station",
+  "m": 96
+ },
+ {
+  "feed": "sounder",
+  "amtrak_id": "SEA",
+  "amtrak": "Seattle",
+  "other_id": "SS01",
+  "other": "King Street Station",
+  "m": 98
+ },
+ {
+  "feed": "sounder",
+  "amtrak_id": "TUK",
+  "amtrak": "Tukwila Amtrak",
+  "other_id": "SS02",
+  "other": "Tukwila Sounder Station",
+  "m": 99
+ },
+ {
+  "feed": "metrolink",
+  "amtrak_id": "BUR",
+  "amtrak": "Burbank Amtrak",
+  "other_id": "170",
+  "other": "Burbank Airport - South (VC Line)",
+  "m": 112
+ },
+ {
+  "feed": "septa",
+  "amtrak_id": "PHL",
+  "amtrak": "Philadelphia",
+  "other_id": "90004",
+  "other": "Gray 30th St Station",
+  "m": 129
+ },
+ {
+  "feed": "mnr",
+  "amtrak_id": "POU",
+  "amtrak": "Poughkeepsie Amtrak Station",
+  "other_id": "51",
+  "other": "Poughkeepsie",
+  "m": 141
+ },
+ {
+  "feed": "metrolink",
+  "amtrak_id": "ANA",
+  "amtrak": "Anaheim",
+  "other_id": "128",
+  "other": "Anaheim - ARTIC",
+  "m": 150
+ },
+ {
+  "feed": "mnr",
+  "amtrak_id": "NHV",
+  "amtrak": "New Haven",
+  "other_id": "149",
+  "other": "New Haven",
+  "m": 191
+ },
+ {
+  "feed": "septa",
+  "amtrak_id": "CWH",
+  "amtrak": "Cornwells Heights Amtrak",
+  "other_id": "90706",
+  "other": "Cornwells Heights",
+  "m": 200
+ },
+ {
+  "feed": "marc",
+  "amtrak_id": "WAS",
+  "amtrak": "Washington Union Station",
+  "other_id": "11958",
+  "other": "UNION STATION MARC Washington",
+  "m": 229
+ },
+ {
+  "feed": "rtd-rail",
+  "amtrak_id": "DEN",
+  "amtrak": "Denver",
+  "other_id": "33727",
+  "other": "Union Station",
+  "m": 243
+ },
+ {
+  "feed": "frontrunner",
+  "amtrak_id": "PRO",
+  "amtrak": "Provo Amtrak",
+  "other_id": "23073",
+  "other": "Provo Central Station",
+  "m": 292
+ },
+ {
+  "feed": "metrolink",
+  "amtrak_id": "LAX",
+  "amtrak": "Los Angeles",
+  "other_id": "107",
+  "other": "L.A. Union Station",
+  "m": 305
+ },
+ {
+  "feed": "sunrail",
+  "amtrak_id": "SFA",
+  "amtrak": "Sanford Amtrak Auto Train Station",
+  "other_id": "2",
+  "other": "Sanford",
+  "m": 863
+ },
+ {
+  "feed": "vre",
+  "amtrak_id": "LOR",
+  "amtrak": "Lorton Amtrak Auto Train Station",
+  "other_id": "00000000000000000000000000000006",
+  "other": "Lorton",
+  "m": 1017
+ },
+ {
+  "feed": "mnr",
+  "amtrak_id": "NYP",
+  "amtrak": "Ny Moynihan Train Hall At Penn Station",
+  "other_id": "1",
+  "other": "Grand Central",
+  "m": 1496
+ }
+]

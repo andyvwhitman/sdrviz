@@ -303,3 +303,33 @@ GET /transit/stations/merges
 `suggestions` are pairs of ungrouped stations of different sources within 800 m (or 1 km with the same normalised
 name), closest first, for a later Settings review; nothing in it is applied. This endpoint replaces
 `/transit/stations/suggestions`.
+
+### Non-stop passes on trips (BE-5, decision 17)
+
+`GET /transit/trips/{id}?passes=1` (default off; without it the response is exactly as before) lists the stations the
+train runs through without stopping, interleaved in order with the stops:
+
+```
+TripStop (pass entry) {
+  kind: "pass",                    // ordinary entries now carry kind: "stop"
+  stop_id: string, name: string,   // the station (group id `st:ncr` when it has one)
+  seq: number,                     // seq of every entry is renumbered 1..n in this mode
+  arr_scheduled / arr_estimated / dep_scheduled / dep_estimated: null,
+  pass_scheduled: string,          // approximate: interpolated along the track between the two bracketing stops
+  pass_estimated: string | null,   // the same with the live delay; null when the trip has no realtime
+  approx: true, delay_s: number | null, track: null,
+  state: "passed" | "upcoming", state_basis: "position" | "clock"
+}
+```
+- A pass is a station of the feed that lies on the trip's route shape between two consecutive stops of the trip and is
+  not one of them (within 250 m of the shape, more than 300 m from either stop). Stations of other routes count: an
+  Acela runs through New Carrollton, Aberdeen and Metropark although no Acela stops there. Found per stopping
+  pattern and cached until the static feed reloads.
+- `pass_scheduled` is the scheduled departure of the previous stop plus the share of the way to the next stop's
+  scheduled arrival, by distance along the shape. `delay_s` blends the previous stop's delay and the next stop's
+  arrival delay the same way; `pass_estimated = pass_scheduled + delay_s`.
+- State: `passed` once the train has reached the next stop, or (while it is between the two) when the estimate is in
+  the past; otherwise `upcoming`. There is no `current` / `next` for a pass.
+- Works for scheduled trips (`/trips/amtrak:316975`, MARC) and for the live id of an Amtrak train matched to a
+  scheduled trip (`/trips/amtrak:2122-13`). Added / realtime-only trips (no scheduled trip) have no passes.
+- The Amtrak static shapes are kept in memory for this (thinned to 25 m, about 8 MB).

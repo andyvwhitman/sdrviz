@@ -99,6 +99,7 @@ class Path:
         self.cum = [0.0]
         for a, b in zip(points, points[1:], strict=False):
             self.cum.append(self.cum[-1] + distance_m(a[0], a[1], b[0], b[1]))
+        self._array: np.ndarray | None = None
 
     @property
     def total(self) -> float:
@@ -114,6 +115,22 @@ class Path:
             if d < best_d:
                 best, best_d = dist, d
         return best
+
+    def project(self, lat: float, lon: float) -> tuple[float, float]:
+        """(distance along the path, metres off it) of the point on the path nearest (lat, lon). Whole segments, not
+        vertices: some feeds put their vertices kilometres apart."""
+        if self._array is None:
+            self._array = np.asarray(self.points, dtype=float)
+        i, (near_lat, near_lon), off = _nearest(self._array, (lat, lon))
+        span = self.cum[i + 1] - self.cum[i]
+        a, b = self.points[i], self.points[i + 1]
+        seg_lat, seg_lon = b[0] - a[0], b[1] - a[1]
+        # the share of the segment before the nearest point, from whichever coordinate moves more
+        if abs(seg_lat) >= abs(seg_lon):
+            share = (near_lat - a[0]) / seg_lat if seg_lat else 0.0
+        else:
+            share = (near_lon - a[1]) / seg_lon
+        return self.cum[i] + min(max(share, 0.0), 1.0) * span, off
 
     def at(self, distance: float) -> tuple[float, float, float | None]:
         """(lat, lon, bearing) at a distance from the start."""

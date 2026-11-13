@@ -32,6 +32,7 @@ from .models import (
     Vehicle,
     delay_status,
 )
+from .passes import PassPoint, find_passes, pass_estimated, pass_time
 from .places import StopPoint, assign_stops
 from .provider import Provider, entry_status
 from .tracking import MPS_TO_MPH, MotionTracker
@@ -50,6 +51,17 @@ def _stop_index(legs: list[Leg], position: VehiclePosition) -> int | None:
     if position.stop_id is not None:
         return next((i for i, leg in enumerate(legs) if leg.stop_id == position.stop_id), None)
     return None
+
+
+def interleave(stops: list[TripStop], passes: list[tuple[str, TripStop]]) -> list[TripStop]:
+    """The stops with each pass slotted in after the stop it follows (named by stop id), renumbered 1..n."""
+    after: dict[str, list[TripStop]] = {}
+    for stop_id, entry in passes:
+        after.setdefault(stop_id, []).append(entry)
+    merged = [item for stop in stops for item in (stop, *after.get(stop.stop_id, ()))]
+    for number, item in enumerate(merged, 1):
+        item.seq = number
+    return merged
 
 
 def merge_order(sequences: list[list[str]]) -> list[str]:
@@ -73,6 +85,8 @@ class GtfsProvider(Provider):
         self.place_stops: dict[str, list[str]] = {}
         self.motion = MotionTracker()
         self._paths: dict[str, Path] = {}
+        self._passes: dict[tuple, list[PassPoint]] = {}
+        self._station_points: dict[str, tuple[float, float]] = {}
         self._by_trip: dict[str, VehiclePosition] = {}
         self._by_trip_of: list[VehiclePosition] | None = None
 
@@ -326,7 +340,7 @@ class GtfsProvider(Provider):
             alerts=self.alerts_for(now, trip_id=trip_id),
         )
 
-    def trip(self, trip_id: str, now: datetime, day: date | None = None) -> Trip | None:
+    def trip(self, trip_id: str, now: datetime, day: date | None = None, passes: bool = False) -> Trip | None:
         feed = self.static
         trip = feed.trips.get(trip_id) if feed else None
         if trip is None and feed and (update := self.trip_updates.get(trip_id)) and update.added and update.stops:
@@ -353,6 +367,8 @@ class GtfsProvider(Provider):
             )
             for leg, state in zip(legs, leg_states(legs, progress), strict=True)
         ]
+        if passes:
+            stops = interleave(stops, self.pass_stops(trip_id, day, now))
         vehicle = next((v for v in self.vehicles(now) if v.trip_id == self.gid(trip_id)), None)
         return Trip(
             id=self.gid(trip_id),
@@ -372,6 +388,60 @@ class GtfsProvider(Provider):
                 stop_ids=[leg.stop_id for leg in legs],
             ),
         )
+
+    # --- non-stop passes ---------------------------------------------------------
+
+    def station_points(self) -> dict[str, tuple[float, float]]:
+        """Every station of the feed: station id -> (lat, lon)."""
+        if not self._station_points:
+            self._station_points = {i: (st.lat, st.lon) for i, st in self.static.stations.items()}
+        return self._station_points
+
+    def pass_points(self, trip: StaticTrip, legs: list[Leg]) -> list[PassPoint]:
+        """Where the trip runs through a station of its route without stopping (cached per stopping pattern)."""
+        feed = self.static
+        served = [feed.station_of.get(leg.stop_id, leg.stop_id) for leg in legs]
+        key = (trip.shape_id or trip.id, tuple(served))
+        if key not in self._passes:
+            candidates = {i: xy for i, xy in self.station_points().items() if i not in served}
+            stops = [(feed.stations[i].lat, feed.stations[i].lon) for i in served if i in feed.stations]
+            usable = len(stops) == len(served) and len(served) >= 2
+            self._passes[key] = find_passes(self._path(trip, legs), stops, candidates) if usable else []
+        return self._passes[key]
+
+    def pass_stops(self, trip_id: str, day: date, now: datetime) -> list[tuple[str, TripStop]]:
+        """(stop id of the stop it follows, pass entry) for each station a scheduled trip runs through."""
+        trip, legs = self.static.trips[trip_id], self.legs(trip_id, day)
+        progress, basis = self.progress(trip_id, day, legs, now)
+        trip_stops = {self.station_gid(leg.stop_id) for leg in legs}
+        entries = []
+        for point in self.pass_points(trip, legs):
+            time = pass_time(legs, point)
+            gid = self.station_gid(point.station_id)
+            if time is None or gid in trip_stops:
+                continue
+            estimated = pass_estimated(time)
+            past = progress.index > point.after + 1 or (
+                progress.index == point.after + 1 and (progress.at_stop or (estimated or time.scheduled) <= now)
+            )
+            entries.append(
+                (
+                    self.station_gid(legs[point.after].stop_id),
+                    TripStop(
+                        stop_id=gid,
+                        name=self._station_name(point.station_id),
+                        seq=0,
+                        kind="pass",
+                        pass_scheduled=time.scheduled,
+                        pass_estimated=estimated,
+                        approx=True,
+                        delay_s=time.delay_s,
+                        state="passed" if past else "upcoming",
+                        state_basis=basis,
+                    ),
+                )
+            )
+        return entries
 
     # --- vehicles --------------------------------------------------------------
 
@@ -697,6 +767,8 @@ class GtfsProvider(Provider):
 
     def on_static_loaded(self) -> None:
         self._paths.clear()
+        self._passes.clear()
+        self._station_points = {}
         self.remap_places()
 
     def remap_places(self) -> None:

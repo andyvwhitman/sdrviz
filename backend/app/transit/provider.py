@@ -13,7 +13,7 @@ from pathlib import Path
 
 import httpx
 
-from .geometry import Bbox
+from .geometry import Bbox, simplify
 from .gtfs_static import GtfsStatic
 from .lines import LineIndex
 from .models import (
@@ -141,6 +141,8 @@ class Provider:
     def keep_shapes(self) -> bool:
         return False
 
+    shape_tolerance_m = 0  # kept shapes are thinned to this tolerance (0: as published)
+
     # --- loading -----------------------------------------------------------
 
     async def update(self, client: httpx.AsyncClient, force: bool = False) -> None:
@@ -232,6 +234,8 @@ class Provider:
             return None, index
         if not self.keep_shapes:
             feed.shapes = {}
+        elif self.shape_tolerance_m:
+            feed.shapes = {k: simplify(v, self.shape_tolerance_m) for k, v in feed.shapes.items()}
         return feed, index
 
     def on_static_loaded(self) -> None:
@@ -318,7 +322,7 @@ class Provider:
     def alerts(self, now: datetime) -> list[Alert]:
         return []
 
-    def trip(self, trip_id: str, now: datetime, day: date | None = None) -> Trip | None:
+    def trip(self, trip_id: str, now: datetime, day: date | None = None, passes: bool = False) -> Trip | None:
         return None
 
     def station_board(

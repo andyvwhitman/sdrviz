@@ -323,9 +323,9 @@ class TransitService:
         provider = self.providers.get(source_id)
         return (provider, local) if provider and local else None
 
-    def trip(self, gid: str, now: datetime | None = None, day: date | None = None) -> Trip | None:
+    def trip(self, gid: str, now: datetime | None = None, day: date | None = None, passes: bool = False) -> Trip | None:
         found = self._split(gid)
-        return found[0].trip(found[1], now or datetime.now(UTC), day) if found else None
+        return found[0].trip(found[1], now or datetime.now(UTC), day, passes) if found else None
 
     def alerts(self, source: str | None = None, now: datetime | None = None) -> list[Alert]:
         now = now or datetime.now(UTC)

@@ -13,7 +13,7 @@ from datetime import UTC, date, datetime, timedelta
 import httpx
 
 from .estimates import Leg, Progress, StateBasis, clock_progress, departure_delay, leg_states, next_leg
-from .gtfs_provider import GtfsProvider
+from .gtfs_provider import GtfsProvider, interleave
 from .gtfs_rt import StopUpdate, TripUpdate
 from .models import (
     Alert,
@@ -61,6 +61,12 @@ class AmtrakerProvider(GtfsProvider):
     @property
     def has_realtime(self) -> bool:
         return True
+
+    @property
+    def keep_shapes(self) -> bool:  # to find the stations a train runs through without stopping
+        return True
+
+    shape_tolerance_m = 25  # Amtrak's shapes are 365 000 points; 25 m is plenty to place a station on the track
 
     @property
     def attribution(self) -> str:
@@ -293,10 +299,10 @@ class AmtrakerProvider(GtfsProvider):
         leg = next_leg(legs, states)
         return leg.arr_d if leg else None
 
-    def trip(self, trip_id: str, now: datetime, day: date | None = None) -> Trip | None:
+    def trip(self, trip_id: str, now: datetime, day: date | None = None, passes: bool = False) -> Trip | None:
         train = self._train(trip_id)
         if train is None:
-            return super().trip(trip_id, now, day)
+            return super().trip(trip_id, now, day, passes)
         legs = self._live_legs(train)
         progress, basis = self._live_progress(train, legs, now)
         stops = []
@@ -316,6 +322,9 @@ class AmtrakerProvider(GtfsProvider):
                     state_basis=basis,
                 )
             )
+        match = next((key for key, (live, _) in self._matched.items() if live is train), None)
+        if passes and match:  # the passes of the scheduled trip this train is running
+            stops = interleave(stops, self.pass_stops(*match, now))
         first = stops[0] if stops else None
         started = (first.dep_scheduled or first.arr_scheduled) if first else None
         route_id = self._route_by_name.get((train.get("routeName") or "").lower())

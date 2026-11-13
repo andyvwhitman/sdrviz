@@ -64,6 +64,10 @@ class TripStop(BaseModel):
     track: str | None = None
     state: Literal["passed", "current", "next", "upcoming", "skipped"] = "upcoming"
     state_basis: Literal["position", "clock"] = "clock"  # position = from the train's fresh position; clock = estimated
+    kind: Literal["stop", "pass"] = "stop"  # "pass": the train runs through without stopping (`?passes=1` only)
+    pass_scheduled: datetime | None = None  # a pass entry's approximate time (arr_* and dep_* are null then)
+    pass_estimated: datetime | None = None
+    approx: bool = False  # true for every pass entry: the time is interpolated, not published
 
 
 class Alert(BaseModel):

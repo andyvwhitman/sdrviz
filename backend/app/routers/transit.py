@@ -108,9 +108,18 @@ def alerts(rt: RT, source: str | None = None) -> list[Alert]:
 
 
 @router.get("/trips/{trip_id:path}")
-def trip(trip_id: str, rt: RT, date: date | None = None) -> Trip:
-    """A trip with every stop; `date` shows a scheduled trip on that service day instead of today's run."""
-    found = rt.transit.trip(trip_id, day=date) if rt.transit else None
+def trip(
+    trip_id: str,
+    rt: RT,
+    date: date | None = None,
+    passes: Annotated[bool, Query(description="also list the stations it runs through without stopping")] = False,
+) -> Trip:
+    """A trip with every stop; `date` shows a scheduled trip on that service day instead of today's run.
+
+    With `passes=1` the stations the train runs through without stopping are interleaved in order as entries with
+    `kind: "pass"` and an approximate `pass_scheduled` / `pass_estimated`.
+    """
+    found = rt.transit.trip(trip_id, day=date, passes=passes) if rt.transit else None
     if found is None:
         raise HTTPException(status_code=404, detail=f"no trip {trip_id!r}")
     return found

@@ -19,6 +19,14 @@
 .fb-col--insp  { left: 470px; width: 602px; }
 .fb-col--banks { left: 1096px; width: 760px; }
 
+/* narrow stage: inspector over banks in one column that scrolls inside its own frame */
+.fb-right, .fb-pane { display: contents; }
+.fb-right.is-stacked { display: block; position: absolute; left: 470px; right: -6px; top: 74px; bottom: 0; padding: 6px 6px 0 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--line-faint) transparent; }
+.is-stacked .fb-pane { display: block; position: relative; width: 760px; max-width: 100%; }
+.is-stacked .fb-pane--insp { width: 602px; height: 920px; }
+.is-stacked .fb-pane--banks { height: 780px; margin: 24px 0 12px; }
+.is-stacked .fb-col { left: 0; top: 0; bottom: 0; width: auto; right: 0; }
+
 /* ---------- feed list: HOST card + one card per feed ------------------- */
 .fb-card { position: relative; padding: 12px 16px 12px; background: var(--bg-panel); }
 .fb-card.has-wash { background: var(--bg-panel); }

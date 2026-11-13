@@ -11,9 +11,11 @@
   import { live } from "$lib/stores/live.svelte";
   import { prefs } from "$lib/stores/prefs.svelte";
   import { shell } from "$lib/stores/shell.svelte";
+  import { stage } from "$lib/stores/stage.svelte";
   import { api } from "$lib/api/client";
   import BankEditor from "./BankEditor.svelte";
   import BankLeverRows from "./BankLeverRows.svelte";
+  import { feedsColumns } from "./breakpoints";
   import { catalogue } from "./catalogue.svelte";
   import FeedCard from "./FeedCard.svelte";
   import FeedForm from "./FeedForm.svelte";
@@ -29,6 +31,7 @@
   import "./feeds.css";
 
   const snapshot = $derived(live.state);
+  const stacked = $derived(feedsColumns(stage.width) === 2);
 
   // -- selection: the inspector opens on the feed the fixture names for the admin view (?feed=alx overrides) --
   let pickedFeed = $state<string | null>(null);
@@ -143,6 +146,9 @@
     <div class="fb-card__add"><Button sm onclick={() => ((receiverForm = false), (feedForm = { config: null }))}>+ NEW FEED</Button></div>
   </div>
 
+  <!-- on a narrow stage the inspector and the banks stack in one scrolling column; on a wide one the wrappers vanish -->
+  <div class="fb-right" class:is-stacked={stacked}>
+  <div class="fb-pane fb-pane--insp">
   {#if receiverForm}
     <ReceiverForm ondone={() => (receiverForm = false)} />
   {:else if feedForm}
@@ -152,7 +158,9 @@
   {:else if selectedFeed}
     <FeedInspector feed={selectedFeed} {snapshot} onedit={() => editFeed(selectedFeed.id)} onack={() => catalogue.ackFeed(selectedFeed.id).catch(report)} />
   {/if}
+  </div>
 
+  <div class="fb-pane fb-pane--banks">
   <div class="fb-col fb-col--banks">
     <div class="fb-banks">
       <div class="fb-ph">
@@ -192,5 +200,7 @@
         {/key}
       {/if}
     </div>
+  </div>
+  </div>
   </div>
 {/if}

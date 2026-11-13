@@ -12,6 +12,7 @@ from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
 import httpx
+from sqlalchemy.engine import Engine
 
 from .amtraker import AmtrakerProvider
 from .geometry import Bbox, bbox_width_km
@@ -22,6 +23,9 @@ from .models import (
     BoardEntry,
     BoardRow,
     Line,
+    MergeGroup,
+    MergeMember,
+    Merges,
     RouteBrief,
     RouteInfo,
     StationBoard,
@@ -31,11 +35,20 @@ from .models import (
     Trip,
     Vehicle,
 )
-from .places import Place
+from .places import Place, distance_m
 from .provider import USER_AGENT, Provider
 from .source_store import SourceStore
 from .sources import MASK, SourceConfig, SourceStatus, TransitSource
-from .stations import Candidate, StationGroup, StationGroups, suggest_pairs
+from .stations import (
+    MERGE_RADIUS_M,
+    Candidate,
+    StationGroup,
+    StationGroups,
+    build_groups,
+    read_blocks,
+    store_groups,
+    suggest_pairs,
+)
 
 log = logging.getLogger(__name__)
 
@@ -145,6 +158,9 @@ class TransitService:
         store: SourceStore | None = None,
         bbox: tuple[float, float, float, float] = DEFAULT_BBOX,
         groups: StationGroups | None = None,
+        curated: StationGroups | None = None,
+        engine: Engine | None = None,
+        merge_radius_m: int = MERGE_RADIUS_M,
     ):
         self.cache_dir = cache_dir
         self.places = {p.id: p for p in places}
@@ -152,7 +168,11 @@ class TransitService:
         self.store = store
         self.bbox = bbox
         self.groups = groups or StationGroups()
-        self._suggested: tuple[tuple, list[StationSuggestion]] | None = None
+        self.curated = StationGroups(dict((curated or self.groups).groups))  # a copy: `groups` is replaced in place
+        self.engine = engine
+        self.merge_radius_m = merge_radius_m
+        self._grouped_for: tuple | None = None
+        self._merges: tuple[tuple, Merges] | None = None
         self.configs: dict[str, SourceConfig] = {s.id: s for s in sources}
         self.providers: dict[str, Provider] = {}
         self._tasks: dict[str, asyncio.Task] = {}
@@ -206,6 +226,7 @@ class TransitService:
         while True:
             try:
                 await provider.update(self._client)
+                self.regroup()
             except asyncio.CancelledError:
                 raise
             except Exception as exc:  # belt and braces: providers record their own errors
@@ -241,6 +262,7 @@ class TransitService:
             provider = self._make(config)
             self.providers[config.id] = provider
             self._spawn(provider)
+        self.regroup()
         return self.source(config.id)
 
     async def remove(self, source_id: str) -> bool:
@@ -250,6 +272,7 @@ class TransitService:
         del self.configs[source_id]
         if self.store:
             await asyncio.to_thread(self.store.delete, source_id)
+        self.regroup()
         return True
 
     async def refresh(self, source_id: str) -> TransitSource | None:
@@ -350,25 +373,84 @@ class TransitService:
                 return None
         return filter_board(board, agency, source)
 
-    def suggestions(self) -> list[StationSuggestion]:
-        """Stations of different sources that look like one but are in no group (recomputed when a feed reloads)."""
-        stamp = tuple((sid, id(p.index)) for sid, p in self.providers.items())
-        if self._suggested is None or self._suggested[0] != stamp:
-            self._suggested = (stamp, self._suggest())
-        return self._suggested[1]
+    # --- automatic station groups (decision 29) ------------------------------
 
-    def _suggest(self) -> list[StationSuggestion]:
-        by_id: dict[tuple[str, str], Stop] = {}
-        for sid, provider in self.providers.items():
-            for stop in provider.stops(WORLD):
-                local = stop.id.partition(":")[2]
-                if not self.groups.resolve(sid, local):
-                    by_id[(sid, local)] = stop
-        candidates = [Candidate(sid, local, s.name, s.lat, s.lon) for (sid, local), s in by_id.items()]
-        return [
-            StationSuggestion(a=by_id[(a.source, a.id)], b=by_id[(b.source, b.id)], distance_m=round(d), reason=why)
+    def _stamp(self) -> tuple:
+        return tuple((sid, id(p.index)) for sid, p in self.providers.items())
+
+    def _settled(self) -> bool:
+        """Every enabled source has loaded its stations or failed trying (a half-loaded set would drop members)."""
+        return all(p.index is not None or p.state.static_error for p in self.providers.values())
+
+    def _stations(self) -> dict[tuple[str, str], Stop]:
+        """Every station of every enabled source, by (source, local station id)."""
+        return {(sid, stop.id.partition(":")[2]): stop for sid, p in self.providers.items() for stop in p.stops(WORLD)}
+
+    def regroup(self) -> bool:
+        """Rebuild the groups when the set of loaded stations changed. Returns whether it did."""
+        stamp = (self._stamp(), self.merge_radius_m)
+        if stamp == self._grouped_for or not self._settled():
+            return False
+        self._grouped_for = stamp
+        anchors, others = [], []
+        for (sid, local), stop in self._stations().items():
+            candidate = Candidate(sid, local, stop.name, stop.lat, stop.lon)
+            (anchors if self.providers[sid].source.kind == "amtraker" else others).append(candidate)
+        groups = build_groups(self.curated, anchors, others, self.merge_radius_m, read_blocks())
+        self.groups.replace(groups)
+        if self.engine is not None:
+            try:
+                store_groups(self.engine, groups, self.curated)
+            except Exception:  # the groups work from memory; the tables only carry them across a restart
+                log.exception("could not store the station groups")
+        log.info("station groups: %d (%d curated)", len(groups.groups), len(self.curated.groups))
+        return True
+
+    def merges(self) -> Merges:
+        """Every group with its members, how each got in and how far from the group; and ungrouped pairs for review."""
+        stamp = (self._stamp(), id(self.groups.groups))
+        if self._merges is None or self._merges[0] != stamp:
+            self._merges = (stamp, self._build_merges())
+        return self._merges[1]
+
+    def _build_merges(self) -> Merges:
+        stations = self._stations()
+        groups = []
+        for group in sorted(self.groups.groups.values(), key=lambda g: g.id):
+            members = []
+            for source, ids in group.members.items():
+                for local in ids:
+                    stop = stations.get((source, local))
+                    if stop is None:
+                        continue
+                    method = "curated" if self.curated.resolve(source, local) == group.id else "auto"
+                    distance = distance_m(group.lat, group.lon, stop.lat, stop.lon)
+                    members.append(
+                        MergeMember(
+                            source=source, stop_id=local, name=stop.name, distance_m=round(distance), method=method
+                        )
+                    )
+            if members:
+                groups.append(
+                    MergeGroup(
+                        id=group.id,
+                        code=group.code,
+                        name=group.name,
+                        short_name=group.short_name,
+                        lat=group.lat,
+                        lon=group.lon,
+                        members=members,
+                    )
+                )
+        ungrouped = {key: stop for key, stop in stations.items() if not self.groups.resolve(*key)}
+        candidates = [Candidate(sid, local, s.name, s.lat, s.lon) for (sid, local), s in ungrouped.items()]
+        suggestions = [
+            StationSuggestion(
+                a=ungrouped[(a.source, a.id)], b=ungrouped[(b.source, b.id)], distance_m=round(d), reason=why
+            )
             for a, b, d, why in suggest_pairs(candidates)
         ]
+        return Merges(radius_m=self.merge_radius_m, groups=groups, suggestions=suggestions)
 
     def route(self, gid: str, day: date | None = None) -> Timetable | None:
         found = self._split(gid)

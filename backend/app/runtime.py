@@ -28,7 +28,7 @@ from .sim.world import World, load_world
 from .transit import TransitService
 from .transit.service import load_places
 from .transit.source_store import SourceStore
-from .transit.stations import load_groups
+from .transit.stations import StationGroups, load_groups
 
 log = logging.getLogger(__name__)
 
@@ -66,7 +66,16 @@ class Runtime:
             store.seed_defaults()
             places = load_places(settings.seed_dir)
             groups = load_groups(self.db)
-            self.transit = TransitService(store.load(), settings.transit_dir, places, store, groups=groups)
+            self.transit = TransitService(
+                store.load(),
+                settings.transit_dir,
+                places,
+                store,
+                groups=groups,
+                curated=StationGroups.from_file(),
+                engine=self.db,
+                merge_radius_m=settings.transit_merge_radius_m,
+            )
 
     # --- lifecycle ---------------------------------------------------------
 

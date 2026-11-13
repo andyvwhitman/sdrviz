@@ -101,7 +101,9 @@ under 45 s at startup (two parse at a time); with the JSON cache a restart takes
   An existing database gets the Amtrak value once, when the column is added.
 - `stale_after_s` (decision 22): how old a train's position may be before the map treats it as stale. Seeds:
   amtrak 360, marc 120, vre 120; any other source defaults to `max(120, 2 * rt_poll_s)` when not set.
-- Station groups (decisions 16 and 21): `app/transit/data/stations.json`, see docs/transit-api.md "Station groups".
+- Station groups (decisions 16, 21 and 29): built automatically by radius (400 m, Amtrak station to nearest commuter
+  station of each source); `app/transit/data/stations.json` holds the curated overrides (forced members, `block`
+  pairs). See docs/transit-api.md "Station groups" and "Automatic station merging".
 
 ### Needs a key or registration (not seeded)
 

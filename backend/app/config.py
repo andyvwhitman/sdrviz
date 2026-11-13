@@ -30,6 +30,8 @@ class Settings(BaseSettings):
     # Real trains. Sources live in the database (seeded with defaults, edited on the Settings page). [] turns
     # the feature off (tests); SDRVIZ_TRANSIT_SOURCES as a JSON list is only read as that on/off switch.
     transit_sources: list[SourceConfig] | None = None
+    # An Amtrak station and a commuter station within this many metres are one station (decision 29).
+    transit_merge_radius_m: int = 400
 
     # Live radio. Set SDRVIZ_RTLTCP_HOST (e.g. sdr.local) to stream real audio from an rtl_tcp
     # server instead of the synthetic clips. The rest of the UI still runs on the replay for now.

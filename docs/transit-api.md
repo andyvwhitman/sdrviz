@@ -175,7 +175,8 @@ Additions and clarifications to the contract above; nothing was removed.
 
 ## Station groups (v1.3, decisions 16 and 21)
 
-Amtrak, MARC and VRE stops at one station are ONE station in the API. A group id is `st:<code>` in lowercase, the
+Amtrak, MARC and VRE stops at one station are ONE station in the API (v1.4: groups are now built automatically,
+see "Automatic station merging" at the end; the curated list below is the override). A group id is `st:<code>` in lowercase, the
 Amtrak code (`st:was`, `st:ncr`, `st:bwi`, `st:bal`, `st:abe`, `st:rkv`, `st:hfy`, `st:mrb`, `st:alx`, `st:mss`,
 `st:bcv`, `st:wdb`, `st:qan`, `st:fbg`). Stops in no group keep `<source>:<stop_id>` ids, unchanged.
 
@@ -198,10 +199,7 @@ Amtrak code (`st:was`, `st:ncr`, `st:bwi`, `st:bal`, `st:abe`, `st:rkv`, `st:hfy
 - **Ids elsewhere**: `Trip.stops[].stop_id`, `Vehicle.next_stop.stop_id`, `Alert.stops[]` and timetable
   `stops[].stop_id` return the group id when the stop belongs to a group, so the frontend opens the merged
   station. Stop names there stay the source's own name. The raw platform id is not returned.
-- **`GET /transit/stations/suggestions`** -> `[{a: Stop, b: Stop, distance_m: number, reason: "name" | "distance"}]`:
-  ungrouped stations of different sources within 300 m (`distance`), or with the same normalised name within 1 km
-  (`name`, which wins when both hold; "station", "amtrak", "marc", "vre", "rail" are ignored, word order is not).
-  Closest first, recomputed when a feed reloads. For the Settings page; nothing is applied automatically.
+- **`GET /transit/stations/suggestions`** was replaced in v1.4 by `/transit/stations/merges` (below).
 
 ## Sprint 1 additions (v1.4)
 
@@ -268,3 +266,40 @@ platform, none at WAS, BAL, BWI or NCR (0 of 135); every one of the 54 appeared 
 its departure and arrival board rows (107 rows). A null `track` therefore means "not assigned yet" for Amtrak,
 and MARC / VRE / MBTA carry a track only where the static feed names platforms (VRE's numbered platform stops).
 The client should say "TBD" for a null Amtrak track on a stop that will see one, not hide the column.
+
+### Automatic station merging (BE-10, decision 29)
+
+Groups are no longer only the 14 curated DC stations. Whenever the enabled sources' stations are (re)loaded, the
+backend rebuilds the groups:
+
+- Each Amtrak (`amtraker` source) station merges with the **nearest station of each other source within 400 m**
+  (setting `SDRVIZ_TRANSIT_MERGE_RADIUS_M`, default 400). A non-Amtrak station joins at most one group: its nearest
+  Amtrak station. A group exists only when an Amtrak station has at least one such neighbour. Commuter-to-commuter
+  merges without an Amtrak station are not made (the review list below shows them).
+- Group id is `st:<Amtrak code, lowercase>` (`st:bos`, `st:bby`, `st:rte`, `st:pvd`, `st:phl`, `st:chi`, `st:lax`,
+  `st:nyp`...), `Stop.code` is the code. The group name is the clearest member name: the longest one once agency words
+  (Amtrak, MARC, VRE, MBTA) are dropped, ties to Amtrak's, ALL CAPS title-cased: "South Station" (not "Boston"),
+  "Back Bay", "L.A. Union Station". Auto groups have no `short_name` (null); the client cleans the name.
+- **Curated overrides** (`data/stations.json`): every curated `members` entry is merged whatever the distance, a
+  curated group keeps its members of a source (the rule only adds sources the group lacks), and the `block` list
+  (`{"station": "chi", "source": "metra", "stop_id": "OTC"}` entries, currently empty) forbids pairs. Existing curated
+  names and short names stay.
+- Rebuilt once every enabled source has loaded its stations (or failed), and again when any source reloads, is
+  added, edited or removed. Auto members are kept in `station_members` (`method = auto`) so a group id works right
+  after a restart, before the feeds load. Boards, stops, trip stop ids and `canonical_id` all use the new groups, no
+  client change needed.
+- Against the cached real feeds: BOS + MBTA South Station, BBY + Back Bay, RTE + Route 128, PVD + Providence, PHL +
+  30th St, CHI + Chicago Union (Metra), LAX + L.A. Union (Metrolink), WAS + MARC + VRE; Chicago Ogilvie (about 1 km
+  away) is not merged.
+
+```
+GET /transit/stations/merges
+-> { radius_m: number,
+     groups: { id: "st:bos", code: "BOS", name, short_name: string | null, lat, lon,
+               members: { source, stop_id /* the source's station id */, name,
+                          distance_m /* from the group position */, method: "curated" | "auto" }[] }[],
+     suggestions: { a: Stop, b: Stop, distance_m, reason: "name" | "distance" }[] }
+```
+`suggestions` are pairs of ungrouped stations of different sources within 800 m (or 1 km with the same normalised
+name), closest first, for a later Settings review; nothing in it is applied. This endpoint replaces
+`/transit/stations/suggestions`.

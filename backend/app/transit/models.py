@@ -162,7 +162,33 @@ class StationSuggestion(BaseModel):
     a: Stop
     b: Stop
     distance_m: int
-    reason: Literal["name", "distance"]  # same name within 1 km, or just within 300 m
+    reason: Literal["name", "distance"]  # same name within 1 km, or just within 800 m
+
+
+class MergeMember(BaseModel):
+    source: str
+    stop_id: str  # the source's own station id (`<source>:<stop_id>` is what the API calls it)
+    name: str
+    distance_m: int  # from the group's position
+    method: Literal["curated", "auto"]
+
+
+class MergeGroup(BaseModel):
+    id: str  # "st:was"
+    code: str
+    name: str
+    short_name: str | None = None
+    lat: float
+    lon: float
+    members: list[MergeMember]
+
+
+class Merges(BaseModel):
+    """Every station group with how each member got in, plus pairs of ungrouped stations that may be one."""
+
+    radius_m: int
+    groups: list[MergeGroup]
+    suggestions: list[StationSuggestion]
 
 
 class RouteInfo(BaseModel):

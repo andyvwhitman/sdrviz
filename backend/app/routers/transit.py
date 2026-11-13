@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException, Query, Response
 
 from ..deps import RT
 from ..transit.geometry import Bbox
-from ..transit.models import Alert, Board, Line, StationBoard, StationSuggestion, Stop, Timetable, Trip, Vehicle
+from ..transit.models import Alert, Board, Line, Merges, StationBoard, Stop, Timetable, Trip, Vehicle
 from ..transit.sources import SourceConfig, TransitSource
 
 router = APIRouter(prefix="/transit", tags=["transit"])
@@ -119,10 +119,11 @@ def trip(trip_id: str, rt: RT, date: date | None = None) -> Trip:
 # --- stations and routes -----------------------------------------------------------
 
 
-@router.get("/stations/suggestions")
-def station_suggestions(rt: RT) -> list[StationSuggestion]:
-    """Stations of different sources that look like one (near each other, or same name) and are in no group."""
-    return rt.transit.suggestions() if rt.transit else []
+@router.get("/stations/merges")
+def station_merges(rt: RT) -> Merges:
+    """Every station group with its members (and whether the rule or the curated list put each there), plus
+    pairs of ungrouped stations that look like one, for review."""
+    return rt.transit.merges() if rt.transit else Merges(radius_m=0, groups=[], suggestions=[])
 
 
 @router.get("/stations/{place_id}/board")

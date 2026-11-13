@@ -662,7 +662,7 @@ def test_suggestions_pair_ungrouped_stations_across_sources(tmp_path, amtrak_gtf
     service.groups = StationGroups({"st:bwi": service.groups.groups["st:bwi"]})  # WAS no longer grouped
     for p in service.providers.values():
         p.groups = service.groups
-    found = {(s.a.id, s.b.id): s for s in service.suggestions()}
+    found = {(s.a.id, s.b.id): s for s in service.merges().suggestions}
     assert ("amtrak:WAS", "marc:PARENT") in found  # 50 m apart
     assert found[("amtrak:WAS", "marc:PARENT")].reason == "distance"  # "Union Station" is not the same name
     assert all("BWI" not in s.a.id and s.a.source != s.b.source for s in found.values())
@@ -722,7 +722,9 @@ def test_stations_endpoints_accept_group_and_member_ids(client, tmp_path, amtrak
     only = client.get("/api/transit/stations/st:was", params={"agency": "Amtrak"}).json()
     assert {r["source"] for r in only["arrivals"] + only["departures"]} <= {"amtrak"}
     assert client.get("/api/transit/stops", params={"bbox": "-78,38,-76,40"}).json()["stops"]
-    assert isinstance(client.get("/api/transit/stations/suggestions").json(), list)
+    merges = client.get("/api/transit/stations/merges").json()
+    assert {g["id"] for g in merges["groups"]} == {"st:was", "st:bwi"} and merges["suggestions"] == []
+    assert client.get("/api/transit/stations/suggestions").status_code == 404  # replaced by /merges
 
 
 # --- BE-4: canonical id, station code and short name, board origin and destination ----------------

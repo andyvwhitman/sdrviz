@@ -14,5 +14,6 @@
     {"code": "WDB", "short_name": "Woodbridge", "name": "Woodbridge", "lat": 38.658915, "lon": -77.247852, "members": {"amtrak": ["WDB"], "vre": ["00000000000000000000000000000007", "7113724B905946399163A4CB5AAB66A1"]}},
     {"code": "QAN", "short_name": "Quantico", "name": "Quantico", "lat": 38.521882, "lon": -77.293027, "members": {"amtrak": ["QAN"], "vre": ["00000000000000000000000000000009", "9B185FE9D08F4766A8CC6B76F2679FC0"]}},
     {"code": "FBG", "short_name": "Fredericksburg", "name": "Fredericksburg", "lat": 38.298413, "lon": -77.457203, "members": {"amtrak": ["FBG"], "vre": ["0000000000000000000000000000000C", "62E201E23B5148898D8B3B73B9395B4B"]}}
-  ]
+  ],
+  "block": []
 }

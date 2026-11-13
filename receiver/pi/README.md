@@ -18,13 +18,15 @@ railroad band (channels 07–97, 160.215–161.565 MHz) to the sdrviz backend.
 4. Write the card, put it in the Pi and power it on. After a minute,
    `ping sdrviz-pi1.local` from the Mac should answer.
 
-## 2. Copy this folder to the Pi and run the setup
-From the repo root on the Mac (replace the user and host):
+## 2. Get the code onto the Pi and run the setup
+SSH in (replace the user and host), clone the repo and run the setup:
 ```bash
-scp -r receiver/pi andy@sdrviz-pi1.local:~/sdrviz-receiver
 ssh andy@sdrviz-pi1.local
-cd ~/sdrviz-receiver && sudo bash setup.sh
+sudo apt-get update && sudo apt-get install -y git
+git clone https://github.com/andyvwhitman/sdrviz.git ~/sdrviz
+cd ~/sdrviz/receiver/pi && sudo bash setup.sh
 ```
+To update later: `cd ~/sdrviz && git pull && cd receiver/pi && sudo bash setup.sh`.
 The script:
 1. installs the `rtl-sdr` tools;
 2. stops Linux from loading the DVB-T TV driver for the dongle;

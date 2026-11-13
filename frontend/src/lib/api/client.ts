@@ -5,6 +5,8 @@
  */
 
 import type { LiveState } from "$lib/types/live";
+import type { Board, Line, RouteTimetable, Stop, StationBoard, TransitSourceStatus, Trip, Vehicle } from "$lib/types/transit";
+import type { BackendStats, SourceConfig, TransitSource } from "../../screens/settings/types";
 import type { Prefs, SessionInfo, SimJump, SimStatus } from "$lib/types/api";
 
 /** A JSON object whose fields the owning screen narrows. Replace with schema.gen.ts types. */
@@ -89,6 +91,7 @@ export const api = {
     session: () => get<SessionInfo>("/auth/session"),
   },
   system: () => get<LiveState["system"] & { version: string; sim: boolean }>("/system"),
+  backend: () => get<BackendStats>("/system/backend"),
   liveState: () => get<LiveState>("/live/state"),
   prefs: {
     get: () => get<Prefs>("/prefs"),
@@ -137,6 +140,11 @@ export const api = {
     },
   },
   lofar: (minutes = 60) => get("/lofar", { minutes }),
+  radio: {
+    status: () => get<Json>("/radio"),
+    settings: () => get<Json>("/radio/settings"),
+    saveSettings: (settings: Json) => put<Json>("/radio/settings", settings),
+  },
   transmissions: {
     list: (query: TransmissionQuery = {}) => get("/transmissions", query),
     summary: (query: TransmissionQuery = {}) => get("/transmissions/summary", query),
@@ -149,8 +157,31 @@ export const api = {
     list: (query: { start?: string; end?: string; route?: string; q?: string } = {}) => get("/trains", query),
     live: () => get<Json[]>("/trains/live"),
   },
+  transit: {
+    sources: () => get<TransitSourceStatus[]>("/transit/sources"),
+    vehicles: (bbox?: string) => get<Vehicle[]>("/transit/vehicles", { bbox }),
+    /** route lines and parent stations for a "west,south,east,north" box at a map zoom */
+    lines: (bbox: string, zoom: number) => get<{ lines: Line[] }>("/transit/lines", { bbox, zoom }),
+    stops: (bbox: string, zoom: number) => get<{ stops: Stop[] }>("/transit/stops", { bbox, zoom }),
+    trip: (tripId: string) => get<Trip>(`/transit/trips/${encodeURIComponent(tripId)}`),
+    /** a station or station group; `agency` (name) and `source` (id) keep only those rows */
+    station: (stopId: string, query: { back?: number; ahead?: number; date?: string; agency?: string; source?: string } = {}) =>
+      get<StationBoard>(`/transit/stations/${encodeURIComponent(stopId)}`, query),
+    route: (routeId: string, date?: string) => get<RouteTimetable>(`/transit/routes/${encodeURIComponent(routeId)}`, { date }),
+    board: (placeId: string, query: { back?: number; ahead?: number } = {}) =>
+      get<Board>(`/transit/stations/${encodeURIComponent(placeId)}/board`, query),
+  },
+  /** Settings page: the transit data sources (docs/transit-api.md). Changes apply live on the backend. */
+  transitSources: {
+    list: () => get<TransitSource[]>("/transit/sources"),
+    create: (source: SourceConfig) => post<TransitSource>("/transit/sources", source),
+    update: (id: string, source: SourceConfig) => put<TransitSource>(`/transit/sources/${encodeURIComponent(id)}`, source),
+    remove: (id: string) => del(`/transit/sources/${encodeURIComponent(id)}`),
+    refresh: (id: string) => post<TransitSource>(`/transit/sources/${encodeURIComponent(id)}/refresh`),
+  },
   geo: {
     rail: () => get("/geo/rail"),
+    railDetail: () => get("/geo/rail-detail"),
     water: () => get("/geo/water"),
     places: () => get("/geo/places"),
     routes: () => get("/geo/routes"),

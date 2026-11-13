@@ -20,8 +20,10 @@
     wave?: Snippet;
     onselect?: () => void;
     onlever?: (key: "m" | "s" | "r") => void;
+    /** position in the bank (1-based); typing it targets the tile */
+    index?: number;
   }
-  let { identity, state: s, variant = "standard", wave, onselect, onlever }: Props = $props();
+  let { identity, state: s, variant = "standard", wave, onselect, onlever, index }: Props = $props();
 
   const resolved = $derived(resolveTile(s, identity));
   const coverage = $derived(s.coverage ?? "ok");
@@ -86,6 +88,7 @@
   data-solo={flag(s.solo)}
   data-levers={flag(s.showLevers)}
   data-focused={flag(s.focused)}
+  data-indexed={flag(index !== undefined && variant !== "strip")}
   style:--ember-w="{emberWidth}px"
   onclick={onselect}
   onkeydown={keydown}
@@ -93,6 +96,7 @@
   <span class="frame" data-frame={resolved.frame} data-commit={frameExtra.commit} data-onset={frameExtra.onset}></span>
   <span class="sel"></span>
   <PositionGlyph state={resolved.glyph} class="tile__glyph" />
+  {#if index !== undefined}<span class="tile__index" aria-hidden="true">{index}</span>{/if}
   <span class="tile__label" bind:this={labelEl}>{identity.label}</span>
   <span class="tile__ember"></span>
   <span class="tile__status {resolved.status.cls}">{resolved.status.text}</span>

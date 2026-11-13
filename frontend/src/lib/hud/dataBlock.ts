@@ -72,7 +72,7 @@ const LABEL_ADVANCE = 0.66;
 export type TextMeasure = (text: string, kind: "mono12" | "lab11") => number;
 
 export const estimateTextWidth: TextMeasure = (text, kind) =>
-  text.length * (kind === "mono12" ? 12 * MONO_ADVANCE : 11 * LABEL_ADVANCE);
+  text.length * (kind === "mono12" ? 15 * MONO_ADVANCE : 14 * LABEL_ADVANCE);
 
 export function blockGeometry(o: BlockOptions, measure: TextMeasure = estimateTextWidth): BlockGeometry {
   const [dx, dy] = DIRECTIONS[o.dir];
@@ -96,9 +96,9 @@ export function blockGeometry(o: BlockOptions, measure: TextMeasure = estimateTe
 
   const tx_ = ex + (dx < 0 ? -4 : dx > 0 ? 4 : 0);
   // a vertical leader is a flagpole: the block sits wholly past its end, so the pole never runs through a glyph
-  const ty = dx === 0 ? (dy > 0 ? ey + 14 : ey - 21) : dy > 0 ? ey + 12 : ey - 6;
+  const ty = dx === 0 ? (dy > 0 ? ey + 17 : ey - 26) : dy > 0 ? ey + 15 : ey - 7;
 
-  const glyphWidth = o.glyph ? 18 : 0;
+  const glyphWidth = o.glyph ? 21 : 0;
   const w1 = measure(o.l1, "mono12") + (o.sim ? 6 + measure("SIM", "lab11") : 0);
   const w2 = measure(o.l2, "mono12");
   const w = Math.max(w1 + glyphWidth, w2);
@@ -121,7 +121,7 @@ export function blockGeometry(o: BlockOptions, measure: TextMeasure = estimateTe
     w2,
     w,
     lead,
-    box: { x0: x0 - 2, y0: ty - 12, x1: x0 + w + 2, y1: ty + 19 },
+    box: { x0: x0 - 2, y0: ty - 15, x1: x0 + w + 2, y1: ty + 24 },
   };
 }
 

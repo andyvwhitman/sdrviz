@@ -23,6 +23,8 @@
   import FrequencyEditor from "./FrequencyEditor.svelte";
   import HostCard from "./HostCard.svelte";
   import MembershipTable from "./MembershipTable.svelte";
+  import ReceiverForm from "./ReceiverForm.svelte";
+  import { LIVE_FEED_ID } from "./receiverForm";
   import type { FeedConfig } from "./types";
   import "./feeds.css";
 
@@ -69,9 +71,13 @@
 
   // -- feed editing: null shows the inspector, otherwise the form (config null adds a feed) --
   let feedForm = $state<{ config: FeedConfig | null } | null>(null);
+  /** the live receiver has its own form (its settings are not a feed row) */
+  let receiverForm = $state(false);
 
   async function editFeed(id: string): Promise<void> {
-    feedForm = { config: await catalogue.feedConfig(id) };
+    feedForm = null;
+    receiverForm = id === LIVE_FEED_ID;
+    if (!receiverForm) feedForm = { config: await catalogue.feedConfig(id) };
   }
 
   function feedFormDone(savedId: string | null): void {
@@ -134,10 +140,12 @@
     {#each snapshot.feeds as feed (feed.id)}
       <FeedCard {feed} keyed={snapshot.active_transmissions ?? []} zone={snapshot.tz.name} nowS={snapshot.t_offset_s} selected={feed.id === selectedFeed?.id} onselect={() => selectFeed(feed.id)} onenable={(enabled) => enableFeed(feed.id, enabled)} />
     {/each}
-    <div class="fb-card__add"><Button sm onclick={() => (feedForm = { config: null })}>+ NEW FEED</Button></div>
+    <div class="fb-card__add"><Button sm onclick={() => ((receiverForm = false), (feedForm = { config: null }))}>+ NEW FEED</Button></div>
   </div>
 
-  {#if feedForm}
+  {#if receiverForm}
+    <ReceiverForm ondone={() => (receiverForm = false)} />
+  {:else if feedForm}
     {#key feedForm}
       <FeedForm feed={feedForm.config} existingIds={snapshot.feeds.map((f) => f.id)} ondone={feedFormDone} />
     {/key}

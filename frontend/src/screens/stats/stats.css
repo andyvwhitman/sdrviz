@@ -29,13 +29,13 @@
 .st-box svg.hud { display: block; }
 
 /* svg text helpers */
-.hud .st-lab    { font: 500 11px var(--font-label); letter-spacing: 0.08em; text-transform: uppercase; fill: var(--ink-2); }
-.hud .st-ch     { font: 500 11px var(--font-data); fill: var(--ink); }
-.hud .st-val    { font: 400 11px var(--font-data); fill: var(--ink-2); }
-.hud .st-dim    { font: 400 11px var(--font-data); fill: var(--ink-3); }
-.hud .st-now    { font: 500 11px var(--font-data); fill: var(--state-idle); }
-.hud .st-fault-t { font: 500 11px var(--font-data); fill: var(--state-fault); }
-.hud .st-stale-t { font: 400 11px var(--font-data); fill: var(--state-stale); }
+.hud .st-lab    { font: 500 var(--fs-11) var(--font-label); letter-spacing: 0.08em; text-transform: uppercase; fill: var(--ink-2); }
+.hud .st-ch     { font: 500 var(--fs-11) var(--font-data); fill: var(--ink); }
+.hud .st-val    { font: 400 var(--fs-11) var(--font-data); fill: var(--ink-2); }
+.hud .st-dim    { font: 400 var(--fs-11) var(--font-data); fill: var(--ink-3); }
+.hud .st-now    { font: 500 var(--fs-11) var(--font-data); fill: var(--state-idle); }
+.hud .st-fault-t { font: 500 var(--fs-11) var(--font-data); fill: var(--state-fault); }
+.hud .st-stale-t { font: 400 var(--fs-11) var(--font-data); fill: var(--state-stale); }
 /* every label on the ridgeline is knocked out of the lines it sits on */
 .st-ridge svg text { paint-order: stroke; stroke: var(--bg-void); stroke-width: 4px; stroke-linejoin: round; }
 .hud .st-path  { fill: var(--bg-void); stroke: var(--line); stroke-width: 1px; vector-effect: non-scaling-stroke; stroke-linejoin: round; }

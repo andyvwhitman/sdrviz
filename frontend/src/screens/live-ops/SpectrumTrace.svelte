@@ -18,7 +18,7 @@
     height: number;
     floor: number;
     /** channel numbers the displayed feed hears */
-    heard: number[];
+    heard: number[]; // AAR numbers; two bank channels can share one
     carriers: Carrier[];
     /** the displayed feed delivers samples */
     live: boolean;
@@ -113,7 +113,7 @@
       <rect class="s-hair k-tx" x={x0 + 0.5} y="0.5" width={Math.round(slot) - 1} height={height - 1} />
     {/each}
 
-    {#each blank ? [] : heard as channel (channel)}
+    {#each blank ? [] : [...new Set(heard)] as channel (channel)}
       {@const xc = bandX(BAND.lo + (channel - BAND.first) * BAND.step, width)}
       <path
         class="s-hair {open(channel) ? 'k-tx' : 'k-faint d-threshold'}"

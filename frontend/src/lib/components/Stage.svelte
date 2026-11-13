@@ -1,29 +1,25 @@
 <script lang="ts">
   /**
-   * The stage: exactly 1920 x 1080 or 1440 x 900 (spec 4.1), scaled uniformly to fit the window and
-   * letterboxed on bg-void. A window of exactly stage size renders 1:1 (what screenshots use).
+   * The stage: 1080 (or 900) design px tall, scaled to fill the window's height, and as wide as the window then
+   * allows (lib/stores/stage). A window of exactly 1920 x 1080 renders 1:1 (what screenshots use).
    */
   import type { Snippet } from "svelte";
-  import { params } from "$lib/params";
+  import { stage } from "$lib/stores/stage.svelte";
 
   interface Props {
     children: Snippet;
   }
   let { children }: Props = $props();
-
-  const width = params.size;
-  const height = params.size === 1440 ? 900 : 1080;
-
-  let windowWidth = $state(innerWidth);
-  let windowHeight = $state(innerHeight);
-  const scale = $derived(Math.min(windowWidth / width, windowHeight / height));
 </script>
 
-<svelte:window bind:innerWidth={windowWidth} bind:innerHeight={windowHeight} />
-
 <div class="stage-viewport">
-  <div class="stage-fit" style:width="{width * scale}px" style:height="{height * scale}px">
-    <div class="hud-stage" style:transform={scale === 1 ? undefined : `scale(${scale})`} style:transform-origin="0 0">
+  <div class="stage-fit" style:width="{stage.width * stage.scale}px" style:height="{stage.height * stage.scale}px">
+    <div
+      class="hud-stage"
+      style:--stage-w="{stage.width}px"
+      style:transform={stage.scale === 1 ? undefined : `scale(${stage.scale})`}
+      style:transform-origin="0 0"
+    >
       {@render children()}
     </div>
   </div>

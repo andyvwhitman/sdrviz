@@ -15,7 +15,7 @@
       <path class="s-hair k-{t.tone}" d="M{t.x} 0V{t.length}" />
     {/each}
     {#each layout.labels as l}
-      <text class={l.tone === "channel" ? "tx-num2" : "tx-num"} style="font-size:11px" x={l.x} y={l.y} text-anchor="middle">{l.text}</text>
+      <text class={l.tone === "channel" ? "tx-num2" : "tx-num"} style="font-size: var(--fs-11)" x={l.x} y={l.y} text-anchor="middle">{l.text}</text>
     {/each}
   </g>
 </svg>

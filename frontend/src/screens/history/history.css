@@ -30,13 +30,13 @@
 .hi-over svg { position: absolute; inset: 0; }
 
 /* svg text helpers (svg.hud already sets families via .tx-*) */
-.hud .hi-stn   { font: 500 11px var(--font-label); letter-spacing: 0.1em; text-transform: uppercase; fill: var(--ink-2); }
+.hud .hi-stn   { font: 500 var(--fs-11) var(--font-label); letter-spacing: 0.1em; text-transform: uppercase; fill: var(--ink-2); }
 .hud .hi-stn.is-dim { fill: var(--ink-3); }
-.hud .hi-train { font: 500 11px var(--font-data); fill: var(--ink-2); }
+.hud .hi-train { font: 500 var(--fs-11) var(--font-data); fill: var(--ink-2); }
 .hud .hi-train.is-sel { fill: var(--state-select); }
-.hud .hi-now   { font: 500 11px var(--font-data); fill: var(--state-idle); }
-.hud .hi-fault-t { font: 500 11px var(--font-data); fill: var(--state-fault); }
-.hud .hi-stale-t { font: 400 11px var(--font-data); fill: var(--state-stale); }
+.hud .hi-now   { font: 500 var(--fs-11) var(--font-data); fill: var(--state-idle); }
+.hud .hi-fault-t { font: 500 var(--fs-11) var(--font-data); fill: var(--state-fault); }
+.hud .hi-stale-t { font: 400 var(--fs-11) var(--font-data); fill: var(--state-stale); }
 .hud .hi-wash-sel { fill: none; }
 .hud .hi-tick  { stroke: var(--ink); stroke-width: 2px; vector-effect: non-scaling-stroke; fill: none; }
 /* the tick's 2 px bg-void gap: cuts the string either side so the tick reads as a mark on it (M19) */
@@ -149,7 +149,7 @@
 /* ------------------------------------------------------------------ screen-owned additions */
 .hud .hi-gap { stroke: var(--bg-void); stroke-width: 3px; fill: none; }
 .hud .hi-hit { fill: transparent; stroke: none; cursor: pointer; }
-.hud .hi-lane-num { font-size: 11px; }
+.hud .hi-lane-num { font-size: var(--fs-11); }
 .hi-filter { position: relative; display: inline-flex; }
 .hi-menu { position: absolute; top: 28px; left: 0; z-index: 10; min-width: 140px; max-height: 240px; overflow-y: auto; margin: 0; padding: 4px 0; list-style: none; }
 .hi-menu button { display: block; width: 100%; padding: 6px 12px; border: 0; background: none; text-align: left; cursor: pointer;

@@ -23,7 +23,7 @@
     <rect class="f-void" x={f1(g.box.x0)} y={f1(g.box.y0 + 1)} width={f1(g.box.x1 - g.box.x0)} height={f1(g.box.y1 - g.box.y0 - 1)} />
   {/if}
   <path class="s-hair {g.tx ? 'k-tx' : 'k-ink3'}" fill="none" d={polyline(g.lead)} />
-  {#if g.glyph}<PositionGlyphSvg cx={l1x - 11} cy={g.ty - 4} state={g.glyph as GlyphState} />{/if}
+  {#if g.glyph}<PositionGlyphSvg cx={l1x - 13} cy={g.ty - 5} state={g.glyph as GlyphState} />{/if}
   <text class="tx-data" class:is-tx={g.tx} x={f1(l1x)} y={f1(g.ty)}>{g.l1}{#if g.sim}<tspan class="tx-lab" dx="6">SIM</tspan>{/if}</text>
-  <text class="tx-num2 {g.l2Class ?? ''}" x={f1(g.tx_)} y={f1(g.ty + 15)} text-anchor={g.left ? "end" : "start"}>{g.l2}</text>
+  <text class="tx-num2 {g.l2Class ?? ''}" x={f1(g.tx_)} y={f1(g.ty + 19)} text-anchor={g.left ? "end" : "start"}>{g.l2}</text>
 </g>

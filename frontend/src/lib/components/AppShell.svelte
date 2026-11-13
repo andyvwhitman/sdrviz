@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * App shell (spec 5.1): header (mark, screen name, nav, chips, audio, clock, motion), content box
+   * App shell (spec 5.1): header (mark, screen name, nav, chips, audio, clock, fullscreen), content box
    * and status line with the title block. One chip set and one status rule on every screen.
    */
   import type { Snippet } from "svelte";
@@ -31,10 +31,10 @@
   /** `?force=loading|connecting`: the shell shows dashes, as before the first data (spec 8.4) */
   const blank = $derived(params.force === "loading" || params.force === "connecting");
 
-  // Keyed chip everywhere except Live Ops, where the tiles say it (spec 5.20)
+  // the same chips on every screen, the orange KEYED chip included
   const chips = $derived.by((): ChipSpec[] => {
     if (blank) return [{ text: `FEEDS ${fmt.BLANK}`, kind: "nominal" }, { text: `ASR ${fmt.BLANK}`, kind: "nominal" }];
-    return state ? headerChips(state, { txChip: route.id !== "live-ops" }) : [];
+    return state ? headerChips(state, { txChip: true }) : [];
   });
 
   const zone = $derived(state?.tz.name ?? "EST");

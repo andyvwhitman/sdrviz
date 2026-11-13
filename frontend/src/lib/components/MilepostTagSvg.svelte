@@ -20,7 +20,7 @@
   <g class="mp-tag-svg">
     <rect class="s-hair k-line" x={snap(x)} y={snap(y)} width="31" height="47" />
     <text class="tx-lab" x={x + 16} y={y + 15} text-anchor="middle" style="letter-spacing:.04em">{parts.derived ? "≈" : ""}{parts.prefix}</text>
-    <text class="tx-data" style="font-size:11px" x={x + 16} y={y + 28} text-anchor="middle">{whole}</text>
-    <text class="tx-num2" style="font-size:11px" x={x + 16} y={y + 41} text-anchor="middle">.{decimal}</text>
+    <text class="tx-data" style="font-size: var(--fs-11)" x={x + 16} y={y + 28} text-anchor="middle">{whole}</text>
+    <text class="tx-num2" style="font-size: var(--fs-11)" x={x + 16} y={y + 41} text-anchor="middle">.{decimal}</text>
   </g>
 {/if}

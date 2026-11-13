@@ -7,7 +7,10 @@
 import { api } from "$lib/api/client";
 import type { SpectrumFrame } from "$lib/ws/protocol";
 
-const ROW_MS = 500;
+export const ROW_MS = 500;
+/** The waterfall shows the last 30 s: 60 rows, stretched to the box height. */
+export const WINDOW_S = 30;
+export const ROWS = (WINDOW_S * 1000) / ROW_MS;
 /** What the backend writes for a sample the feed never delivered. */
 export const NO_SAMPLE_DBFS = -127;
 

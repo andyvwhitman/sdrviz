@@ -8,6 +8,12 @@
    data-ember (recent|recent-dim), data-coverage (ok|partial|stale|offline),
    data-fault (unacked|acked), overlays data-selected, data-muted, data-solo, data-levers.
    -------------------------------------------------------------------------- */
+/* The tile is a pixel-placed 200 px graphic drawn for the ORIGINAL 11..32 px type ramp, so it keeps those sizes locally
+   and is enlarged as a whole with `zoom` (readability pass): compact at the 1440 stage is 1.28x = 256 x 72, three
+   columns still fit the 792 px tile box (3 x 256 + 16 = 784) and 5 rows fit its height. 11 px becomes 14 px. */
+.tile { --fs-11: 11px; --fs-12: 12px; --fs-13: 13px; --fs-15: 15px; --fs-18: 18px; --fs-24: 24px; --fs-32: 32px; zoom: var(--tile-zoom, 1); }
+:root[data-size="1440"] { --tile-zoom: 1.28; }
+:root:not([data-size="1440"]) .tile--standard { --fs-11: 12px; --fs-12: 13px; --fs-13: 14px; }
 .tile { position: relative; width: 200px; height: 112px; color: var(--ink); background: transparent; flex: none; text-align: left; }
 .tile--compact { height: 56px; }
 .tile--strip   { width: 384px; height: 28px; }
@@ -37,7 +43,7 @@
 .tile__spark { right: 8px; top: 42px; width: 64px; height: 14px; }
 .tile__timer { right: 8px; top: 30px; font: 500 var(--fs-32)/32px var(--font-data); color: var(--state-tx); display: none; white-space: nowrap; }
 .tile__meter { left: 8px; top: 84px; width: 120px; height: 12px; }
-.tile__levers { right: 0; top: 72px; display: none; }
+.tile__levers { right: 0; top: 72px; display: flex; } /* always visible: mute / solo / record are one click (or key) away */
 .tile__foot { left: 8px; right: 8px; top: 98px; height: 12px; display: flex; align-items: center; gap: 6px;
   font: 500 var(--fs-11)/12px var(--font-label); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-3); white-space: nowrap; overflow: hidden; }
 .has-wash .tile__foot { color: var(--ink-2); }
@@ -55,8 +61,11 @@
 .tile[data-tx] .tile__timer { display: block; }
 .tile[data-tx] .tile__label { max-width: 150px; }
 
-/* levers on hover, focus or selection */
-.tile:hover .tile__levers, .tile:focus-within .tile__levers, .tile[data-selected] .tile__levers, .tile[data-levers] .tile__levers { display: flex; }
+/* bank index (1, 2, ...): typing the number targets the tile; the label moves right to make room */
+.tile__index { left: 30px; top: 8px; height: 16px; line-height: 16px; min-width: 12px; text-align: center;
+  font: 500 var(--fs-11)/16px var(--font-data); color: var(--ink-2); box-shadow: inset 0 0 0 1px var(--line-faint); padding: 0 2px; }
+.tile[data-indexed] .tile__label, .tile[data-indexed] .tile__ember { left: 50px; }
+.tile:focus-visible .tile__index, .tile[data-focused] .tile__index { color: var(--ink); box-shadow: inset 0 0 0 1px var(--state-select); }
 
 /* offline / stale: values blanked or greyed */
 .tile[data-coverage="stale"] .tile__aar, .tile[data-coverage="stale"] .tile__label { color: var(--state-stale); }
@@ -66,7 +75,8 @@
 .tile--compact .tile__aar   { top: 30px; font-size: var(--fs-18); line-height: 18px; }
 .tile--compact .tile__aar small { font-size: var(--fs-11); margin-left: 4px; }
 .tile--compact .tile__mhz   { left: 64px; top: 33px; }
-.tile--compact .tile__meter { left: auto; right: 8px; top: 33px; width: 64px; }
+.tile--compact .tile__meter { display: none; } /* the levers own row 1 right, so the status readout takes this slot */
+.tile--compact .tile__status { top: 31px; }
 .tile--compact .tile__spark, .tile--compact .tile__foot { display: none; }
 .tile--compact .tile__timer { top: 27px; font-size: var(--fs-24); line-height: 24px; }
 .tile--compact[data-tx] .tile__aar { font-size: var(--fs-18); line-height: 18px; }
@@ -79,10 +89,8 @@
 .tile--compact[data-coverage="partial"] .tile__pips2 { display: inline-flex; }
 .tile--compact[data-coverage="partial"] .tile__status { right: 36px; }
 .tile--compact .tile__levers { top: 6px; right: 2px; } /* M21 pip y 6-8, 4 px inside the 2 px TX frame */
-.tile--compact:hover .tile__status, .tile--compact:focus-within .tile__status,
-.tile--compact[data-selected] .tile__status, .tile--compact[data-levers] .tile__status { visibility: hidden; } /* levers take row 1 right */
-.tile--compact[data-tx][data-selected] .tile__reason, .tile--compact[data-tx][data-levers] .tile__reason { visibility: hidden; }
-.tile--compact .tile__label { max-width: 90px; }
+.tile--compact[data-tx] .tile__reason { visibility: hidden; } /* row 1 right belongs to the levers */
+.tile--compact .tile__label { max-width: 80px; }
 
 /* strip 384 x 28: glyph, CH54, label, MHz, status */
 .tile--strip .tile__glyph  { top: 5px; }
@@ -92,7 +100,7 @@
 .tile--strip .tile__mhz    { left: 208px; top: 8px; }
 .tile--strip .tile__status { top: 6px; }
 .tile--strip .tile__timer  { top: 5px; font-size: var(--fs-18); line-height: 18px; }
-.tile--strip .tile__meter, .tile--strip .tile__spark, .tile--strip .tile__foot, .tile--strip .tile__levers { display: none; }
+.tile--strip .tile__meter, .tile--strip .tile__spark, .tile--strip .tile__foot, .tile--strip .tile__levers, .tile--strip .tile__index { display: none; }
 .tile--strip[data-tx] .tile__aar { font-size: var(--fs-13); line-height: 16px; }
 .tile--strip[data-tx] .tile__mhz { display: none; }
 .tile--strip .tile__reason { left: 208px; top: 8px; font: 500 var(--fs-11)/12px var(--font-label); letter-spacing: 0.06em; text-transform: uppercase; color: var(--state-fault); }

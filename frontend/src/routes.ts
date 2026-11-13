@@ -6,7 +6,7 @@
 import type { Component } from "svelte";
 import StubScreen from "$lib/components/StubScreen.svelte";
 
-export type ScreenId = "live-ops" | "history" | "stats" | "feeds" | "map" | "login" | "kit";
+export type ScreenId = "live-ops" | "history" | "stats" | "feeds" | "map" | "settings" | "login" | "kit";
 
 export interface Route {
   id: ScreenId;
@@ -25,12 +25,17 @@ export const ROUTES: Route[] = [
   { id: "stats", path: "/stats", name: "STATS", dir: "stats", shell: true },
   { id: "feeds", path: "/feeds", name: "FEEDS & BANKS", dir: "feeds", shell: true },
   { id: "map", path: "/map", name: "MAP", dir: "map", shell: true },
+  { id: "settings", path: "/settings", name: "SETTINGS", dir: "settings", shell: true },
   { id: "login", path: "/login", name: "LOGIN", dir: "system", shell: false },
   ...(import.meta.env.DEV ? [{ id: "kit", path: "/kit", name: "KIT", dir: "kit", shell: true } as const] : []),
 ];
 
-/** The five navigable screens, in nav order (the dev-only /kit sheet stays out of the nav). */
-export const NAV = ROUTES.filter((r) => r.shell && r.id !== "kit");
+/** The header tabs, in order. History and Stats still answer at their paths but are off the nav for now. */
+const NAV_ORDER: ScreenId[] = ["map", "live-ops", "feeds", "settings"];
+export const NAV = NAV_ORDER.map((id) => ROUTES.find((r) => r.id === id)!);
+
+/** The keyboard's top letter row: Q opens the first tab, W the second, and so on. */
+export const NAV_KEYS = "qwertyuiop";
 
 export const DEFAULT_PATH = "/live";
 

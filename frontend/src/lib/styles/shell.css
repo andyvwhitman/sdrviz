@@ -22,10 +22,10 @@
 /* nav anchored at grid column 3 (x 345 at 1920, 265 at 1440), independent of the chip cluster, which
    grows leftward into the reserved space. LIVE OPS sits at the same x in every state (review r1 #4, §9.1.7). */
 .hud-nav { position: absolute; top: 0; left: 345px; display: flex; gap: 4px; align-items: flex-end; height: var(--header-h); }
-:root[data-size="1440"] .hud-nav { left: 265px; }
+:root[data-size="1440"] .hud-nav { left: 290px; }
 :root[data-size="1440"] .hud-nav .tab { padding: 0 16px 0 10px; letter-spacing: 0.08em; }
 :root[data-size="1440"] .hud-header { gap: 16px; }
-.hud-nav .tab { height: 28px; margin-bottom: 0; }
+.hud-nav .tab { height: 32px; margin-bottom: 0; }
 
 .hud-content {
   position: absolute; left: var(--margin-x); right: var(--margin-x);

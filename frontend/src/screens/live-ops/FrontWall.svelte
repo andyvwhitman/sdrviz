@@ -1,7 +1,7 @@
 <script lang="ts">
   /**
-   * The front wall (spec 4.3, brief 9.1.2): spectrum trace, M2 ruler, waterfall and LOFAR strip of the
-   * displayed feed, wired to the spectrum, level and LOFAR stores. A faulted or stale feed freezes it
+   * The front wall (spec 4.3, brief 9.1.2): spectrum trace, M2 ruler and waterfall of the
+   * displayed feed, wired to the spectrum store. A faulted or stale feed freezes it
    * (FrontWallMessage); a dropped link voids the rows it never delivered.
    */
   import { onDestroy } from "svelte";
@@ -10,9 +10,9 @@
   import * as fmt from "$lib/hud/fmt";
   import type { Channel, Feed, LiveState } from "$lib/types/live";
   import { boxStyle, type Geometry } from "./geometry";
+  import FrequencyCursor from "./FrequencyCursor.svelte";
   import FrequencyRuler from "./FrequencyRuler.svelte";
   import FrontWallMessage from "./FrontWallMessage.svelte";
-  import LofarStrip from "./LofarStrip.svelte";
   import SpectrumTrace from "./SpectrumTrace.svelte";
   import Waterfall from "./Waterfall.svelte";
   import { carriersOn, channelNumber, heardChannels, noiseFloor } from "./wall";
@@ -48,13 +48,24 @@
   );
   const frozenAge = $derived(feed.last_sample_age_s == null ? null : fmt.age(feed.last_sample_age_s, "age"));
 
-  let clamp = $state({ lo: 0, hi: 0 });
   const [, , spectrumW, spectrumH] = $derived(geometry.spectrum);
   const [, , fallW, fallH] = $derived(geometry.waterfall);
   const [, , rulerW, rulerH] = $derived(geometry.ruler);
+
+  /** pointer x over the spectrum, ruler or waterfall (they share x), for the hover readout */
+  let hoverX = $state<number | null>(null);
+  const hover = {
+    onpointermove: (event: PointerEvent) => {
+      // the stage is scaled to fit the window: convert screen pixels back to layout pixels
+      const box = event.currentTarget as HTMLElement;
+      const rect = box.getBoundingClientRect();
+      hoverX = ((event.clientX - rect.left) * box.offsetWidth) / rect.width;
+    },
+    onpointerleave: () => (hoverX = null),
+  };
 </script>
 
-<div class="lo-box" style={boxStyle(geometry.spectrum)}>
+<div class="lo-box" style={boxStyle(geometry.spectrum)} {...hover} role="presentation">
   <SpectrumTrace
     width={spectrumW}
     height={spectrumH}
@@ -67,16 +78,15 @@
     {blank}
   />
 </div>
-<div class="lo-box lo-plot" style={boxStyle(geometry.ruler)}>
+<div class="lo-box lo-plot" style={boxStyle(geometry.ruler)} {...hover} role="presentation">
   <FrequencyRuler width={rulerW} height={rulerH} hears={blank ? [] : heard} bank={blank ? [] : bankChannels} dimmed={!delivering} />
 </div>
 
 {#if blank}
   <div class="lo-box lo-plot lo-fall" style={boxStyle(geometry.waterfall)}><span class="lo-bezel"></span></div>
-  <div class="lo-box lo-plot lo-lofar" style={boxStyle(geometry.lofar)}><span class="lo-bezel"></span></div>
 {:else}
-  <div class="lo-box" style={boxStyle(geometry.waterfall)}>
-    <Waterfall width={fallW} height={fallH} feedId={feed.id} {floor} {carriers} live={delivering} {dropAge} bind:clamp>
+  <div class="lo-box" style={boxStyle(geometry.waterfall)} {...hover} role="presentation">
+    <Waterfall width={fallW} height={fallH} feedId={feed.id} {floor} {carriers} live={delivering} {dropAge}>
       {#if !delivering}
         <FrontWallMessage
           feedShort={feed.short}
@@ -89,18 +99,8 @@
       {/if}
     </Waterfall>
   </div>
-  <LofarStrip
-    lofar={snapshot.lofar_60m}
-    feedId={feed.id}
-    feedShort={feed.short}
-    {floor}
-    {heard}
-    rows={geometry.lofarRows}
-    boxes={{ head: geometry.lofarHead, ruler: geometry.lofarRuler, strip: geometry.lofar }}
-    rampTop={geometry.rampTop}
-    {clamp}
-    rowSeconds={snapshot.lofar_60m.row_s}
-    {dropAge}
-    dimmed={!delivering}
-  />
+{/if}
+
+{#if hoverX !== null && !blank}
+  <FrequencyCursor x={hoverX} spectrum={geometry.spectrum} ruler={geometry.ruler} waterfall={geometry.waterfall} channels={snapshot.channels} />
 {/if}

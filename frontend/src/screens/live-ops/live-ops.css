@@ -67,7 +67,7 @@
 .lo-tiles.has-solo .tile:not([data-solo]) .tile__meter,
 .lo-tiles.has-solo .tile:not([data-solo]) .tile__wave { opacity: 0.4; }
 /* key-up commit (spec 6.3): the AAR steps 24 > 20 > 16 > 13 px inside the 120 ms flash, the timer waits */
-@keyframes lo-aar-lock { 0% { font-size: var(--fs-24); } 33% { font-size: 20px; } 66% { font-size: 16px; } 100% { font-size: var(--fs-13); } }
+@keyframes lo-aar-lock { 0% { font-size: var(--fs-24); } 33% { font-size: 23px; } 66% { font-size: 19px; } 100% { font-size: var(--fs-13); } }
 .tile--standard:has(.frame[data-commit]) .tile__aar { animation: lo-aar-lock var(--t-flash) steps(1, end) 1; }
 .tile:has(.frame[data-commit]) .tile__timer { visibility: hidden; }
 
@@ -87,11 +87,11 @@
 
 /* ---- CTC track strip (M18, brief 9.1.6) ----------------------------------- */
 .lo-ctc { position: absolute; inset: 0; box-shadow: inset 0 1px 0 var(--grid); }
-.lo-ctc svg text.lo-rt { font: 500 11px var(--font-label); letter-spacing: 0.1em; text-transform: uppercase; fill: var(--ink-2); }
-.lo-ctc svg text.lo-st { font: 500 11px var(--font-label); letter-spacing: 0.06em; text-transform: uppercase; fill: var(--ink-3); }
-.lo-ctc svg text.lo-tr { font: 400 11px var(--font-data); fill: var(--ink-2); }
+.lo-ctc svg text.lo-rt { font: 500 var(--fs-11) var(--font-label); letter-spacing: 0.1em; text-transform: uppercase; fill: var(--ink-2); }
+.lo-ctc svg text.lo-st { font: 500 var(--fs-11) var(--font-label); letter-spacing: 0.06em; text-transform: uppercase; fill: var(--ink-3); }
+.lo-ctc svg text.lo-tr { font: 400 var(--fs-11) var(--font-data); fill: var(--ink-2); }
 .lo-ctc svg text.lo-tr.is-tx { fill: var(--state-tx); }
-.lo-ctc svg text.lo-eq { font: 400 11px var(--font-data); fill: var(--ink-3); }
+.lo-ctc svg text.lo-eq { font: 400 var(--fs-11) var(--font-data); fill: var(--ink-3); }
 
 /* ---- inspector extras ----------------------------------------------------- */
 .lo-wave { display: flex; overflow: hidden; justify-content: flex-end; }

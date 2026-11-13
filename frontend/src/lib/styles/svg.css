@@ -23,12 +23,12 @@ svg.hud { overflow: visible; }
 .hud .f-tx { fill: var(--state-tx); } .hud .f-fault { fill: var(--state-fault); } .hud .f-idle { fill: var(--state-idle); }
 .hud .f-wash-tx-plot { fill: var(--wash-tx-plot); }
 .hud text { font-family: var(--font-label); }
-.hud .tx-lab   { font: 500 11px var(--font-label); letter-spacing: 0.1em; text-transform: uppercase; fill: var(--ink-3); }
-.hud .tx-lab2  { font: 500 12px var(--font-label); letter-spacing: 0.1em; text-transform: uppercase; fill: var(--ink-2); }
-.hud .tx-term  { font: 600 13px var(--font-display); letter-spacing: 0.12em; text-transform: uppercase; fill: var(--ink); }
-.hud .tx-num   { font: 400 11px var(--font-data); fill: var(--ink-3); }
-.hud .tx-num2  { font: 400 12px var(--font-data); fill: var(--ink-2); }
-.hud .tx-data  { font: 400 12px var(--font-data); fill: var(--ink); }
+.hud .tx-lab   { font: 500 var(--fs-11) var(--font-label); letter-spacing: 0.1em; text-transform: uppercase; fill: var(--ink-3); }
+.hud .tx-lab2  { font: 500 var(--fs-12) var(--font-label); letter-spacing: 0.1em; text-transform: uppercase; fill: var(--ink-2); }
+.hud .tx-term  { font: 600 var(--fs-13) var(--font-display); letter-spacing: 0.12em; text-transform: uppercase; fill: var(--ink); }
+.hud .tx-num   { font: 400 var(--fs-11) var(--font-data); fill: var(--ink-3); }
+.hud .tx-num2  { font: 400 var(--fs-12) var(--font-data); fill: var(--ink-2); }
+.hud .tx-data  { font: 400 var(--fs-12) var(--font-data); fill: var(--ink); }
 .hud .tx-data.is-tx { fill: var(--state-tx); }
 .hud .tx-hero  { font: 500 48px var(--font-data); fill: var(--ink); }
 .hud .ping { fill: none; stroke: var(--state-tx); stroke-width: 1px; transform-box: fill-box; transform-origin: center; }

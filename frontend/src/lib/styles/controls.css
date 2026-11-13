@@ -5,12 +5,12 @@
    9  CHIPS, LEVERS (M21), BUTTONS, INPUTS, TABS
    -------------------------------------------------------------------------- */
 .chip {
-  position: relative; display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 8px;
+  position: relative; display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px;
   font: 400 var(--fs-12)/1 var(--font-data); color: var(--ink-2); white-space: nowrap; --arm: 4px;
 }
 .chip::before { --c: var(--line-faint); }
 .chip .label { font-size: var(--fs-11); }
-.chip .glyph { width: 14px; height: 14px; -webkit-mask-size: 14px 14px; mask-size: 14px 14px; }
+.chip .glyph { width: 16px; height: 16px; -webkit-mask-size: 16px 16px; mask-size: 16px 16px; }
 .chip[data-chip="active"]   { color: var(--ink); }
 .chip[data-chip="active"]::before { --c: var(--line); }
 .chip[data-chip="armed"]    { color: var(--ink); }          /* AUDIO · CLICK TO ENABLE */
@@ -39,6 +39,7 @@
 .chip[data-chip="filter"][aria-pressed="true"]::before { --c: var(--line); }
 .chip { transition: color var(--t-micro) var(--ease-instrument); }
 button.chip:hover { color: var(--ink); }
+.chip--icon { width: 32px; padding: 0; justify-content: center; }
 
 /* M21 lever: 16 x 16 square, 11 px letter, pip above, 24 x 24 hit area */
 .levers { display: inline-flex; }
@@ -59,7 +60,7 @@ button.chip:hover { color: var(--ink); }
 
 /* buttons */
 .btn {
-  position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 32px; padding: 0 16px;
+  position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 40px; padding: 0 20px;
   font: 600 var(--fs-12)/1 var(--font-label); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-2); --arm: 6px;
   transition: color var(--t-micro) var(--ease-instrument);
 }
@@ -68,7 +69,7 @@ button.chip:hover { color: var(--ink); }
 .btn:hover::before { --c: var(--line); }
 .btn--primary { color: var(--ink); }
 .btn--primary::before { --c: var(--line); }
-.btn--sm { height: 24px; padding: 0 8px; font-size: var(--fs-11); }
+.btn--sm { height: 32px; padding: 0 12px; font-size: var(--fs-11); }
 .btn[disabled] { color: var(--state-offline); cursor: default; }
 .btn[disabled]::before { --c: var(--state-offline); }
 .btn:active { color: var(--state-select); }
@@ -81,7 +82,7 @@ button.chip:hover { color: var(--ink); }
 .field { display: grid; gap: 6px; min-width: 120px; }
 .field__label { font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--ink-3); }
 .field__input {
-  height: 28px; padding: 0 0 4px; border: 0; border-bottom: 1px solid var(--line-faint); border-radius: 0; background: transparent;
+  height: 34px; padding: 0 0 4px; border: 0; border-bottom: 1px solid var(--line-faint); border-radius: 0; background: transparent;
   font: 400 var(--fs-13)/1 var(--font-data); color: var(--ink); width: 100%;
   transition: border-color var(--t-micro) var(--ease-instrument);
 }
@@ -106,17 +107,17 @@ button.chip:hover { color: var(--ink); }
 .field__hint  { font: 400 var(--fs-13)/1.3 var(--font-read); color: var(--ink-3); }
 .field.is-error .field__input { border-bottom-color: var(--line-faint); } /* never a red box */
 
-.check { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--ink-2); min-height: 24px; }
-.check > i { width: 12px; height: 12px; box-shadow: inset 0 0 0 1px var(--line-faint); display: grid; place-items: center; flex: none; }
+.check { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--ink-2); min-height: 32px; }
+.check > i { width: 16px; height: 16px; box-shadow: inset 0 0 0 1px var(--line-faint); display: grid; place-items: center; flex: none; }
 .check[aria-checked="true"] > i { box-shadow: inset 0 0 0 1px var(--line); }
-.check[aria-checked="true"] > i::after { content: ""; width: 6px; height: 6px; background: var(--ink); }
+.check[aria-checked="true"] > i::after { content: ""; width: 8px; height: 8px; background: var(--ink); }
 
-.toggle { display: inline-flex; align-items: center; gap: 8px; font: 600 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--ink-3); min-height: 24px; }
-.toggle > i { position: relative; width: 28px; height: 12px; box-shadow: inset 0 0 0 1px var(--line-faint); }
-.toggle > i::after { content: ""; position: absolute; left: 2px; top: 2px; width: 8px; height: 8px; background: var(--line-faint); transition: left var(--t-micro) var(--ease-instrument); }
+.toggle { display: inline-flex; align-items: center; gap: 8px; font: 600 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--ink-3); min-height: 32px; }
+.toggle > i { position: relative; width: 34px; height: 16px; box-shadow: inset 0 0 0 1px var(--line-faint); }
+.toggle > i::after { content: ""; position: absolute; left: 3px; top: 3px; width: 10px; height: 10px; background: var(--line-faint); transition: left var(--t-micro) var(--ease-instrument); }
 .toggle[aria-checked="true"] { color: var(--ink); }
 .toggle[aria-checked="true"] > i { box-shadow: inset 0 0 0 1px var(--line); }
-.toggle[aria-checked="true"] > i::after { left: 18px; background: var(--ink); }
+.toggle[aria-checked="true"] > i::after { left: 21px; background: var(--ink); }
 
 /* tabs: nav, bank and route selectors; 45-degree chamfer on the top-right corner */
 .tabs { display: flex; gap: 4px; height: var(--tabs-h); align-items: flex-end; }
@@ -140,3 +141,11 @@ button.chip:hover { color: var(--ink); }
 .tab--bare { --tab-stroke: transparent; }  /* header nav: no outline until active */
 .tab--bare[aria-selected="true"] { --tab-stroke: var(--line-faint); }
 
+
+/* Touch: every small control keeps its drawn size but gets an invisible 44 x 44 hit area (readability pass). */
+@media (pointer: coarse) {
+  .chip, .btn, .lever, .check, .toggle { position: relative; }
+  .chip::after, .btn::after, .lever::after, .check::after, .toggle::after {
+    content: ""; position: absolute; left: 50%; top: 50%; width: max(100%, 44px); height: max(100%, 44px); transform: translate(-50%, -50%);
+  }
+}

@@ -17,7 +17,7 @@ type ChipState = Pick<LiveState, "header" | "faults" | "degraded" | "system" | "
 
 /**
  * FEEDS (fault + glyph + onset | acked + glyph | degraded + stale glyph | nominal), ASR, DISK, HOST,
- * and, off Live Ops, the one orange KEYED chip (`txChip`).
+ * and the orange KEYED chip (`txChip`).
  */
 export function headerChips(state: ChipState, { txChip = false } = {}): ChipSpec[] {
   const { header, faults, degraded } = state;

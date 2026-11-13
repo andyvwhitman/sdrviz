@@ -1,12 +1,11 @@
 <script lang="ts">
   /**
-   * Live Ops (spec 4.3, brief 9.1): hero strip, front wall, bank tabs and tile wall, transcript log,
-   * CTC strip and the channel / feed inspectors. The system screens reuse this wall: `link` renders
+   * Live Ops (spec 4.3, brief 9.1): hero strip, front wall, bank tabs and tile wall, transcript log
+   * and the channel / feed inspectors. The system screens reuse this wall: `link` renders
    * it blank (loading, connecting), voided and AGE-stamped after a link drop (reconnecting), dimmed
    * under the NO LINK alarm, or with an empty bank (spec 11.17).
    */
   import { onMount, untrack } from "svelte";
-  import { api, type Json } from "$lib/api/client";
   import ChannelTile from "$lib/components/ChannelTile.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import TileGrid from "$lib/components/TileGrid.svelte";
@@ -27,11 +26,10 @@
   import { BACKOFF_S } from "$lib/ws/link";
   import BankTabs from "./BankTabs.svelte";
   import ChannelInspector from "./ChannelInspector.svelte";
-  import type { RoutesDoc } from "./ctc/layout";
-  import CtcStrip from "./CtcStrip.svelte";
   import FeedInspector from "./FeedInspector.svelte";
   import FrontWall from "./FrontWall.svelte";
   import { boxStyle, geometryFor } from "./geometry";
+  import { stage } from "$lib/stores/stage.svelte";
   import { elsewhereLabel, heroFor, offBankLabel } from "./hero";
   import HeroStrip from "./HeroStrip.svelte";
   import { KeyupMotion } from "./keyup.svelte";
@@ -48,7 +46,7 @@
   }
   let { link: forced }: Props = $props();
 
-  const geometry = geometryFor(params.size);
+  const geometry = $derived(geometryFor(params.size, stage.width));
   const snapshot = $derived(live.state);
 
   /* the link: the prop when a system screen forces a state, else what the socket is doing */
@@ -138,6 +136,7 @@
       linkDropAgeS: dropAge,
     });
     base.levers = { m: prefs.muted.has(c.id), s: prefs.solo.has(c.id), r: prefs.record.has(c.id) };
+    base.focused = targetedId === c.id;
     base.commit = motion.committing.has(c.id) && !prefs.muted.has(c.id);
     if (held) base.elapsed = held.elapsed;
     else if (dropAge == null) {
@@ -179,25 +178,55 @@
     const step: Record<string, number> = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: cols, ArrowUp: -cols };
     if (event.key in step) {
       event.preventDefault();
+      targetedId = null; // arrow keys show the browser's own focus ring
       tilesEl[Math.min(tilesEl.length - 1, Math.max(0, at + step[event.key]))].focus();
     } else if (event.target === tilesEl[at] && event.key.toLowerCase() in LEVER_LIST) {
+      event.preventDefault(); // R is also a tab hotkey: the focused tile's lever wins
       leverPressed(tiles[at].id, event.key.toLowerCase() as LeverKey);
     }
   }
 
-  /* ---- CTC strip */
-  let routes = $state<RoutesDoc | null>(null);
-  onMount(() => {
-    api.geo
-      .routes()
-      .then((doc: Json) => (routes = doc as unknown as RoutesDoc))
-      .catch((error) => console.warn("routes unavailable", error));
-  });
+  /**
+   * Number keys target a tile by its bank index (1-9; 0 is the tenth; two digits typed quickly, e.g. 1 then 2,
+   * reach 12). The targeted tile takes focus, so M, S and R then work its levers (tileKeys).
+   */
+  const DIGIT_PAIR_MS = 800;
+  /** the tile a number key targeted; drawn focused explicitly, since the browser hides focus rings after a click */
+  let targetedId = $state<string | null>(null);
+  let lastDigit = { key: "", at: 0 };
+
+  function globalKeys(event: KeyboardEvent): void {
+    if (event.ctrlKey || event.metaKey || event.altKey || !/^[0-9]$/.test(event.key)) return;
+    const target = event.target as HTMLElement;
+    if (target.closest("input, textarea, select, [contenteditable]")) return;
+    const now = performance.now();
+    const pair = now - lastDigit.at < DIGIT_PAIR_MS ? Number(lastDigit.key + event.key) : NaN;
+    const single = event.key === "0" ? 10 : Number(event.key);
+    const index = pair >= 1 && pair <= tiles.length ? pair : single;
+    lastDigit = { key: event.key, at: now };
+    const tile = tilesBox?.querySelectorAll<HTMLElement>(".tile")[index - 1];
+    if (tile) {
+      event.preventDefault();
+      targetedId = tiles[index - 1].id;
+      tile.focus();
+    }
+  }
+
+  /** A click anywhere that is not a control, a tile, a transcript row or the inspector closes the inspector. */
+  function clickAway(event: MouseEvent): void {
+    if (!inspectId) return;
+    const target = event.target as HTMLElement;
+    if (target.closest(".inspector, .tile, .txrow, button, a, input, select, textarea, [role='button']")) return;
+    router.setQuery({ select: null, inspect: null });
+  }
 
   const downCap = BACKOFF_S[BACKOFF_S.length - 1];
 </script>
 
-<div class="lo-root" class:is-down={linkState === "no-link"} data-link={linkState ?? undefined}>
+<svelte:window onkeydown={globalKeys} />
+
+<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+<div class="lo-root" class:is-down={linkState === "no-link"} data-link={linkState ?? undefined} onclick={clickAway}>
   {#if blank || !snapshot || !bank || !displayed}
     <!-- nothing has arrived yet: the same boxes, empty -->
     <div class="lo-box hero lo-hero" style={boxStyle(geometry.hero)}>
@@ -206,7 +235,6 @@
     <div class="lo-box lo-plot" style={boxStyle(geometry.spectrum)}><span class="lo-bezel"></span></div>
     <div class="lo-box lo-plot" style={boxStyle(geometry.ruler)}></div>
     <div class="lo-box lo-plot lo-fall" style={boxStyle(geometry.waterfall)}><span class="lo-bezel"></span></div>
-    <div class="lo-box lo-plot lo-lofar" style={boxStyle(geometry.lofar)}><span class="lo-bezel"></span></div>
     <div class="lo-box br" style={boxStyle(geometry.tiles)}>
       <div class="lo-blank"><span class="t-panel">CHANNELS</span><span class="mono">{BLANK}</span></div>
     </div>
@@ -214,7 +242,6 @@
       <div class="txlog__head"><span class="t-panel">TRANSCRIPT</span><span class="grow"></span></div>
       <div class="txrow-empty">{BLANK}</div>
     </div>
-    <div class="lo-box" style={boxStyle(geometry.ctc)}><CtcStrip routes={null} live={{}} width={geometry.ctc[2]} height={geometry.ctc[3]} x0={geometry.ctcX0} /></div>
   {:else}
     <div class="lo-box" style={boxStyle(geometry.hero)}>
       <HeroStrip {hero} feeds={snapshot.feeds} {displayed} faults={snapshot.faults} {offBank} {elsewhere} onshowfeed={showFeed} oninspectfeed={inspectFeedId} />
@@ -227,7 +254,7 @@
     </div>
 
     <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-    <div bind:this={tilesBox} class="lo-box lo-tiles" class:has-solo={prefs.solo.size > 0} style={boxStyle(geometry.tiles)} role="group" aria-label="Channels" onkeydown={tileKeys}>
+    <div bind:this={tilesBox} class="lo-box lo-tiles" class:has-solo={prefs.solo.size > 0} style={boxStyle(geometry.tiles)} role="group" aria-label="Channels" onkeydown={tileKeys} onfocusout={(e) => !(e.relatedTarget as HTMLElement | null)?.closest(".tile") && (targetedId = null)}>
       {#if tiles.length === 0}
         <div class="lo-empty br">
           <EmptyState title="BANK EMPTY">
@@ -236,7 +263,7 @@
         </div>
       {:else}
         <TileGrid cols={geometry.tileCols}>
-          {#each tiles as c (c.id)}
+          {#each tiles as c, i (c.id)}
             {#snippet wave()}
               <Waveform env={waveOf(c)} width={WAVE_WIDTH} height={16} live />
             {/snippet}
@@ -247,6 +274,7 @@
               wave={(c.tx || motion.held.has(c.id)) && geometry.tileVariant === "standard" ? wave : undefined}
               onselect={() => selectChannel(c.id)}
               onlever={(key) => leverPressed(c.id, key)}
+              index={i + 1}
             />
           {/each}
         </TileGrid>
@@ -262,10 +290,6 @@
         {now}
         onselect={(row) => selectChannel(row.frequency_id)}
       />
-    </div>
-
-    <div class="lo-box" style={boxStyle(geometry.ctc)}>
-      <CtcStrip {routes} live={snapshot.ctc} width={geometry.ctc[2]} height={geometry.ctc[3]} x0={geometry.ctcX0} />
     </div>
 
     {#if inspectChannel}

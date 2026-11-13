@@ -61,8 +61,10 @@
   --font-data:    "JetBrains Mono", "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 
   /* 1.7 type scale (brief §4), px */
-  --fs-11: 11px; --fs-12: 12px; --fs-13: 13px; --fs-15: 15px; --fs-18: 18px;
-  --fs-24: 24px; --fs-32: 32px; --fs-48: 48px; --fs-72: 72px;
+  /* Step NAMES are the original 11..72 px ramp; VALUES were raised (readability pass): nothing is under
+     14 design px, which is ~11.5 px on screen at the 1440 stage on an iPad (scale 0.82). */
+  --fs-11: 14px; --fs-12: 15px; --fs-13: 16px; --fs-15: 18px; --fs-18: 21px;
+  --fs-24: 27px; --fs-32: 35px; --fs-48: 52px; --fs-72: 76px;
   --track-label: 0.10em;
   --track-display: 0.12em;
 
@@ -82,15 +84,15 @@
   --unit: 4px;
   --layout-unit: 8px;
   --margin-x: 32px;        /* outer margin left/right */
-  --gap-chrome: 16px;      /* header/status line to content */
+  --gap-chrome: 12px;      /* header/status line to content */
   --gap-panel: 16px;       /* stacked panels */
   --gap-cell: 8px;         /* cells inside a panel (tiles) */
   --gutter: 24px;          /* 12-col gutter */
   --cols: 12;
-  --header-h: 40px;
-  --status-h: 24px;
+  --header-h: 44px;
+  --status-h: 28px;
   --hero-h: 64px;
-  --tabs-h: 32px;
+  --tabs-h: 36px;
   --inspector-w: 480px;
   --arm-len: 8px;          /* M1 bracket arm */
   --sel-arm: 14px;         /* selection bracket arm */

@@ -10,7 +10,7 @@
   import { spectrum } from "$lib/stores/spectrum.svelte";
   import { BAND } from "$lib/hud/band";
   import type { Snippet } from "svelte";
-  import { WaterfallModel, NO_SAMPLE_DBFS } from "./waterfallModel.svelte";
+  import { WaterfallModel, NO_SAMPLE_DBFS, ROWS, WINDOW_S } from "./waterfallModel.svelte";
   import { bandX, hash, rampClamp, slotWidth, type Carrier } from "./wall";
 
   interface Props {
@@ -35,7 +35,9 @@
     return rampRgb[i].map((v, k) => v + (rampRgb[i + 1][k] - v) * (x - i));
   };
 
-  const model = new WaterfallModel(untrack(() => height));
+  const model = new WaterfallModel(ROWS);
+  /** screen pixels per second of history */
+  const pxPerS = $derived(height / WINDOW_S);
   let canvas = $state<HTMLCanvasElement>();
 
   $effect(() => {
@@ -53,7 +55,7 @@
     const image = ctx.createImageData(width, height);
     const rows = model.rows;
     const void0 = rampRgb[0];
-    const gap = dropAge == null ? 0 : Math.min(height, Math.ceil(dropAge * 2));
+    const gap = dropAge == null ? 0 : Math.min(height, Math.ceil(dropAge * pxPerS));
 
     // band x -> bin of the feed's span
     const lo = model.centerMhz - model.spanMhz / 2;
@@ -69,7 +71,7 @@
     if (clamp.lo !== low || clamp.hi !== high) clamp = { lo: low, hi: high };
 
     for (let r = 0; r < height; r++) {
-      const row = rows[rows.length - 1 - r];
+      const row = rows[rows.length - 1 - Math.floor((r * ROWS) / height)];
       for (let x = 0; x < width; x++) {
         const p = (r * width + x) * 4;
         let rgb = void0;
@@ -107,7 +109,7 @@
   });
 
   const slot = $derived(slotWidth(width));
-  const ticks = $derived(Array.from({ length: Math.floor((height / 2 - 1) / 10) }, (_, i) => (i + 1) * 10));
+  const ticks = $derived(Array.from({ length: Math.floor((WINDOW_S - 1) / 5) }, (_, i) => (i + 1) * 5));
   const snap = (v: number) => Math.round(v) + 0.5;
 </script>
 
@@ -116,16 +118,16 @@
   <svg class="hud" {width} {height}>
     {#each carriers as c (c.channel)}
       {@const x0 = Math.round(bandX(c.mhz, width) - slot / 2)}
-      {@const rows = Math.min(height, Math.round(c.elapsedS * 2))}
+      {@const rows = Math.min(height, Math.round(c.elapsedS * pxPerS))}
       {#if rows > 0}
         <rect class="f-wash-tx-plot" x={x0} y="0" width={Math.round(slot)} height={rows} />
         <rect class="s-hair k-tx" x={x0 + 0.5} y="0.5" width={Math.round(slot) - 1} height={Math.max(0, rows - 1)} />
       {/if}
     {/each}
     {#each ticks as sec}
-      {@const major = sec % 20 === 0}
-      <path class="s-hair {major ? 'k-line' : 'k-faint'}" d="M1 {snap(sec * 2)}H{major ? 9 : 5}" />
-      {#if major}<text class="tx-num" x="13" y={snap(sec * 2) + 4}>{sec} S</text>{/if}
+      {@const major = sec % 10 === 0}
+      <path class="s-hair {major ? 'k-line' : 'k-faint'}" d="M1 {snap(sec * pxPerS)}H{major ? 9 : 5}" />
+      {#if major}<text class="tx-num" x="13" y={snap(sec * pxPerS) + 4}>{sec} S</text>{/if}
     {/each}
   </svg>
   <span class="lo-bezel"></span>

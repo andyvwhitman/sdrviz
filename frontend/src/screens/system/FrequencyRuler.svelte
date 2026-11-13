@@ -17,6 +17,6 @@
     <path class="s-hair {t.tone === 'line' ? 'k-line' : 'k-faint'}" d="M{t.x} 0V{t.len}" />
   {/each}
   {#each geometry.numerals as n}
-    <text class={n.bright ? "tx-num2" : "tx-num"} style="font-size:11px" x={n.x.toFixed(1)} y={n.y} text-anchor="middle">{n.text}</text>
+    <text class={n.bright ? "tx-num2" : "tx-num"} style="font-size: var(--fs-11)" x={n.x.toFixed(1)} y={n.y} text-anchor="middle">{n.text}</text>
   {/each}
 </g>

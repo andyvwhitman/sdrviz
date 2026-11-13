@@ -1,4 +1,5 @@
 <script lang="ts">
+  import "./feeds.css"; // the select caret lives here, and the select is also used on the Settings screen
   /** Underline select in the field vocabulary (spec 5.22): the kit has no select, see docs/requests/feeds-banks.md. */
   interface Props {
     label: string;

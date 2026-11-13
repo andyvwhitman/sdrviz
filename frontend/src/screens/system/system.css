@@ -29,8 +29,8 @@
 .sy-tiles { left: 0; top: 368px; width: 1072px; height: 480px; }
 .sy-log { left: 1096px; top: 320px; width: 760px; height: 528px; overflow: hidden; }
 .sy-ctc { left: 0; top: 864px; width: 1856px; height: 120px; }
-.sy-svg .lab  { font: 500 11px var(--font-label); letter-spacing: 0.1em; text-transform: uppercase; fill: var(--ink-3); }
-.sy-svg .num  { font: 400 11px var(--font-data); fill: var(--ink-3); }
+.sy-svg .lab  { font: 500 var(--fs-11) var(--font-label); letter-spacing: 0.1em; text-transform: uppercase; fill: var(--ink-3); }
+.sy-svg .num  { font: 400 var(--fs-11) var(--font-data); fill: var(--ink-3); }
 .sy-svg .box  { fill: var(--bg-void); stroke: var(--line-faint); stroke-width: 1px; }
 .sy-lofar-lab { font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink-3); text-transform: uppercase; display: flex; justify-content: space-between; }
 .sy-lofar-lab .mono { font: 400 var(--fs-11)/1 var(--font-data); color: var(--ink-2); letter-spacing: 0; }

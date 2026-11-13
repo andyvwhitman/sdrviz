@@ -39,7 +39,7 @@ export function waveEnvelope(levels: readonly number[], floorDb: number, elapsed
   const low = Math.min(...own);
   const range = Math.max(MIN_RANGE_DB, Math.max(...own) - low);
   const mean = own.reduce((sum, db) => sum + db, 0) / own.length;
-  const gain = Math.min(1, Math.max(0.45, (mean - floorDb) / FULL_SCALE_DB));
+  const gain = Math.min(1, Math.max(0.7, (mean - floorDb) / FULL_SCALE_DB));
   const timed = words.some((word) => word.t != null);
 
   return Array.from({ length: width }, (_, x): [number, number] => {

@@ -23,7 +23,7 @@
 .tile__wave { left: 8px; top: 64px; width: 184px; height: 16px; display: none; overflow: hidden; justify-content: flex-end; }
 .tile__wave svg { display: block; overflow: visible; flex: none; }
 .tile--standard[data-tx] > .tile__wave, .tile--standard.show-wave > .tile__wave { display: flex; }
-.tile[data-selected] > .tile__wave, .tile[data-levers] > .tile__wave, .tile:hover > .tile__wave, .tile:focus-within > .tile__wave { width: 112px; }
+.tile > .tile__wave { width: 112px; } /* the levers are always visible, so the wave always leaves them room */
 
 /* detector rows: each field is one non-breaking unit; a wrap only falls after a separator dot */
 .txrow[data-det] .fld { white-space: nowrap; }

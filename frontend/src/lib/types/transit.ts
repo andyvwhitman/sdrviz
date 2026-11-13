@@ -48,6 +48,9 @@ export interface Vehicle {
 
 export type TripStopState = "passed" | "current" | "next" | "upcoming" | "skipped";
 
+/** `position`: the train's own position says so; `clock`: estimated from the times only (no usable position) */
+export type StateBasis = "position" | "clock";
+
 export interface TripStop {
   stop_id: string;
   name: string;
@@ -59,6 +62,7 @@ export interface TripStop {
   delay_s: number | null;
   track: string | null;
   state: TripStopState;
+  state_basis?: StateBasis;
 }
 
 /** GET /transit/trips/{trip_id} */
@@ -103,6 +107,10 @@ export interface Stop {
   lon: number;
   kind: LineKind;
   routes: string[];
+  /** Amtrak station code ("WAS"), for Amtrak stops and station groups */
+  code?: string | null;
+  /** "Washington Union": for tight spaces, set for curated groups only */
+  short_name?: string | null;
 }
 
 export interface BoardRow {
@@ -113,17 +121,23 @@ export interface BoardRow {
   agency: string;
   /** departures: the destination; arrivals: the origin */
   headsign: string | null;
+  /** where the trip begins and ends, on every row */
+  origin?: string | null;
+  destination?: string | null;
   scheduled: string;
   estimated: string | null;
   delay_s: number | null;
   track: string | null;
   state: "passed" | "upcoming" | "cancelled";
+  state_basis?: StateBasis;
   /** a train in realtime that is not in the schedule */
   added?: boolean;
 }
 
 /** GET /transit/stations/{stop_id} */
 export interface StationBoard {
+  /** the id to address the station by (a group id, or the stop's own id) */
+  canonical_id?: string;
   stop: Stop;
   routes: { id: string; name: string; short_name: string | null; color: string | null; agency: string }[];
   departures: BoardRow[];

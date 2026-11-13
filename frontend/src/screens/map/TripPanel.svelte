@@ -12,7 +12,8 @@
   import type { Trip, TripStop, Vehicle } from "$lib/types/transit";
   import Panel, { type PanelControls } from "./Panel.svelte";
   import Delay from "./Delay.svelte";
-  import { ageNow, ageText, clockOf, delayCell, hhmm, hhmmss, isStale, timeTag, trainTitle, type DelayCell } from "./lib/transitView";
+  import { estMark, stopCode, stopTimes, TRACK_STATIONS } from "./lib/boardView";
+  import { ageNow, ageText, clockOf, delayCell, hhmm, hhmmss, isStale, timeTag, trainTitle } from "./lib/transitView";
 
   interface Props extends PanelControls {
     /** a trip id, or the id of a running train that has none */
@@ -84,15 +85,10 @@
   const agency = $derived(vehicle?.agency ?? trip?.agency ?? BLANK);
   const title = $derived(vehicle ? trainTitle(vehicle) : trip ? `${trip.agency} ${trip.train ?? ""}`.trim() : tripId);
 
-  /** one time per stop: the expected one when there is realtime, else the timetable's; the schedule is in the hover */
-  const timeOf = (s: TripStop): { time: string; title: string; tag: DelayCell } => {
-    const [sched, est] = s.arr_scheduled || !s.dep_scheduled ? [s.arr_scheduled, s.arr_estimated] : [s.dep_scheduled, s.dep_estimated];
-    return {
-      time: hhmm(est ?? sched),
-      title: `SCHEDULED ${hhmm(sched)}${est ? ` · EXPECTED ${hhmm(est)}` : " · NO REALTIME"}`,
-      tag: timeTag(s.delay_s, est),
-    };
-  };
+  /** the track of a stop: its own, or TBD for an Amtrak train at a station that announces tracks */
+  const trackOf = (s: TripStop): string => s.track ?? (agency === "Amtrak" && TRACK_STATIONS.includes(stopCode(s.stop_id) ?? "") ? "TBD" : "");
+  const tagOf = (s: TripStop): string =>
+    s.state === "skipped" ? "SKIPPED" : s.state === "current" ? `${estMark(s.state_basis)}AT STOP` : s.state === "next" ? `${estMark(s.state_basis)}NEXT` : "";
   /** the glance form of the freshness, for the panel's subheader */
   const glance = $derived(
     !vehicle ? "SCHEDULE ONLY" : gone ? "NOT REPORTING" : age == null ? "AGE —" : `${vehicle.position === "realtime" ? "LIVE" : "EST"} · ${ageText(age)} AGO`,
@@ -144,13 +140,13 @@
       {#if stops.length}
         <div class="tw-list" bind:this={listEl}>
           {#each stops as s (s.seq)}
-            {@const t = timeOf(s)}
+            {@const t = stopTimes(s)}
             <button class="tw-stop is-{s.state}" title={t.title} class:is-cur={s.state === "current" || s.state === "next"} onclick={() => onstop(s.stop_id)}>
               <span class="tw-mark" aria-hidden="true"></span>
               <span class="tw-name">{s.name}</span>
-              <span class="tw-tag">{s.state === "current" ? "AT STOP" : s.state === "next" ? "NEXT" : s.state === "skipped" ? "SKIPPED" : s.track ? `TRK ${s.track}` : ""}</span>
-              <span class="tw-t">{t.time}</span>
-              <span class="tw-t tw-tag"><Delay {...t.tag} /></span>
+              {#if tagOf(s) || trackOf(s)}<span class="tw-tag tw-sub">{[tagOf(s), trackOf(s) && `TRK ${trackOf(s)}`].filter(Boolean).join(" · ")}</span>{/if}
+              <span class="tw-t">{#if t.arrival}<span class="tw-arr">{t.arrival}</span> {/if}{t.time}</span>
+              <span class="tw-t tw-tag"><Delay {...timeTag(s.delay_s, s.dep_estimated ?? s.arr_estimated)} /></span>
             </button>
           {/each}
         </div>
@@ -177,7 +173,7 @@
   .tw-stops { flex: 1; min-height: 160px; display: flex; flex-direction: column; }
   .tw-list { flex: 1; min-height: 0; position: relative; overflow-y: auto; margin-right: -8px; padding-right: 8px; }
   .tw-stop {
-    display: grid; grid-template-columns: 14px 1fr auto 44px 62px; align-items: baseline; column-gap: 8px; width: 100%;
+    display: grid; grid-template-columns: 14px 1fr 84px 92px; grid-template-areas: "m n t g" ". k k ."; align-items: baseline; column-gap: 8px; width: 100%;
     padding: 5px 4px; border: 0; border-bottom: 1px solid var(--grid); background: none; text-align: left; cursor: pointer;
     font: 400 var(--fs-12)/1.2 var(--font-data); color: var(--ink); text-transform: uppercase;
   }
@@ -186,6 +182,10 @@
   .tw-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .tw-tag { font: 500 var(--fs-11)/1.2 var(--font-label); letter-spacing: 0.08em; color: var(--ink-3); white-space: nowrap; }
   .tw-t { font-variant-numeric: tabular-nums; text-align: right; }
+  .tw-arr { color: var(--ink-3); margin-right: 6px; }
+  .tw-sub { grid-area: k; margin-top: 2px; }
+  .tw-mark { grid-area: m; } .tw-name { grid-area: n; }
+  .tw-t { grid-area: t; } .tw-tag.tw-t { grid-area: g; }
   .tw-live { color: var(--state-idle); }
   .is-passed { color: var(--ink-3); }
   .is-passed .tw-mark { background: var(--line-faint); border-color: var(--line-faint); }

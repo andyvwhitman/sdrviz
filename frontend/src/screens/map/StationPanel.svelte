@@ -10,6 +10,7 @@
   import type { BoardRow, Stop, StationBoard } from "$lib/types/transit";
   import Panel, { type PanelControls } from "./Panel.svelte";
   import Delay from "./Delay.svelte";
+  import { endpoint, stateWord, timeCell, trackCell } from "./lib/boardView";
   import { hhmm, timeTag } from "./lib/transitView";
 
   interface Props extends PanelControls {
@@ -65,7 +66,6 @@
   const ahead = $derived(rows.filter((r) => r.state !== "passed"));
   const timeTitle = (r: BoardRow): string =>
     [r.route_name, `SCHEDULED ${hhmm(r.scheduled)}`, r.estimated ? `EXPECTED ${hhmm(r.estimated)}` : "NO REALTIME"].filter(Boolean).join(" · ");
-  const stateText = (r: BoardRow): string => (r.track ? `TRK ${r.track}` : r.state === "passed" ? (tab === "departures" ? "LEFT" : "IN") : "");
 
   /** scroll to the first upcoming row */
   let listEl = $state<HTMLElement>();
@@ -82,18 +82,16 @@
 
 {#snippet line(r: BoardRow)}
   {@const tag = timeTag(r.delay_s, r.estimated)}
+  {@const t = timeCell(r.scheduled, r.estimated)}
+  {@const word = stateWord(r, tab)}
   <button class="sw-row is-{r.state}" onclick={() => ontrip(r.trip_id)} title={timeTitle(r)}>
-    {#if controls.full}
-      <span class="sw-t">{hhmm(r.scheduled)}</span>
-      <span class="sw-t">{r.estimated ? hhmm(r.estimated) : BLANK}</span>
-    {:else}
-      <span class="sw-t">{hhmm(r.estimated ?? r.scheduled)}</span>
-    {/if}
+    <span class="sw-t">{#if t.scheduled}<s>{t.scheduled}</s> {/if}{t.time}</span>
     <span class="sw-n">{r.agency} {r.train ?? ""}</span>
-    {#if controls.full}<span class="sw-d">{r.route_name ?? BLANK}</span>{/if}
-    <span class="sw-d">{r.headsign ?? r.route_name ?? BLANK}</span>
-    <span class="sw-k sw-tag">{#if r.state === "cancelled"}CANCELLED{:else}<Delay {...tag} />{/if}</span>
-    <span class="sw-k">{stateText(r)}</span>
+    {#if controls.full}<span class="sw-d sw-r">{r.route_name ?? BLANK}</span>{/if}
+    <span class="sw-d">{endpoint(r, tab)}</span>
+    <span class="sw-k sw-trk">{#if trackCell(r, board?.stop.code)}TRK {trackCell(r, board?.stop.code)}{/if}</span>
+    <span class="sw-k sw-g">{#if r.state === "cancelled"}CANCELLED{:else}<Delay {...tag} />{/if}</span>
+    <span class="sw-k sw-s">{word}</span>
   </button>
 {/snippet}
 
@@ -115,8 +113,7 @@
     <h4>{tab === "departures" ? "LEFT / LEAVING" : "ARRIVED / ARRIVING"} · LAST {BACK_MIN} MIN · NEXT {AHEAD_MIN / 60} H</h4>
     {#if board}
       <div class="sw-row sw-head" aria-hidden="true">
-        {#if controls.full}<span>SCHEDULED</span><span>EXPECTED</span>{:else}<span>TIME</span>{/if}
-        <span>TRAIN</span>{#if controls.full}<span>SERVICE</span>{/if}<span>{tab === "departures" ? "TO" : "FROM"}</span><span>STATUS</span><span></span>
+        <span class="sw-t">TIME</span><span class="sw-n">TRAIN</span>{#if controls.full}<span class="sw-r">SERVICE</span>{/if}<span class="sw-d">{tab === "departures" ? "TO" : "FROM"}</span><span class="sw-trk">TRACK</span><span class="sw-g">STATUS</span>
       </div>
       <div class="sw-list" bind:this={listEl}>
         {#each passed as r (`${r.trip_id}-${r.scheduled}`)}{@render line(r)}{/each}
@@ -135,14 +132,21 @@
   .sw-routes:not(.is-wide) { flex-wrap: nowrap; overflow-x: auto; flex: none; padding-bottom: 4px; }
   .sw-board { flex: 1; min-height: 160px; display: flex; flex-direction: column; }
   .sw-list { flex: 1; min-height: 0; overflow-y: auto; margin-right: -8px; padding-right: 8px; }
+  /* docked: two lines, the train and its time over the far end, the track and the state word */
   .sw-row {
-    display: grid; grid-template-columns: 44px 104px 1fr 92px auto; column-gap: 8px; align-items: baseline; width: 100%; padding: 5px 4px;
-    border: 0; border-bottom: 1px solid var(--grid); background: none; text-align: left; cursor: pointer;
+    display: grid; grid-template-columns: 92px 1fr auto; grid-template-areas: "t n g" "k d s"; column-gap: 8px; row-gap: 2px; align-items: baseline;
+    width: 100%; padding: 5px 4px; border: 0; border-bottom: 1px solid var(--grid); background: none; text-align: left; cursor: pointer;
     font: 400 var(--fs-12)/1.2 var(--font-data); color: var(--ink); text-transform: uppercase;
   }
-  .sw-board.is-wide .sw-row { grid-template-columns: 84px 84px 130px 1fr 1fr 100px 64px; }
+  .sw-t { grid-area: t; } .sw-n { grid-area: n; } .sw-d { grid-area: d; } .sw-trk { grid-area: k; } .sw-g { grid-area: g; text-align: right; } .sw-s { grid-area: s; text-align: right; }
+  .sw-r { grid-area: r; }
+  .sw-board.is-wide .sw-row { grid-template-columns: 130px 130px 1fr 1fr 64px 120px 110px; grid-template-areas: "t n r d k g s"; }
   .sw-head { cursor: default; padding-top: 0; font: 500 var(--fs-11)/1.2 var(--font-label); letter-spacing: 0.08em; color: var(--ink-3); }
-  .sw-tag { text-align: right; }
+  .sw-head { grid-template-areas: "t n g"; }
+  .sw-board.is-wide .sw-head { grid-template-areas: "t n r d k g s"; }
+  .sw-board:not(.is-wide) .sw-head .sw-d, .sw-board:not(.is-wide) .sw-head .sw-trk { display: none; }
+  .sw-t s { font-size: var(--fs-11); color: var(--ink-3); margin-right: 6px; }
+  .sw-trk { color: var(--ink-2); }
   .sw-row:hover:not(.sw-head) { background: var(--bg-panel); }
   .sw-t { font-variant-numeric: tabular-nums; }
   .sw-n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

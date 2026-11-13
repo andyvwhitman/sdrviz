@@ -234,3 +234,17 @@ station board and `Vehicle.next_stop`:
   for), so it equals the first `current` / `next` stop of `/trips/{id}`. This changes MARC / VRE / MBTA: while a train
   stands at a stop, `next_stop` is that stop (as Amtrak already did) instead of the one after.
 - Board rows: a train standing at a stop (`current`) has `passed` as an arrival row and `upcoming` as a departure row.
+
+### Station identity and board rows (BE-4)
+
+- `StationBoard.canonical_id: string`: the id to address the station by. A group id (`st:was`) for a group or any of
+  its member stop ids; otherwise the stop's own id (`amtrak:NYP`; a platform id resolves to its parent station). The
+  client rewrites the URL to this id and compares map selections with it.
+- `Stop.code: string | null`: the Amtrak station code (`WAS`). Set for every Amtrak stop and for every station group
+  (the group id's code, uppercase); null for stops of other sources.
+- `Stop.short_name: string | null`: a short display name for tight spaces ("Washington Union", "Baltimore Penn").
+  Set for the curated groups (the `short_name` key in `data/stations.json`); null elsewhere (the client cleans those
+  names, FE-9). `name` is unchanged.
+- `BoardRow.origin` and `BoardRow.destination: string | null`: names of the station where the trip begins and ends,
+  on every row (departures and arrivals both). `headsign` keeps its meaning (departures: destination; arrivals:
+  origin).

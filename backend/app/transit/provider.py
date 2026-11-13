@@ -122,6 +122,10 @@ class Provider:
         """The station a stop (or platform) belongs to in this source."""
         return self.static.station_of.get(stop_id, stop_id) if self.static else stop_id
 
+    def stop_code(self, station_id: str) -> str | None:
+        """The Amtrak station code, for the one source whose station ids are those codes."""
+        return station_id if self.source.kind == "amtraker" else None
+
     def station_gid(self, stop_id: str) -> str:
         """The API id of a stop's station: its group (`st:was`) when it has one, else `<source>:<station>`."""
         station = self.station_id(stop_id)
@@ -273,6 +277,7 @@ class Provider:
                 id=self.gid(st.id),
                 source=self.source.id,
                 name=st.name,
+                code=self.stop_code(st.id),
                 lat=st.lat,
                 lon=st.lon,
                 kind=self.kind,
@@ -317,12 +322,15 @@ class Provider:
             id=self.gid(station.id),
             source=self.source.id,
             name=station.name,
+            code=self.stop_code(station.id),
             lat=station.lat,
             lon=station.lon,
             kind=self.kind,
             routes=[self.gid(r) for r in station.routes],
         )
-        return StationBoard(stop=stop, routes=self.route_briefs(station.routes), departures=[], arrivals=[])
+        return StationBoard(
+            stop=stop, canonical_id=stop.id, routes=self.route_briefs(station.routes), departures=[], arrivals=[]
+        )
 
     def station_rec(self, station_id: str):
         if self.index is None:

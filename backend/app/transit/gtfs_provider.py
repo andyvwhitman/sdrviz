@@ -531,6 +531,7 @@ class GtfsProvider(Provider):
             id=self.gid(station_id),
             source=self.source.id,
             name=station.name,
+            code=self.stop_code(station_id),
             lat=station.lat,
             lon=station.lon,
             kind=self.kind,
@@ -556,6 +557,7 @@ class GtfsProvider(Provider):
         key = lambda r: r.estimated or r.scheduled  # noqa: E731
         return StationBoard(
             stop=stop,
+            canonical_id=stop.id,
             routes=self.route_briefs(route_ids),
             departures=sorted(departures, key=key),
             arrivals=sorted(arrivals, key=key),
@@ -586,6 +588,8 @@ class GtfsProvider(Provider):
                                 train=trip_id.removeprefix("Train"),
                                 agency=self.source.agency,
                                 headsign=self._station_name(other.stop_id),
+                                origin=self._station_name(ends[0].stop_id),
+                                destination=self._station_name(ends[-1].stop_id),
                                 scheduled=at,
                                 estimated=at,
                                 state="cancelled" if u.skipped else ("passed" if at <= now else "upcoming"),
@@ -638,6 +642,8 @@ class GtfsProvider(Provider):
                     route_name=route.name if route else None,
                     agency=self.source.agency,
                     headsign=self._station_name(other.stop_id),
+                    origin=self._station_name(times[0].stop_id),
+                    destination=self._station_name(times[-1].stop_id),
                     scheduled=scheduled,
                     estimated=estimated,
                     delay_s=delay,

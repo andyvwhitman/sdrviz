@@ -363,6 +363,8 @@ class AmtrakerProvider(GtfsProvider):
                             route_name=t.get("routeName"),
                             agency=self.source.agency,
                             headsign=other["name"],
+                            origin=stops[0]["name"],
+                            destination=stops[-1]["name"],
                             scheduled=scheduled,
                             estimated=estimated,
                             delay_s=leg.dep_d if departing else leg.arr_d,

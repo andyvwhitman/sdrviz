@@ -30,6 +30,11 @@ class StationGroup:
     lat: float
     lon: float
     members: dict[str, tuple[str, ...]]  # source id -> stop ids
+    short_name: str | None = None  # "Washington Union", for tight spaces
+
+    @property
+    def code(self) -> str:
+        return self.id.partition(":")[2].upper()
 
 
 @dataclass
@@ -58,7 +63,8 @@ class StationGroups:
         return cls({g.id: g for g in groups})
 
     @classmethod
-    def from_db(cls, engine: Engine) -> "StationGroups":
+    def from_db(cls, engine: Engine, path: Path = STATIONS_FILE) -> "StationGroups":
+        short_names = {g.id: g.short_name for g in cls.from_file(path).groups.values()}
         with Session(engine) as session:
             rows = session.exec(select(StationGroupRow)).all()
             members = session.exec(select(StationMemberRow).where(col(StationMemberRow.method).in_(APPLIED))).all()
@@ -73,6 +79,7 @@ class StationGroups:
                     r.lat,
                     r.lon,
                     {src: tuple(ids) for src, ids in found[r.station_id].items()},
+                    short_names.get(r.station_id),
                 )
                 for r in rows
                 if r.station_id in found
@@ -86,7 +93,9 @@ def _read(path: Path) -> list[dict]:
 
 def _group(entry: dict) -> StationGroup:
     members = {src: tuple(ids) for src, ids in entry["members"].items()}
-    return StationGroup(f"st:{entry['code'].lower()}", entry["name"], entry["lat"], entry["lon"], members)
+    return StationGroup(
+        f"st:{entry['code'].lower()}", entry["name"], entry["lat"], entry["lon"], members, entry.get("short_name")
+    )
 
 
 def seed_groups(engine: Engine, path: Path = STATIONS_FILE) -> None:
@@ -109,7 +118,7 @@ def seed_groups(engine: Engine, path: Path = STATIONS_FILE) -> None:
 
 def load_groups(engine: Engine, path: Path = STATIONS_FILE) -> StationGroups:
     seed_groups(engine, path)
-    return StationGroups.from_db(engine)
+    return StationGroups.from_db(engine, path)
 
 
 # --- suggested merges ----------------------------------------------------------------

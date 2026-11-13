@@ -17,7 +17,7 @@ from app.transit.gtfs_rt import VehiclePosition, parse_trip_updates, parse_vehic
 from app.transit.gtfs_static import GtfsStatic
 from app.transit.lines import LineIndex, level_for
 from app.transit.provider import Provider
-from app.transit.service import thin_stops
+from app.transit.service import group_stop, thin_stops
 from app.transit.source_store import SourceStore
 from app.transit.stations import StationGroup, StationGroups, name_key
 
@@ -722,3 +722,59 @@ def test_stations_endpoints_accept_group_and_member_ids(client, tmp_path, amtrak
     assert {r["source"] for r in only["arrivals"] + only["departures"]} <= {"amtrak"}
     assert client.get("/api/transit/stops", params={"bbox": "-78,38,-76,40"}).json()["stops"]
     assert isinstance(client.get("/api/transit/stations/suggestions").json(), list)
+
+
+# --- BE-4: canonical id, station code and short name, board origin and destination ----------------
+
+
+def test_station_board_names_its_canonical_id(tmp_path, amtrak_gtfs):
+    service = group_service(tmp_path, amtrak_gtfs)
+    for gid in ("st:was", "amtrak:WAS", "marc:U", "marc:T4"):
+        assert service.station(gid, NOW).canonical_id == "st:was"
+    plain = TransitService([], tmp_path, PLACES)
+    plain.providers = {"amtrak": amtrak_gtfs}
+    assert plain.station("amtrak:WAS", NOW).canonical_id == "amtrak:WAS"  # ungrouped: its own id
+
+
+def test_stops_carry_code_and_short_name(tmp_path, amtrak_gtfs):
+    board = group_service(tmp_path, amtrak_gtfs).station("st:was", NOW)
+    assert (board.stop.code, board.stop.short_name) == ("WAS", None)  # this test group has no short name
+    ungrouped = amtrak_gtfs.station_board("WAS", NOW, timedelta(hours=1), timedelta(hours=1)).stop
+    assert (ungrouped.code, ungrouped.short_name) == ("WAS", None)
+    marc_stop = gtfs(tmp_path).station_board("PARENT", NOW, timedelta(hours=1), timedelta(hours=1)).stop
+    assert marc_stop.code is None  # only Amtrak stations have a code
+
+
+def test_every_curated_group_has_a_code_and_short_name(tmp_path):
+    from app.transit.stations import load_groups
+
+    groups = load_groups(_engine(tmp_path))
+    assert len(groups.groups) == 14
+    for group in groups.groups.values():
+        assert group.short_name and group.code == group.id.removeprefix("st:").upper()
+    assert groups.get("st:was").short_name == "Washington Union"
+    assert group_stop(groups.get("st:bal"), []).short_name == "Baltimore Penn"
+
+
+def _engine(tmp_path):
+    from sqlmodel import SQLModel
+
+    from app.db import make_engine
+
+    engine = make_engine(tmp_path / "groups.sqlite")
+    SQLModel.metadata.create_all(engine)
+    return engine
+
+
+def test_board_rows_carry_origin_and_destination(amtrak_gtfs, tmp_path):
+    board = amtrak_gtfs.station_board("WAS", NOW, timedelta(hours=1), timedelta(hours=3))
+    [row] = board.arrivals
+    assert (row.origin, row.destination, row.headsign) == ("BWI Airport", "Washington Union Station", "BWI Airport")
+    marc = gtfs(tmp_path).station_board("PARENT", NOW, timedelta(hours=1), timedelta(hours=3))
+    [leaves] = marc.departures
+    assert (leaves.origin, leaves.destination, leaves.headsign) == (
+        "Union Station",
+        "BWI RAIL STATION MARC",
+        leaves.headsign,
+    )
+    assert leaves.headsign == leaves.destination

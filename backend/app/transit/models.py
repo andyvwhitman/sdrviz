@@ -94,6 +94,8 @@ class Stop(BaseModel):
     id: str
     source: str
     name: str
+    code: str | None = None  # Amtrak station code ("WAS"), when the station has one
+    short_name: str | None = None  # "Washington Union": for tight spaces, set for curated station groups
     lat: float
     lon: float
     kind: Literal["intercity", "commuter"]
@@ -134,6 +136,8 @@ class BoardRow(BaseModel):
     route_name: str | None = None
     agency: str
     headsign: str | None = None  # departures: destination; arrivals: origin
+    origin: str | None = None  # station name where the trip begins (every row)
+    destination: str | None = None  # station name where the trip ends (every row)
     scheduled: datetime
     estimated: datetime | None = None
     delay_s: int | None = None
@@ -145,6 +149,7 @@ class BoardRow(BaseModel):
 
 class StationBoard(BaseModel):
     stop: Stop
+    canonical_id: str  # the id to address this station by: its group (`st:was`), else the stop's own id
     routes: list[RouteBrief]
     departures: list[BoardRow]
     arrivals: list[BoardRow]

@@ -63,6 +63,8 @@ def group_stop(group: StationGroup, stops: list[Stop]) -> Stop:
         id=group.id,
         source="group",
         name=group.name,
+        code=group.code,
+        short_name=group.short_name,
         lat=group.lat,
         lon=group.lon,
         kind="intercity" if any(s.kind == "intercity" for s in stops) else "commuter",
@@ -80,6 +82,7 @@ def merge_boards(group: StationGroup, boards: list[StationBoard]) -> StationBoar
         alerts.update(((a.header, a.description), a) for a in board.alerts)
     return StationBoard(
         stop=group_stop(group, [b.stop for b in boards]),
+        canonical_id=group.id,
         routes=list(routes.values()),
         departures=sorted((r for b in boards for r in b.departures), key=_row_time),
         arrivals=sorted((r for b in boards for r in b.arrivals), key=_row_time),

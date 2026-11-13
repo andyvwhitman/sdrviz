@@ -256,3 +256,15 @@ finished (after a backend restart this lasts a few seconds to a minute). While a
 vehicles to `GET /transit/vehicles` (none, not a partial list); boards, trips and the map layers still answer from
 the schedule. The first poll ending, well or not, ends the warming: a failed first poll shows `stale` / `error` as
 before. Order of states on a restart: `loading` (schedule downloading) -> `warming` -> `ok`.
+
+### Tracks and platforms (BE-7)
+
+`BoardRow.track` and `TripStop.track` are Amtraker's `platform` for that train at that stop, on live trip pages,
+on board rows of live trains (matched to a scheduled trip or "added") and on the scheduled trip a live train is
+matched to. Nothing is invented: Amtrak publishes a platform only for stops where it has assigned one, usually
+within an hour or two of the train's arrival or departure and mostly on the Northeast Corridor from Philadelphia to
+New York and on some northern routes. Audit on 2026-11-13 (evening): 54 of 2679 live Amtrak stops carried a
+platform, none at WAS, BAL, BWI or NCR (0 of 135); every one of the 54 appeared in the API on its trip stop and on
+its departure and arrival board rows (107 rows). A null `track` therefore means "not assigned yet" for Amtrak,
+and MARC / VRE / MBTA carry a track only where the static feed names platforms (VRE's numbered platform stops).
+The client should say "TBD" for a null Amtrak track on a stop that will see one, not hide the column.

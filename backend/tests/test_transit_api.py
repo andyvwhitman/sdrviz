@@ -779,3 +779,21 @@ def test_board_rows_carry_origin_and_destination(amtrak_gtfs, tmp_path):
         leaves.headsign,
     )
     assert leaves.headsign == leaves.destination
+
+
+# --- BE-7: a platform in Amtraker's payload reaches every board row and trip stop ------------------
+
+
+def test_amtraker_platform_reaches_boards_and_trips(amtrak_gtfs):
+    wide = (timedelta(hours=1), timedelta(hours=3))
+    [row] = amtrak_gtfs.station_board("WAS", NOW, *wide).arrivals
+    assert row.track == "9"  # board row of the matched live train
+    assert amtrak_gtfs.trip("171-13", NOW).stops[1].track == "9"  # its live trip page
+    assert amtrak_gtfs.trip("g171", NOW, NOW.date()).stops[1].track == "9"  # the scheduled trip it is matched to
+    assert amtrak_gtfs.trip("g171", NOW, NOW.date()).stops[0].track is None  # no platform yet: nothing invented
+    other = live_train()
+    other.update(trainID="999-13", trainNum="999")  # matches no scheduled trip: an "added" row, straight from Amtraker
+    amtrak_gtfs.trains.append(other)
+    amtrak_gtfs.match_trips(NOW)
+    [added] = [r for r in amtrak_gtfs.station_board("WAS", NOW, *wide).arrivals if r.added]
+    assert (added.trip_id, added.track) == ("amtrak:999-13", "9")

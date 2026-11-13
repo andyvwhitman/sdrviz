@@ -40,3 +40,12 @@ export function shiftDate(date: string, days: number): string {
   const [y, m, d] = date.split("-").map(Number);
   return isoDay(new Date(y, m - 1, d + days));
 }
+
+/**
+ * The id the map highlights for the open panel: a station's canonical id once the board has said it (a member stop
+ * id such as `amtrak:WAS` or a MARC platform resolves to the group `st:was`), else the id in the URL.
+ */
+export function stationHighlight(state: PanelState | null, canonicalId: { for: string; id: string } | null): string | null {
+  if (state?.kind !== "station") return null;
+  return canonicalId?.for === state.id ? canonicalId.id : state.id;
+}

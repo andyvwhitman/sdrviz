@@ -4,6 +4,7 @@
    * (GET /transit/stations/{id}), scheduled against realtime. A station group is one board merged across agencies,
    * with a chip per agency to filter it. Maximized, it has room for both the scheduled and the expected time.
    */
+  import { untrack } from "svelte";
   import { api } from "$lib/api/client";
   import Chip from "$lib/components/Chip.svelte";
   import { BLANK } from "$lib/hud/fmt";
@@ -23,8 +24,10 @@
     onroute: (routeId: string) => void;
     /** the board arrived for a stop id: where the station is, to keep it in view */
     onlocate?: (stop: Stop) => void;
+    /** the board named the id to address the station by (`canonical_id`), for the id that was asked for */
+    oncanonical?: (asked: string, canonical: string) => void;
   }
-  let { stopId, name = "", ontrip, onroute, onlocate, ...controls }: Props = $props();
+  let { stopId, name = "", ontrip, onroute, onlocate, oncanonical, ...controls }: Props = $props();
 
   const REFRESH_MS = 30_000;
   const BACK_MIN = 60;
@@ -37,16 +40,17 @@
 
   $effect(() => {
     const id = stopId;
-    board = null;
-    failed = false;
-    agency = null;
+    // the URL was just rewritten to this board's canonical id: keep the board on screen and refresh it quietly
+    const same = untrack(() => board?.canonical_id === id);
+    if (!same) [board, failed, agency] = [null, false, null];
     let alive = true;
-    let located = false;
+    let located = same;
     const load = async (): Promise<void> => {
       try {
         const next = await api.transit.station(id, { back: BACK_MIN, ahead: AHEAD_MIN });
         if (!alive) return;
         [board, failed] = [next, false];
+        if (next.canonical_id) oncanonical?.(id, next.canonical_id);
         if (!located) [located] = [true, onlocate?.(next.stop)];
       } catch {
         if (alive) failed = true;

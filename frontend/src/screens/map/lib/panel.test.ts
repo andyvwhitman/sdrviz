@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { panelQuery, parsePanel, shiftDate } from "./panel";
+import { panelQuery, parsePanel, shiftDate, stationHighlight } from "./panel";
 
 const from = (qs: string) => (name: string) => new URLSearchParams(qs).get(name);
 
@@ -26,5 +26,20 @@ describe("shiftDate", () => {
   it("crosses month and year ends", () => {
     expect(shiftDate("2026-11-30", 1)).toBe("2026-12-01");
     expect(shiftDate("2026-01-01", -1)).toBe("2025-12-31");
+  });
+});
+
+describe("stationHighlight", () => {
+  const station = { kind: "station", id: "amtrak:WAS", date: null, full: false } as const;
+  it("uses the canonical id the board reported for the opened id", () => {
+    expect(stationHighlight(station, { for: "amtrak:WAS", id: "st:was" })).toBe("st:was");
+  });
+  it("uses the id in the URL until the board answers, or when the answer is for another id", () => {
+    expect(stationHighlight(station, null)).toBe("amtrak:WAS");
+    expect(stationHighlight(station, { for: "amtrak:BAL", id: "st:bal" })).toBe("amtrak:WAS");
+  });
+  it("is null for a trip or route panel, or none", () => {
+    expect(stationHighlight({ kind: "trip", id: "t", date: null, full: false }, null)).toBeNull();
+    expect(stationHighlight(null, null)).toBeNull();
   });
 });

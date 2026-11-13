@@ -35,6 +35,11 @@ class PanelStore {
     if (this.current) router.setQuery(panelQuery({ ...this.current, full }));
   }
 
+  /** Rewrite the opened id to its canonical one in place: no new trail entry, nothing else changes. */
+  canonicalise(id: string): void {
+    if (this.current && this.current.id !== id) router.setQuery(panelQuery({ ...this.current, id }));
+  }
+
   setDate(date: string): void {
     if (this.current) router.setQuery(panelQuery({ ...this.current, date }));
   }

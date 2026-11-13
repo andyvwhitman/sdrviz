@@ -39,6 +39,7 @@
   import { describePointer, milepostSegments } from "./lib/pointer";
   import type { LonLat } from "./lib/project";
   import { countOnly, listFoldedByDefault } from "./lib/overlays";
+  import { stationHighlight } from "./lib/panel";
   import { resolveSelection } from "./lib/selection";
   import type { GeoFeatureCollection, MapData, Places, RoutesDoc } from "./lib/types";
   import { DETAIL_ZOOM, type DetailArea, type DetailCollection } from "./lib/detail";
@@ -101,7 +102,13 @@
 
   // the marks the panel highlights on the map
   const trainId = $derived(current?.kind === "trip" ? (transit.vehicles.find((v) => (v.trip_id ?? v.id) === current.id)?.id ?? null) : null);
-  const stopId = $derived(current?.kind === "station" ? current.id : null);
+  let canonical = $state<{ for: string; id: string } | null>(null);
+  const stopId = $derived(stationHighlight(current, canonical));
+  /** the board named the station's canonical id: address it by that (the URL id follows) */
+  function onCanonical(asked: string, id: string): void {
+    canonical = { for: asked, id };
+    if (current?.kind === "station" && current.id === asked) panel.canonicalise(id);
+  }
   const stopName = $derived(transit.stops.find((s) => s.id === stopId)?.name ?? "");
 
   /** the panel replaces the sim inspector, which would sit under it */
@@ -354,7 +361,7 @@
     {/if}
 
     {#if current?.kind === "station"}
-      <StationPanel stopId={current.id} name={stopName} {...controls} ontrip={openTrip} onroute={openRoute} onlocate={revealAt} />
+      <StationPanel stopId={current.id} name={stopName} {...controls} ontrip={openTrip} onroute={openRoute} onlocate={revealAt} oncanonical={onCanonical} />
     {:else if current?.kind === "trip"}
       <TripPanel tripId={current.id} vehicles={transit.vehicles} fetchedAt={transit.fetchedAt} {...controls} onstop={openStop} onroute={openRoute} onlocate={revealAt} />
     {:else if current?.kind === "route"}

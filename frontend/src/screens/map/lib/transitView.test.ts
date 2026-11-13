@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { hhmmss, nearestStop, ageNow, ageText, bboxParam, delayLabel, delayShort, hhmm, isStale, snapBbox, thinByGrid, viewBbox, zoomBucket, bucketZoom } from "./transitView";
+import { hhmmss, nearestStop, ageNow, ageText, bboxParam, delayLabel, delayShort, hhmm, isStale, freshness, sinceText, snapBbox, thinByGrid, viewBbox, zoomBucket, bucketZoom } from "./transitView";
 
 describe("delay", () => {
   it("is on time within two minutes either way", () => {
@@ -99,5 +99,25 @@ describe("hhmmss", () => {
   it("keeps local seconds and converts UTC", () => {
     expect(hhmmss("2026-11-13T14:32:05-05:00")).toBe("14:32:05");
     expect(hhmmss("2026-11-13T19:32:05Z")).toBe("14:32:05");
+  });
+});
+
+describe("freshness levels", () => {
+  it("is fresh within the source limit, stale past it, old past ten minutes", () => {
+    expect(freshness(30, 120)).toBe("fresh");
+    expect(freshness(121, 120)).toBe("stale");
+    expect(freshness(400, 360)).toBe("stale");
+    expect(freshness(601, 360)).toBe("old");
+    expect(freshness(null, 120)).toBe("unknown");
+  });
+});
+
+describe("sinceText", () => {
+  it("counts seconds under a minute, then whole minutes", () => {
+    expect(sinceText(42.7)).toBe("42 s");
+    expect(sinceText(59.9)).toBe("59 s");
+    expect(sinceText(60)).toBe("1 min");
+    expect(sinceText(185)).toBe("3 min");
+    expect(sinceText(null)).toBe("unknown");
   });
 });

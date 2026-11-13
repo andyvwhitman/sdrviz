@@ -50,6 +50,24 @@ export function ageNow(ageS: number | null, fetchedAt: number, now: number): num
 /** A position is stale once it is older than its source's threshold (`Vehicle.stale_after_s`). */
 export const isStale = (ageS: number | null, staleAfterS: number): boolean => ageS != null && ageS > staleAfterS;
 
+/** "42 s" under a minute, else whole minutes "3 min"; for the freshness dot's tooltip. */
+export function sinceText(ageS: number | null): string {
+  if (ageS == null) return "unknown";
+  return ageS < 60 ? `${Math.floor(ageS)} s` : `${Math.floor(ageS / 60)} min`;
+}
+
+/** Past this a train's data is old whatever its source (ten minutes). */
+export const OLD_S = 600;
+
+export type Freshness = "fresh" | "stale" | "old" | "unknown";
+
+/** fresh up to the source's own limit, stale beyond it, old after ten minutes */
+export function freshness(ageS: number | null, staleAfterS: number): Freshness {
+  if (ageS == null) return "unknown";
+  if (ageS > OLD_S) return "old";
+  return ageS > staleAfterS ? "stale" : "fresh";
+}
+
 export function ageText(ageS: number | null): string {
   if (ageS == null) return BLANK;
   if (ageS < 90) return `${Math.round(ageS)} S`;

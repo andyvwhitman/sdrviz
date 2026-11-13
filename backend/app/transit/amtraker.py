@@ -84,8 +84,14 @@ class AmtrakerProvider(GtfsProvider):
         try:
             response = await client.get(self.source.rt_vehicle_positions_url or TRAINS_URL, headers=headers)
             response.raise_for_status()
-            # {train number: [train, ...]}: one number can be running on two days at once
-            self.trains = [train for group in response.json().values() for train in group]
+            # {train number: [train, ...]}: one number can be running on two days at once. Amtraker also carries VIA
+            # Rail and Brightline; only Amtrak's own trains belong to this source (Brightline has its own feed).
+            self.trains = [
+                train
+                for group in response.json().values()
+                for train in group
+                if train.get("provider", "Amtrak") == "Amtrak"
+            ]
             st.realtime_error = None
             st.realtime_updated = datetime.now(UTC)
             st.vehicles = len(self.trains)

@@ -136,7 +136,31 @@ DEFAULT_SOURCES: list[SourceConfig] = [
         "SEPTA",
         "https://github.com/septadev/GTFS/releases/latest/download/gtfs_public.zip",
     ),
-    _lines("mbta", "MBTA Commuter Rail", "MBTA", "https://cdn.mbta.com/MBTA_GTFS.zip"),
+    SourceConfig(
+        id="brightline",
+        name="Brightline",
+        agency="Brightline",
+        kind="gtfs",
+        static_url="https://feed.gobrightline.com/bl_gtfs.zip",
+        rt_trip_updates_url="https://feed.gobrightline.com/trip_updates.pb",
+        rt_vehicle_positions_url="https://feed.gobrightline.com/position_updates.pb",
+        route_types=[2],
+        stale_after_s=120,
+    ),
+    SourceConfig(
+        id="mbta",
+        name="MBTA Commuter Rail",
+        agency="MBTA",
+        kind="gtfs",
+        static_url="https://cdn.mbta.com/MBTA_GTFS.zip",
+        rt_trip_updates_url="https://cdn.mbta.com/realtime/TripUpdates.pb",
+        rt_vehicle_positions_url="https://cdn.mbta.com/realtime/VehiclePositions.pb",
+        rt_alerts_url="https://cdn.mbta.com/realtime/Alerts.pb",
+        route_types=[2],  # the realtime feeds carry every mode; keep commuter rail
+        static_refresh_h=24,
+        rt_poll_s=30,
+        stale_after_s=120,
+    ),
     _lines("metra", "Metra", "Metra", "https://schedules.metrarail.com/gtfs/schedule.zip"),
     _lines(
         "caltrain", "Caltrain", "Caltrain", "https://data.trilliumtransit.com/gtfs/caltrain-ca-us/caltrain-ca-us.zip"

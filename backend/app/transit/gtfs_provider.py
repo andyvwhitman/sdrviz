@@ -128,6 +128,18 @@ class GtfsProvider(Provider):
 
     # --- realtime ------------------------------------------------------------
 
+    def _ours(self, trip_id: str | None, route_id: str | None) -> bool:
+        """Whether a realtime entity belongs to the routes this source loaded. Feeds like MBTA's carry every mode
+        (buses, subway) while the source keeps only rail (`route_types`) and drops `exclude_routes`."""
+        feed = self.static
+        if feed is None:
+            return True  # filtered again once the schedule is in
+        if trip_id and trip_id in feed.trips:
+            return True
+        if route_id:
+            return route_id in feed.routes
+        return not self.source.route_types  # no route given: trust it only when the source keeps every route
+
     async def _load_realtime(self, client: httpx.AsyncClient) -> None:
         if not self.has_realtime:
             return
@@ -139,9 +151,10 @@ class GtfsProvider(Provider):
         tu, vp, al = results
         try:
             if isinstance(tu, bytes):
-                self.trip_updates = parse_trip_updates(tu)
+                updates = parse_trip_updates(tu)
+                self.trip_updates = {k: u for k, u in updates.items() if self._ours(u.trip_id, u.route_id)}
             if isinstance(vp, bytes):
-                self.positions = parse_vehicle_positions(vp)
+                self.positions = [p for p in parse_vehicle_positions(vp) if self._ours(p.trip_id, p.route_id)]
             if isinstance(al, bytes):
                 self.alert_infos = parse_alerts(al)
         except Exception as exc:  # a corrupt protobuf

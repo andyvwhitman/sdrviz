@@ -111,3 +111,12 @@ under 45 s at startup (two parse at a time); with the JSON cache a restart takes
   feed needs a token. Amtrak's feed already draws Capitol Corridor.
 - **Metra realtime**, **Metro Transit (Northstar)**, **NICTD South Shore Line**, **Tri-Rail**, **TEXRail**
   (Trinity Metro's public feed carries no rail routes), **Brightline**: no keyless static GTFS URL found.
+
+## Brightline (added 2026-11-13)
+
+- Static GTFS: `https://feed.gobrightline.com/bl_gtfs.zip` (Brightline's own S3 bucket, listed on
+  `https://feed.gobrightline.com/`; refreshed daily; 6 stations, shapes, calendars a year ahead).
+- GTFS-RT: `https://feed.gobrightline.com/trip_updates.pb` and `https://feed.gobrightline.com/position_updates.pb`.
+  No service alerts feed is published. No API key.
+- Amtraker also carries Brightline (and VIA Rail) trains; the Amtrak source drops every train whose `provider` is
+  not "Amtrak" (decision 31), so Brightline comes only from its own feed and VIA not at all.

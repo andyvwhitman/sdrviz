@@ -194,6 +194,18 @@ def test_stale_vehicle_is_dropped(provider):
     assert provider.vehicles(NOW) == []
 
 
+def test_realtime_of_other_routes_is_not_ours(provider):
+    """A feed covering every mode (MBTA): only entities of the loaded routes are kept."""
+    route = next(iter(provider.static.routes))
+    assert provider._ours("Train100", None)  # a scheduled trip
+    assert provider._ours("unknown", route)  # an added trip on one of our routes
+    assert not provider._ours("bus-trip", "bus-77")  # another route
+    provider.source = provider.source.model_copy(update={"route_types": [2]})
+    assert not provider._ours("unknown", None)  # no route, and the source filters routes
+    provider.source = provider.source.model_copy(update={"route_types": None})
+    assert provider._ours("unknown", None)  # MARC's added trips carry no route
+
+
 # --- polling and failure ----------------------------------------------------
 
 
@@ -396,3 +408,21 @@ def test_follow_shapes_keeps_an_express_on_the_track():
     line = follow_shapes([(0.0, 0.0), (0.05, 0.1)], [bend])
     assert (0.0, 0.05) in line and (0.05, 0.05) in line
     assert follow_shapes([(1.0, 1.0), (1.05, 1.1)], [bend]) == [(1.0, 1.0), (1.05, 1.1)]  # no shape near: straight
+
+
+def test_amtraker_keeps_only_amtrak_trains(amtrak):
+    """Amtraker also carries VIA Rail and Brightline: VIA is dropped, Brightline has its own source."""
+    trains = {
+        "171": [amtrak_train(provider="Amtrak")],
+        "v67": [amtrak_train(trainID="v67-13", provider="Via")],
+        "1001": [amtrak_train(trainID="1001-13", provider="Brightline")],
+    }
+    amtrak._stations_at = 1e12  # stations are fresh: only the trains call is made
+    routes = {"https://api.amtraker.com/v3/trains": httpx.Response(200, json=trains)}
+
+    async def load():
+        async with httpx.AsyncClient(transport=transport(routes)) as client:
+            await amtrak._load_realtime(client)
+
+    asyncio.run(load())
+    assert [t["trainID"] for t in amtrak.trains] == ["171-12"]

@@ -37,6 +37,7 @@ class StopUpdate:
 @dataclass
 class TripUpdate:
     trip_id: str
+    route_id: str | None = None
     canceled: bool = False
     added: bool = False  # a trip the schedule does not have
     delay: int | None = None  # trip-level delay, when the feed gives one
@@ -96,6 +97,7 @@ def parse_trip_updates(data: bytes) -> dict[str, TripUpdate]:
             continue
         update = TripUpdate(
             trip_id,
+            route_id=tu.trip.route_id or None,
             canceled=tu.trip.schedule_relationship == CANCELED,
             added=tu.trip.schedule_relationship == ADDED,
             delay=tu.delay if tu.HasField("delay") else None,

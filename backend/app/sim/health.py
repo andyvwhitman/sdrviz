@@ -63,8 +63,10 @@ class Health:
     def spans(self, fid: str, start: float, end: float) -> list[dict]:
         """Non-ok spans overlapping [start, end) on the repeating day."""
         out = []
+        evs = self.events.get(fid, [])
+        if not evs:
+            return out  # no recorded changes: ok all day
         for shift in (-DAY, 0):
-            evs = self.events.get(fid, [])
             for (t, state, label), nxt in zip(evs, [*evs[1:], (DAY, "ok", "")], strict=True):
                 a, b = t + shift, nxt[0] + shift
                 if state != "ok" and b > start and a < end:

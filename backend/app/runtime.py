@@ -13,7 +13,9 @@ from .config import Settings
 from .db import create_schema, make_engine, open_session, seed_if_empty
 from .live import protocol
 from .live.hub import Hub
-from .models import Bank, FeedAck, Prefs
+from .models import Bank, FeedAck, Prefs, Receiver
+from .radio.receiver import load_receiver, save_receiver
+from .radio.source import RadioSource
 from .sim import live_state
 from .sim.clock import SimClock, local_time_of_day
 from .sim.data import SimData, load_health, load_sim_data
@@ -23,6 +25,10 @@ from .sim.live_state import SimInputs
 from .sim.scenarios import SCENARIOS, ScenarioSpec
 from .sim.timefmt import parse_clock
 from .sim.world import World, load_world
+from .transit import TransitService
+from .transit.service import load_places
+from .transit.source_store import SourceStore
+from .transit.stations import load_groups
 
 log = logging.getLogger(__name__)
 
@@ -38,8 +44,9 @@ class Runtime:
             log.info("seeded %s", settings.database_file)
 
         self.data: SimData = load_sim_data(self.db, settings)
-        self.world: World = load_world(self.db, settings)
-        self.health: Health = load_health(self.db)
+        self.receiver: Receiver = load_receiver(self.db, settings)
+        self.world: World = load_world(self.db, settings, self.receiver)
+        self.health: Health = self._load_health()
         self.prefs: Prefs = self._load_prefs()
         self.scenario: ScenarioSpec | None = None
 
@@ -49,15 +56,30 @@ class Runtime:
         self.audio = AudioStore(settings.audio_path)
         self.engine = ReplayEngine(self)
         self.prefetcher: Prefetcher | None = None
+        # Real audio from the rtl_tcp receiver, once it has a host; the replay's synthetic audio then stays quiet.
+        self.radio = RadioSource(self)
+        # Real train positions and station boards; sources that are down only show up in /api/transit/sources.
+        self.transit: TransitService | None = None
+        if settings.transit_sources is None or settings.transit_sources:
+            store = SourceStore(self.db)
+            store.migrate()
+            store.seed_defaults()
+            places = load_places(settings.seed_dir)
+            groups = load_groups(self.db)
+            self.transit = TransitService(store.load(), settings.transit_dir, places, store, groups=groups)
 
     # --- lifecycle ---------------------------------------------------------
 
     def start(self) -> None:
         self.hub.bind(asyncio.get_running_loop())
-        self.engine.start(self.hub)
+        if self.settings.sim:
+            self.engine.start(self.hub)
+        self.radio.start()
+        if self.transit:
+            self.transit.start()
         if missing := missing_tools():
             log.warning("fake audio disabled, missing: %s", ", ".join(missing))
-        elif self.settings.prerender_audio:
+        elif self.settings.sim and self.settings.prerender_audio:
             self.prefetcher = Prefetcher(self.audio, self.data.day, self.clock.now)
             self.prefetcher.start()
 
@@ -65,6 +87,9 @@ class Runtime:
         if self.prefetcher:
             self.prefetcher.stop()
         await self.engine.stop()
+        await self.radio.stop()
+        if self.transit:
+            await self.transit.stop()
         self.hub.close_all()
         self.db.dispose()
 
@@ -98,11 +123,22 @@ class Runtime:
 
     def reload_world(self) -> None:
         """Re-read frequencies, banks and feeds after a CRUD change and tell the clients."""
-        self.world = load_world(self.db, self.settings)
+        self.world = load_world(self.db, self.settings, self.receiver)
         self.engine.resync()
 
+    async def set_receiver(self, receiver: Receiver) -> None:
+        """Save new receiver settings and apply them live: the feed row, the radio connection, the clients."""
+        save_receiver(self.db, receiver)
+        self.receiver = receiver
+        self.reload_world()
+        await self.radio.reconfigure(receiver)
+        self.publish_snapshot()
+
     def reload_health(self) -> None:
-        self.health = load_health(self.db)
+        self.health = self._load_health()
+
+    def _load_health(self) -> Health:
+        return load_health(self.db) if self.settings.sim else Health({}, [])
 
     def _load_prefs(self) -> Prefs:
         with open_session(self.db) as session:

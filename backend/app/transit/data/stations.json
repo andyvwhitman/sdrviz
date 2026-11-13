@@ -1,0 +1,18 @@
+{
+  "stations": [
+    {"code": "WAS", "name": "Washington Union Station", "lat": 38.896993, "lon": -77.006422, "members": {"amtrak": ["WAS"], "marc": ["11958"], "vre": ["00000000000000000000000000000001", "C9C9EEB6CE1A46C3BD0901F3F225933E"]}},
+    {"code": "NCR", "name": "New Carrollton", "lat": 38.948098, "lon": -76.871494, "members": {"amtrak": ["NCR"], "marc": ["11988", "11989"]}},
+    {"code": "BWI", "name": "BWI Marshall Airport", "lat": 39.192362, "lon": -76.6943, "members": {"amtrak": ["BWI"], "marc": ["11984", "11993"]}},
+    {"code": "BAL", "name": "Baltimore Penn Station", "lat": 39.307302, "lon": -76.615688, "members": {"amtrak": ["BAL"], "marc": ["11980", "12002"]}},
+    {"code": "ABE", "name": "Aberdeen", "lat": 39.508447, "lon": -76.16326, "members": {"amtrak": ["ABE"], "marc": ["11977", "12005"]}},
+    {"code": "RKV", "name": "Rockville", "lat": 39.084547, "lon": -77.145995, "members": {"amtrak": ["RKV"], "marc": ["11954", "11962"]}},
+    {"code": "HFY", "name": "Harpers Ferry", "lat": 39.324452, "lon": -77.731078, "members": {"amtrak": ["HFY"], "marc": ["11942", "11974"]}},
+    {"code": "MRB", "name": "Martinsburg", "lat": 39.458661, "lon": -77.961014, "members": {"amtrak": ["MRB"], "marc": ["11940"]}},
+    {"code": "ALX", "name": "Alexandria", "lat": 38.806503, "lon": -77.06233, "members": {"amtrak": ["ALX"], "vre": ["00000000000000000000000000000004", "1E66EEF0911344ACB3B67E230A99DB81", "26C502B2E36D484DA6376618E6600DAF", "60ADB9309B084464BBCC2C1ABCD908E8"]}},
+    {"code": "MSS", "name": "Manassas", "lat": 38.750278, "lon": -77.47279, "members": {"amtrak": ["MSS"], "vre": ["00000000000000000000000000000011", "64C983C0E74E491488B298F46879C65A"]}},
+    {"code": "BCV", "name": "Burke Centre", "lat": 38.797271, "lon": -77.29879, "members": {"amtrak": ["BCV"], "vre": ["0000000000000000000000000000000F", "9500D42D80744F9499D42D654CA522E6"]}},
+    {"code": "WDB", "name": "Woodbridge", "lat": 38.658915, "lon": -77.247852, "members": {"amtrak": ["WDB"], "vre": ["00000000000000000000000000000007", "7113724B905946399163A4CB5AAB66A1"]}},
+    {"code": "QAN", "name": "Quantico", "lat": 38.521882, "lon": -77.293027, "members": {"amtrak": ["QAN"], "vre": ["00000000000000000000000000000009", "9B185FE9D08F4766A8CC6B76F2679FC0"]}},
+    {"code": "FBG", "name": "Fredericksburg", "lat": 38.298413, "lon": -77.457203, "members": {"amtrak": ["FBG"], "vre": ["0000000000000000000000000000000C", "62E201E23B5148898D8B3B73B9395B4B"]}}
+  ]
+}

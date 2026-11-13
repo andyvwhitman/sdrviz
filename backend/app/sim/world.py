@@ -9,7 +9,7 @@ from sqlmodel import select
 
 from ..config import Settings
 from ..db import open_session
-from ..models import Bank, Feed, Frequency
+from ..models import Bank, Feed, Frequency, Receiver
 
 
 @dataclass
@@ -19,6 +19,7 @@ class World:
     feeds: dict[str, Feed]
     places: dict[str, dict]  # seed places by id (stations, landmarks, detectors, feeds)
     routes: dict[str, dict]  # data/sim/routes.json by route id
+    sim: bool = True  # False: the replay is off; hide its made-up rows
     _heard_by: dict[str, list[str]] = field(init=False, repr=False)
 
     def __post_init__(self) -> None:
@@ -45,7 +46,7 @@ class World:
         return feed.short if feed else feed_id
 
 
-def load_world(engine: Engine, settings: Settings) -> World:
+def load_world(engine: Engine, settings: Settings, receiver: Receiver | None = None) -> World:
     """Read the editable resources from the database, in insertion order."""
     with open_session(engine) as session:
 
@@ -54,8 +55,35 @@ def load_world(engine: Engine, settings: Settings) -> World:
 
         freqs = {f.id: f for f in table(Frequency)}
         banks = list(table(Bank))
-        feeds = {f.id: f for f in table(Feed)}
-    return World(freqs, banks, feeds, load_places(settings), load_routes(settings))
+        feeds = {f.id: f for f in table(Feed)} if settings.sim else {}  # the seeded feeds are fictional
+    if receiver and receiver.host:
+        feed = live_feed(receiver, freqs)
+        feeds[feed.id] = feed
+    return World(freqs, banks, feeds, load_places(settings), load_routes(settings), sim=settings.sim)
+
+
+LIVE_FEED_ID = "feed-live"
+
+
+def live_feed(receiver: Receiver, freqs: dict[str, Frequency]) -> Feed:
+    """The real rtl_tcp receiver, as a feed that hears every channel inside its tuned window."""
+    center, half = receiver.freq_hz / 1e6, 0.45 * receiver.rate / 1e6
+    return Feed(
+        id=LIVE_FEED_ID,
+        name=receiver.name,
+        short=receiver.name.split()[0],
+        site=f"{receiver.host}:{receiver.port}",
+        lat=receiver.lat,
+        lon=receiver.lon,
+        coverage_radius_km=20,
+        hears=[cid for cid, f in freqs.items() if abs(f.freq_mhz - center) <= half],
+        host=receiver.host,
+        port=receiver.port,
+        center_mhz=center,
+        sample_rate_msps=receiver.rate / 1e6,
+        gain_db=receiver.gain_db or 0.0,
+        enabled=receiver.enabled,
+    )
 
 
 def load_places(settings: Settings) -> dict[str, dict]:

@@ -9,6 +9,7 @@ from ..models import Bank, Feed, FeedBase
 from ..schemas import AckIn
 from ..sim import live_state, spectrum
 from ..sim.timefmt import DAY, hms
+from ..sim.world import LIVE_FEED_ID
 
 router = APIRouter(prefix="/feeds", tags=["feeds"])
 
@@ -20,6 +21,13 @@ def get_or_404(session: DB, feed_id: str) -> Feed:
     if feed is None:
         raise HTTPException(status_code=404, detail=f"No feed {feed_id!r}")
     return feed
+
+
+def known_feed(session: DB, rt: RT, feed_id: str) -> Feed:
+    """A stored feed, or the live receiver's feed (built from the receiver settings, never stored)."""
+    if feed_id in rt.world.feeds and session.get(Feed, feed_id) is None:
+        return rt.world.feeds[feed_id]
+    return get_or_404(session, feed_id)
 
 
 def view(rt: RT, feed_id: str) -> dict[str, Any]:
@@ -47,7 +55,7 @@ def create_feed(body: FeedBase, session: DB, rt: RT) -> dict[str, Any]:
 
 @router.get("/{feed_id}")
 def read_feed(feed_id: str, session: DB, rt: RT) -> dict[str, Any]:
-    get_or_404(session, feed_id)
+    known_feed(session, rt, feed_id)
     return view(rt, feed_id)
 
 
@@ -87,7 +95,7 @@ async def acknowledge(feed_id: str, session: DB, rt: RT, body: AckIn | None = No
 @router.get("/{feed_id}/health")
 def feed_health(feed_id: str, session: DB, rt: RT, minutes: int = Query(60, ge=1, le=1440)) -> dict[str, Any]:
     """The last `minutes` of 1-minute series (oldest first), plus the feed's events, acks and fault spans."""
-    get_or_404(session, feed_id)
+    known_feed(session, rt, feed_id)
     t = rt.clock.now()
     minute = int(t // 60)
     series = rt.data.feed_series.get(feed_id, {})
@@ -114,8 +122,11 @@ def feed_health(feed_id: str, session: DB, rt: RT, minutes: int = Query(60, ge=1
 @router.get("/{feed_id}/waterfall")
 def waterfall(feed_id: str, session: DB, rt: RT, rows: int = Query(120, ge=1, le=600)) -> Response:
     """Backfill for the spectrum watcher: `rows` x 1024 int8 dBFS, oldest first."""
-    feed = get_or_404(session, feed_id)
-    body = spectrum.waterfall(rt.inputs, feed_id, rt.clock.now() % DAY, rows, WATERFALL_ROW_S)
+    feed = known_feed(session, rt, feed_id)
+    if feed_id == LIVE_FEED_ID:  # no recorded history yet: an empty (floor) backfill, not the synthetic one
+        body = bytes([0x81]) * (rows * spectrum.BINS)  # int8 -127 dBFS
+    else:
+        body = spectrum.waterfall(rt.inputs, feed_id, rt.clock.now() % DAY, rows, WATERFALL_ROW_S)
     return Response(
         content=body,
         media_type="application/octet-stream",

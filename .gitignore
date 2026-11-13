@@ -19,3 +19,6 @@ design/screens/*
 !design/screens/index/
 
 .DS_Store
+
+# Downloaded GTFS schedules
+data/transit/

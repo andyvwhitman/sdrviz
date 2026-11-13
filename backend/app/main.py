@@ -20,17 +20,19 @@ from .routers import (
     live,
     lofar,
     prefs,
+    radio,
     sim,
     stats,
     system,
     trains,
+    transit,
     transmissions,
 )
 from .runtime import Runtime
 
 log = logging.getLogger("sdrviz")
 
-PROTECTED = (system, sim, prefs, frequencies, banks, feeds, transmissions, stats, trains, geo, lofar)
+PROTECTED = (system, radio, sim, prefs, frequencies, banks, feeds, transmissions, stats, trains, transit, geo, lofar)
 FRONTEND_DIST = REPO_ROOT / "frontend" / "dist"
 
 

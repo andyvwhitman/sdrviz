@@ -71,6 +71,22 @@ class Feed(FeedBase, table=True):
     hears: list[str] = Field(default_factory=list, sa_column=Column(JSON))
 
 
+class Receiver(SQLModel, table=True):
+    """The one rtl_tcp receiver. With no saved row the SDRVIZ_RTLTCP_* settings apply (see radio/receiver.py)."""
+
+    id: int = Field(default=1, primary_key=True)
+    name: str
+    host: str  # empty: no receiver configured
+    port: int
+    freq_hz: int  # centre frequency
+    rate: int  # sample rate in S/s, a multiple of 48 000
+    gain_db: float | None  # None: automatic gain
+    squelch_db: float  # opens this far above a channel's noise floor
+    lat: float
+    lon: float
+    enabled: bool = True
+
+
 class FeedEvent(SQLModel, table=True):
     """A scripted feed state change (the replayed day's health timeline)."""
 
@@ -129,3 +145,58 @@ class Prefs(SQLModel, table=True):
     solo: list[str] = Field(default_factory=list, sa_column=Column(JSON))
     record: list[str] = Field(default_factory=list, sa_column=Column(JSON))
     volume: dict[str, float] = Field(default_factory=dict, sa_column=Column(JSON))
+
+
+class TransitSourceRow(SQLModel, table=True):
+    """One transit data feed (the settings page edits these); see app/transit/sources.py for the API shape."""
+
+    __tablename__ = "transit_source"
+
+    id: str = Field(primary_key=True)
+    position: int = 0  # display order
+    name: str
+    agency: str
+    kind: str = "gtfs"  # gtfs | amtraker | lines
+    enabled: bool = True
+    static_url: str | None = None
+    rt_trip_updates_url: str | None = None
+    rt_vehicle_positions_url: str | None = None
+    rt_alerts_url: str | None = None
+    api_key: str | None = None
+    key_header: str | None = None
+    route_types: list[int] | None = Field(default=None, sa_column=Column(JSON))
+    exclude_routes: list[str] | None = Field(default=None, sa_column=Column(JSON))
+    static_refresh_h: float = 24.0
+    rt_poll_s: float = 15.0
+    stale_after_s: int | None = None  # null = derived from rt_poll_s when loaded
+
+
+class TransitMeta(SQLModel, table=True):
+    """Small flags for the transit feature, e.g. that the default sources were seeded (so a deleted one stays gone)."""
+
+    __tablename__ = "transit_meta"
+
+    key: str = Field(primary_key=True)
+    value: str = ""
+
+
+class StationGroupRow(SQLModel, table=True):
+    """A station several sources share (`st:was`); the curated rows come from app/transit/data/stations.json."""
+
+    __tablename__ = "station_groups"
+
+    station_id: str = Field(primary_key=True)  # "st:<code>"
+    name: str
+    lat: float
+    lon: float
+
+
+class StationMemberRow(SQLModel, table=True):
+    """One source stop that belongs to a group. `suggested` rows are only proposals and never applied."""
+
+    __tablename__ = "station_members"
+
+    source: str = Field(primary_key=True)
+    stop_id: str = Field(primary_key=True)
+    station_id: str = Field(index=True)
+    method: str = "curated"  # curated | suggested | auto

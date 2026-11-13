@@ -36,6 +36,7 @@ def settings(template_db, tmp_path) -> Settings:
         sim_start="14:07:30",
         sim_speed=0.0,  # frozen: tests assert exact moments
         prerender_audio=False,
+        transit_sources=[],  # no network in tests
     )
 
 

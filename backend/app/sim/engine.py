@@ -42,6 +42,7 @@ DRAFT_HOLD_S = 0.8  # how long the draft transcript shows before it is final
 FORGET_AFTER_S = 120.0  # a tracked key-up older than this (on the sim clock) is dropped
 SPEECH_SWING_DB = 8.0  # peak-to-gap swing of a voiced word in the level stream
 WORD_TAIL_S = 0.45  # a word's burst when it is the last one
+WORD_GAP_S = 0.15  # silence between words
 
 
 def speech_level(tx: Tx, elapsed: float) -> float:
@@ -50,7 +51,7 @@ def speech_level(tx: Tx, elapsed: float) -> float:
         return 1.0
     for i, word in enumerate(tx.words):
         start = word.get("t", 0.0)
-        end = tx.words[i + 1].get("t", start) - 0.06 if i + 1 < len(tx.words) else start + WORD_TAIL_S
+        end = tx.words[i + 1].get("t", start) - WORD_GAP_S if i + 1 < len(tx.words) else start + WORD_TAIL_S
         if start <= elapsed <= end:
             return random.uniform(0.35, 1.0)
     return 0.0
@@ -64,6 +65,7 @@ class Tracked:
     stream: AudioStream
     keyed: bool = True
     decode_stage: int = 0  # 0 waiting for the decoder, 1 draft shown, 2 final shown
+    voice_start: float = field(default_factory=time.monotonic)  # wall time the level stream's voice pattern starts
 
 
 @dataclass
@@ -255,7 +257,8 @@ class ReplayEngine:
                 )
                 self._send_channel(tx.channel, t)
             self._decode(tracked, age)
-            audio_stream.advance(tracked.stream, age, self.rt.audio, self.hub)
+            if not self.rt.radio.active:  # live radio replaces the synthetic clips
+                audio_stream.advance(tracked.stream, age, self.rt.audio, self.hub)
 
     def _decode(self, tracked: Tracked, age: float) -> None:
         """Announce decoder progress: a draft, then the final words (other outcomes are announced once)."""
@@ -292,8 +295,9 @@ class ReplayEngine:
                 continue
             cid = tracked.tx.channel
             strongest = max((r["rssi_dbfs"] for r in tracked.tx.receptions), default=-60.0)
-            elapsed = (self._last_t - tracked.tx.t) % DAY
-            swing = SPEECH_SWING_DB * (speech_level(tracked.tx, elapsed) - 0.55)
+            # the voice pattern runs on wall time (looping), so it also moves while the sim clock is frozen
+            voiced = (time.monotonic() - tracked.voice_start) % max(tracked.tx.duration, 1.0)
+            swing = SPEECH_SWING_DB * (speech_level(tracked.tx, voiced) - 0.55)
             db = round(strongest + swing + self._rng.uniform(-1.0, 1.0), 1)
             self._peaks[cid] = max(db, self._peaks.get(cid, -127.0) - 1.5)
             levels[cid] = {"db": db, "peak": round(self._peaks[cid], 1)}

@@ -50,6 +50,8 @@ def _window(f: TxFilter) -> tuple[float, float] | None:
 
 def select_rows(session: Session, world: World, f: TxFilter) -> list[Transmission]:
     """Rows matching every filter that does not depend on the time window."""
+    if not world.sim:
+        return []  # every stored row is seed or replay data until the live recorder exists
     stmt = select(Transmission).where(Transmission.kind == "tx")
     for column, value in (
         (Transmission.frequency_id, f.frequency_id),

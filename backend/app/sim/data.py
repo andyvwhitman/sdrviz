@@ -48,6 +48,8 @@ def tx_from_row(row: Transmission) -> Tx:
 
 
 def load_sim_data(engine: Engine, settings: Settings) -> SimData:
+    if not settings.sim:
+        return SimData(SimDay([]), kerchunks=[], runs=[], train_records=[], feed_series={}, system_series={})
     with open_session(engine) as session:
         rows = session.exec(select(Transmission)).all()
         tx_rows = [tx_from_row(r) for r in rows if r.kind == "tx"]

@@ -30,6 +30,12 @@ def rail(request: Request, rt: RT) -> Response:
     return _geojson(request, rt.settings.geo_dir / "rail.geojson")
 
 
+@router.get("/rail-detail")
+def rail_detail(request: Request, rt: RT) -> Response:
+    """Track-level detail at the terminals (tools/fetch_detail.py): every track, switch and platform."""
+    return _geojson(request, rt.settings.geo_dir / "rail_detail.geojson")
+
+
 @router.get("/water")
 def water(request: Request, rt: RT) -> Response:
     return _geojson(request, rt.settings.geo_dir / "water.geojson")
@@ -37,8 +43,10 @@ def water(request: Request, rt: RT) -> Response:
 
 @router.get("/places")
 def places(rt: RT) -> JSONResponse:
-    path = rt.settings.seed_dir / "places.json"
-    return JSONResponse(json.loads(path.read_text(encoding="utf-8")), headers=CACHE)
+    places = json.loads((rt.settings.seed_dir / "places.json").read_text(encoding="utf-8"))
+    if not rt.settings.sim:
+        places["feeds"] = []  # the seeded feed sites are fictional
+    return JSONResponse(places, headers=CACHE)
 
 
 @router.get("/routes")

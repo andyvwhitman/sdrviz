@@ -6,9 +6,13 @@ Omitted compared with a scenario file (they have their own endpoints): `summary`
 `history`, `stats`, `map`.
 """
 
+import os
+import shutil
+import time
 from collections import defaultdict
 from dataclasses import dataclass
 
+from ..config import REPO_ROOT
 from .data import SimData
 from .health import Health
 from .scenarios import ScenarioSpec
@@ -397,11 +401,33 @@ def health_summary(feeds: list[dict]) -> dict:
 
 
 def system_block(data: SimData, t: float) -> dict:
-    """Host, decoder and disk readings (5 minute steps)."""
+    """Host, decoder and disk readings (5 minute steps), or this machine's own when the replay is off."""
+    if not data.system_series:
+        return this_host_block()
     step = int((t % DAY) // 60) // 5
     return {
         name: {key: values[step] for key, values in series.items() if isinstance(values, list)} | {"state": "ok"}
         for name, series in data.system_series.items()
+    }
+
+
+STARTED = time.monotonic()
+
+
+def this_host_block() -> dict:
+    """Real readings from the machine running the backend. No decoder exists yet, so its queue is empty."""
+    disk = shutil.disk_usage(REPO_ROOT)
+    return {
+        "host": {
+            "cpu_pct": round(min(100.0, os.getloadavg()[0] / (os.cpu_count() or 1) * 100), 1),
+            "soc_temp_c": None,
+            "throttled": False,
+            "under_voltage": False,
+            "uptime_s": round(time.monotonic() - STARTED),
+            "state": "ok",
+        },
+        "decoder": {"queue": 0, "median_latency_s": None, "state": "ok"},
+        "disk": {"pct": round(disk.used / disk.total * 100, 1), "state": "ok"},
     }
 
 
@@ -533,7 +559,7 @@ def build(
 
     return {
         "scenario": scenario.name if scenario else None,
-        "sim": True,
+        "sim": world.sim,
         "speed": speed,
         "date": SIM_DATE,
         "tz": TZ,

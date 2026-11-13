@@ -48,6 +48,12 @@ class TestLiveState:
         body = client.get("/api/system").json()
         assert set(body) >= {"host", "decoder", "disk", "version", "sim"} and body["decoder"]["state"] == "ok"
 
+    def test_system_backend(self, client):
+        body = client.get("/api/system/backend").json()
+        assert body["build"]["version"] and body["uptime_s"] >= 0
+        assert body["memory"]["rss_bytes"] > 0 and body["disk"]["db_bytes"] > 0
+        assert body["websocket"]["clients"] == 0
+
 
 class TestSim:
     def test_jump_to_a_scenario_sets_clock_bank_and_state(self, client):

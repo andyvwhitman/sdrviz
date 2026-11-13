@@ -13,7 +13,7 @@
   import type { LonLat } from "./lib/project";
   import { schematicTrainPosition, type SchematicLayout } from "./lib/schematicLayout";
   import type { Route } from "./lib/types";
-  import { ageNow, delayTone, isStale, thinByGrid, trainTitle } from "./lib/transitView";
+  import { ageNow, isStale, thinByGrid, trainTitle } from "./lib/transitView";
   import VehicleMark from "./VehicleMark.svelte";
 
   interface Props {
@@ -79,7 +79,6 @@
 
 <g class="mp-live-trains">
   {#each drawn as t (t.v.id)}
-    {@const late = delayTone(t.v.delay_s) === "late"}
     <g style:opacity={t.opacity.toFixed(2)}>
       <VehicleMark
         pos={t.pos} angle={t.angle} selected={selectedId === t.v.id}
@@ -87,7 +86,7 @@
         onselect={() => onselect(t.v.id)}
       />
       {#if named.has(t.v.id) || selectedId === t.v.id}
-        <text class="mp-vlabel" class:late x={(t.pos[0] + 16).toFixed(1)} y={(t.pos[1] + 4).toFixed(1)}>{trainTitle(t.v)}</text>
+        <text class="mp-vlabel" x={(t.pos[0] + 16).toFixed(1)} y={(t.pos[1] + 4).toFixed(1)}>{trainTitle(t.v)}</text>
       {/if}
     </g>
   {/each}

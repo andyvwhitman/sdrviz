@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { hhmmss, nearestStop, ageNow, ageText, bboxParam, delayLabel, delayShort, hhmm, isStale, freshness, sinceText, snapBbox, thinByGrid, viewBbox, zoomBucket, bucketZoom } from "./transitView";
+import { hhmmss, nearestStop, ageNow, ageText, bboxParam, delayBarPx, delayCell, delayLabel, delayShort, delayTone, formatDelay, hhmm, timeTag, isStale, freshness, sinceText, snapBbox, thinByGrid, viewBbox, zoomBucket, bucketZoom } from "./transitView";
 
 describe("delay", () => {
   it("is on time within two minutes either way", () => {
@@ -11,10 +11,62 @@ describe("delay", () => {
     expect(delayLabel(120)).toBe("+2 MIN LATE");
     expect(delayLabel(905)).toBe("+15 MIN LATE");
     expect(delayLabel(-420)).toBe("7 MIN EARLY");
-    expect(delayShort(-420)).toBe("-7 MIN");
   });
   it("is blank when unknown", () => {
     expect(delayLabel(null)).not.toMatch(/MIN/);
+  });
+  it("uses a true minus for early", () => {
+    expect(delayShort(-420)).toBe("\u22127 MIN");
+    expect(formatDelay(-300)).toBe("\u22125 MIN");
+  });
+});
+
+describe("delayTone", () => {
+  it("steps by brightness at 2 and 5 minutes", () => {
+    expect(delayTone(null)).toBe("unknown");
+    expect(delayTone(0)).toBe("ok");
+    expect(delayTone(119)).toBe("ok");
+    expect(delayTone(-119)).toBe("ok");
+    expect(delayTone(120)).toBe("slight");
+    expect(delayTone(299)).toBe("slight");
+    expect(delayTone(300)).toBe("late");
+    expect(delayTone(-120)).toBe("early");
+  });
+});
+
+describe("formatDelay", () => {
+  it("is minutes under two hours", () => {
+    expect(formatDelay(120)).toBe("+2 MIN");
+    expect(formatDelay(119 * 60)).toBe("+119 MIN");
+  });
+  it("is hours and minutes from two hours", () => {
+    expect(formatDelay(120 * 60)).toBe("+2 H 00");
+    expect(formatDelay(361 * 60)).toBe("+6 H 01");
+  });
+  it("is hours for an early train too", () => {
+    expect(formatDelay(-125 * 60)).toBe("\u22122 H 05");
+  });
+});
+
+describe("delay bar", () => {
+  it("only a late train has one, longer the later", () => {
+    expect(delayBarPx(299)).toBe(0);
+    expect(delayBarPx(-900)).toBe(0);
+    expect(delayBarPx(300)).toBe(8);
+    expect(delayBarPx(900)).toBe(12);
+    expect(delayBarPx(3 * 3600)).toBe(24);
+  });
+});
+
+describe("delayCell and timeTag", () => {
+  it("reads the long form with the unit and the word", () => {
+    expect(delayCell(905, true)).toEqual({ text: "+15 MIN LATE", tone: "late", barPx: 12 });
+    expect(delayCell(361 * 60, true).text).toBe("+6 H 01 LATE");
+    expect(delayCell(-420, true).text).toBe("7 MIN EARLY");
+  });
+  it("says SCHED when there is no realtime at all", () => {
+    expect(timeTag(null, null)).toEqual({ text: "SCHED", tone: "unknown", barPx: 0 });
+    expect(timeTag(0, "2026-11-13T17:42:00-05:00").text).toBe("ON TIME");
   });
 });
 

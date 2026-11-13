@@ -42,6 +42,8 @@ export interface Vehicle {
   stale_after_s: number;
   /** `age_s` > `stale_after_s`, at response time */
   stale: boolean;
+  /** `delay_s` is implausible (more than 12 h late or 30 min early): shown with a "?" */
+  delay_suspect?: boolean;
 }
 
 export type TripStopState = "passed" | "current" | "next" | "upcoming" | "skipped";

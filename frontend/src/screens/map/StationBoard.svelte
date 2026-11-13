@@ -42,7 +42,7 @@
 
   const clock = new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "America/New_York" });
   const hhmm = (iso: string | null): string => (iso ? clock.format(new Date(iso)) : BLANK);
-  const tone = (e: BoardEntry): string => (e.status === "cancelled" ? "is-fault" : e.status === "delayed" ? "is-late" : "");
+  const tone = (e: BoardEntry): string => (e.status === "cancelled" ? "is-fault" : "");
   const label = (e: BoardEntry): string => (e.event === "arrival" ? `${e.status === "cancelled" ? "CANCELLED" : "ARRIVES"}` : e.status.toUpperCase());
 </script>
 
@@ -89,7 +89,6 @@
   .bd-n { white-space: nowrap; }
   .bd-d { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-2); text-transform: uppercase; }
   .bd-k { font: 500 var(--fs-11)/1.2 var(--font-label); letter-spacing: 0.08em; color: var(--ink-3); white-space: nowrap; }
-  .is-late .bd-est, .is-late .bd-k { color: var(--state-stale); }
   .is-fault .bd-n, .is-fault .bd-k { color: var(--state-fault); text-decoration: line-through; }
   .bd-none, .bd-attrib { padding: 6px 0; font: 500 var(--fs-11)/1.2 var(--font-label); letter-spacing: 0.08em; color: var(--ink-3); text-transform: uppercase; }
 </style>

@@ -11,7 +11,8 @@
   import { BLANK } from "$lib/hud/fmt";
   import type { Trip, TripStop, Vehicle } from "$lib/types/transit";
   import Panel, { type PanelControls } from "./Panel.svelte";
-  import { ageNow, ageText, clockOf, delayLabel, delayTone, hhmm, hhmmss, isStale, timeTag, trainTitle } from "./lib/transitView";
+  import Delay from "./Delay.svelte";
+  import { ageNow, ageText, clockOf, delayCell, hhmm, hhmmss, isStale, timeTag, trainTitle, type DelayCell } from "./lib/transitView";
 
   interface Props extends PanelControls {
     /** a trip id, or the id of a running train that has none */
@@ -76,7 +77,6 @@
   const gone = $derived(!!vehicle && !reported && vehicle === lastKnown);
   const age = $derived(vehicle ? ageNow(vehicle.age_s, fetchedAt, now) : null);
   const stale = $derived(gone || (!!vehicle && isStale(age, vehicle.stale_after_s)));
-  const tone = $derived(delayTone(vehicle?.delay_s ?? null));
   const stops = $derived(trip?.stops ?? []);
   const cur = $derived(stops.findIndex((s) => s.state === "current" || s.state === "next"));
   const routeId = $derived(vehicle?.route_id ?? trip?.route_id ?? null);
@@ -85,7 +85,7 @@
   const title = $derived(vehicle ? trainTitle(vehicle) : trip ? `${trip.agency} ${trip.train ?? ""}`.trim() : tripId);
 
   /** one time per stop: the expected one when there is realtime, else the timetable's; the schedule is in the hover */
-  const timeOf = (s: TripStop): { time: string; title: string; tag: ReturnType<typeof timeTag> } => {
+  const timeOf = (s: TripStop): { time: string; title: string; tag: DelayCell } => {
     const [sched, est] = s.arr_scheduled || !s.dep_scheduled ? [s.arr_scheduled, s.arr_estimated] : [s.dep_scheduled, s.dep_estimated];
     return {
       time: hhmm(est ?? sched),
@@ -121,9 +121,9 @@
       <KeyValue label="ROUTE" value="{vehicle?.origin ?? BLANK} → {vehicle?.destination ?? vehicle?.headsign ?? trip?.headsign ?? BLANK}" />
       {#if vehicle}
         <KeyValue label="NEXT STOP">
-          {#if vehicle.next_stop}{vehicle.next_stop.name} · <span class="mp-tone-{tone}">{hhmm(vehicle.next_stop.eta ?? vehicle.next_stop.scheduled)}</span>{:else}{BLANK}{/if}
+          {#if vehicle.next_stop}{vehicle.next_stop.name} · {hhmm(vehicle.next_stop.eta ?? vehicle.next_stop.scheduled)}{:else}{BLANK}{/if}
         </KeyValue>
-        <KeyValue label="DELAY"><span class="tw-delay mp-tone-{tone}">{delayLabel(vehicle.delay_s)}</span></KeyValue>
+        <KeyValue label="DELAY"><Delay {...delayCell(vehicle.delay_s, true)} suspect={vehicle.delay_suspect} /></KeyValue>
         <KeyValue label="SPEED" value={vehicle.speed_mph == null ? BLANK : String(Math.round(vehicle.speed_mph))} unit="MPH" />
         <KeyValue label="POSITION"><span class:tw-est={vehicle.position === "estimated"}>{vehicle.position === "realtime" ? "REALTIME" : "ESTIMATED FROM SCHEDULE"}</span></KeyValue>
         <div class="tw-fresh" class:is-stale={stale}>
@@ -149,8 +149,8 @@
               <span class="tw-mark" aria-hidden="true"></span>
               <span class="tw-name">{s.name}</span>
               <span class="tw-tag">{s.state === "current" ? "AT STOP" : s.state === "next" ? "NEXT" : s.state === "skipped" ? "SKIPPED" : s.track ? `TRK ${s.track}` : ""}</span>
-              <span class="tw-t" class:mp-tone-late={t.tag.tone === "late"}>{t.time}</span>
-              <span class="tw-t tw-tag mp-tone-{t.tag.tone}">{t.tag.text}</span>
+              <span class="tw-t">{t.time}</span>
+              <span class="tw-t tw-tag"><Delay {...t.tag} /></span>
             </button>
           {/each}
         </div>
@@ -170,8 +170,7 @@
   .tw-cols.is-wide { display: grid; grid-template-columns: minmax(340px, 420px) 1fr; gap: 32px; align-items: start; }
   .tw-cols.is-wide .tw-stops { align-self: stretch; }
   .is-stale { opacity: 0.75; }
-  .tw-delay { font-weight: 600; }
-  .tw-est, .tw-stale { color: var(--state-recent); }
+  .tw-est { color: var(--ink-2); }
   .tw-stale { color: var(--state-fault); }
   .tw-link { padding: 0; border: 0; background: none; font: inherit; color: var(--ink); text-transform: inherit; text-decoration: underline dotted var(--ink-3); text-underline-offset: 3px; cursor: pointer; }
   .tw-link:hover { color: var(--state-idle); }

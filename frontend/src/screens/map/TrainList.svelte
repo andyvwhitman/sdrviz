@@ -7,7 +7,8 @@
   import { BLANK } from "$lib/hud/fmt";
   import type { Vehicle } from "$lib/types/transit";
   import { onMount } from "svelte";
-  import { ageNow, delayShort, delayTone, freshness, sinceText, trainTitle } from "./lib/transitView";
+  import Delay from "./Delay.svelte";
+  import { ageNow, delayCell, freshness, sinceText, trainTitle } from "./lib/transitView";
 
   interface Props {
     vehicles: Vehicle[];
@@ -69,7 +70,7 @@
             {#if !compact}<span>{v.origin ?? BLANK}</span>{/if}
             <span>{v.next_stop?.name ?? BLANK}</span>
             {#if !compact}<span>{v.destination ?? v.headsign ?? BLANK}</span>{/if}
-            <span class="r mp-tone-{delayTone(v.delay_s)}" title={trainTitle(v)}>{delayShort(v.delay_s)}</span>
+            <span class="r" title={trainTitle(v)}><Delay {...delayCell(v.delay_s)} suspect={v.delay_suspect} /></span>
             <span class="tl__mark is-{freshness(ageOf(v), v.stale_after_s)}" use:flash={v.updated} title="{sinceText(ageOf(v))} since fresh data"></span>
           </button>
         {/each}
@@ -92,11 +93,11 @@
   .tl__caret.is-open { transform: none; }
   .tl__rows { max-height: calc(9 * 23px); /* the header and 8 rows, then scroll */ overflow-y: auto; overflow-x: hidden; }
   .tl__row {
-    display: grid; grid-template-columns: 52px 180px 76px 120px 160px 120px 84px 8px; column-gap: 10px; align-items: baseline; width: 100%;
+    display: grid; grid-template-columns: 52px 180px 76px 120px 160px 120px 108px 8px; column-gap: 10px; align-items: baseline; width: 100%;
     min-height: 22px; padding: 2px 6px 2px 0; border: 0; border-bottom: 1px solid var(--grid); background: none; text-align: left; cursor: pointer;
     font: 400 var(--fs-12)/1.2 var(--font-data); color: var(--ink); text-transform: uppercase; white-space: nowrap;
   }
-  .is-compact .tl__row { grid-template-columns: 52px 170px 76px 160px 84px 8px; }
+  .is-compact .tl__row { grid-template-columns: 52px 170px 76px 160px 108px 8px; }
   .tl__row > span { overflow: hidden; text-overflow: ellipsis; }
   .tl__row .r { text-align: right; }
   /* freshness mark: neutral ink only, and the shape carries the state (filled / hollow / hollow and crossed) */

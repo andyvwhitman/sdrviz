@@ -7,39 +7,74 @@ import type { LonLat } from "./project";
 
 /** Within this many seconds of the schedule a train is on time (the API's own threshold). */
 export const ON_TIME_S = 120;
-export type DelayTone = "ok" | "late" | "early" | "unknown";
+/** From this many seconds late a delay is a real one: brighter text and a bar. */
+export const LATE_S = 300;
+/** Minutes are shown as hours and minutes from this many on. */
+const HOURS_FROM_MIN = 120;
+/** A delay bar is this long at 5 minutes late and grows 2 px per further 5 minutes, up to the maximum. */
+const BAR_MIN_PX = 8;
+const BAR_MAX_PX = 24;
+
+/**
+ * How a delay is told, by brightness only (decision 26): on time ink-3, slightly late (2-4 min) ink-2, late (5 min
+ * or more) full ink with a bar, early ink-2, unknown ink-3. No hue: orange is for live transmissions.
+ */
+export type DelayTone = "ok" | "slight" | "late" | "early" | "unknown";
 
 export function delayTone(delayS: number | null): DelayTone {
   if (delayS == null) return "unknown";
   if (Math.abs(delayS) < ON_TIME_S) return "ok";
-  return delayS > 0 ? "late" : "early";
+  if (delayS < 0) return "early";
+  return delayS < LATE_S ? "slight" : "late";
+}
+
+/** "12 MIN" under two hours, then "6 H 01" (hours, minutes padded). */
+export function formatDuration(seconds: number): string {
+  const min = Math.round(Math.abs(seconds) / 60);
+  if (min < HOURS_FROM_MIN) return `${min} MIN`;
+  return `${Math.floor(min / 60)} H ${String(min % 60).padStart(2, "0")}`;
+}
+
+/** "+12 MIN", "+6 H 01", or "\u22125 MIN" with a true minus: the signed form of a delay. */
+export function formatDelay(delayS: number): string {
+  return `${delayS < 0 ? "\u2212" : "+"}${formatDuration(delayS)}`;
+}
+
+/** Length of the bar before a late delay, 0 when it has none. */
+export function delayBarPx(delayS: number | null): number {
+  if (delayTone(delayS) !== "late") return 0;
+  return Math.min(BAR_MAX_PX, BAR_MIN_PX + Math.floor((delayS! - LATE_S) / 300) * 2);
+}
+
+export interface DelayCell {
+  text: string;
+  tone: DelayTone;
+  barPx: number;
+}
+
+/** What a delay reads as: short ("ON TIME", "+12 MIN") or long ("+12 MIN LATE", "5 MIN EARLY"). */
+export function delayCell(delayS: number | null, long = false): DelayCell {
+  const tone = delayTone(delayS);
+  const barPx = delayBarPx(delayS);
+  if (tone === "unknown") return { text: BLANK, tone, barPx };
+  if (tone === "ok") return { text: "ON TIME", tone, barPx };
+  if (!long) return { text: formatDelay(delayS!), tone, barPx };
+  return { text: delayS! > 0 ? `${formatDelay(delayS!)} LATE` : `${formatDuration(delayS!)} EARLY`, tone, barPx };
 }
 
 /** "ON TIME" within two minutes, else "+12 MIN LATE" or "5 MIN EARLY". */
-export function delayLabel(delayS: number | null): string {
-  const tone = delayTone(delayS);
-  if (tone === "unknown") return BLANK;
-  if (tone === "ok") return "ON TIME";
-  const min = Math.round(Math.abs(delayS!) / 60);
-  return tone === "late" ? `+${min} MIN LATE` : `${min} MIN EARLY`;
-}
+export const delayLabel = (delayS: number | null): string => delayCell(delayS, true).text;
 
-/** Short form for the list: "ON TIME", "+12 MIN", "-5 MIN". */
-export function delayShort(delayS: number | null): string {
-  const tone = delayTone(delayS);
-  if (tone === "unknown") return BLANK;
-  if (tone === "ok") return "ON TIME";
-  const min = Math.round(Math.abs(delayS!) / 60);
-  return tone === "late" ? `+${min} MIN` : `-${min} MIN`;
-}
+/** Short form for the list: "ON TIME", "+12 MIN", "\u22125 MIN". */
+export const delayShort = (delayS: number | null): string => delayCell(delayS).text;
 
 /**
- * The one status word beside a single time: "ON TIME", "+7 MIN", "-3 MIN", or "SCHED" when there is no realtime
+ * The one status word beside a single time: "ON TIME", "+7 MIN", "\u22123 MIN", or "SCHED" when there is no realtime
  * (the time shown is then the timetable's).
  */
-export function timeTag(delayS: number | null, estimated: string | null): { text: string; tone: DelayTone } {
-  if (!estimated && delayS == null) return { text: "SCHED", tone: "unknown" };
-  return { text: delayShort(delayS), tone: delayTone(delayS) };
+export function timeTag(delayS: number | null, estimated: string | null): DelayCell {
+  if (!estimated && delayS == null) return { text: "SCHED", tone: "unknown", barPx: 0 };
+  return delayCell(delayS);
 }
 
 /** Age of a position now: the age the response reported plus the time since it arrived. */

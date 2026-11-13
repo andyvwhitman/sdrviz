@@ -9,6 +9,7 @@
   import { BLANK } from "$lib/hud/fmt";
   import type { BoardRow, Stop, StationBoard } from "$lib/types/transit";
   import Panel, { type PanelControls } from "./Panel.svelte";
+  import Delay from "./Delay.svelte";
   import { hhmm, timeTag } from "./lib/transitView";
 
   interface Props extends PanelControls {
@@ -80,18 +81,18 @@
 </script>
 
 {#snippet line(r: BoardRow)}
-  {@const tag = r.state === "cancelled" ? { text: "CANCELLED", tone: "late" } : timeTag(r.delay_s, r.estimated)}
+  {@const tag = timeTag(r.delay_s, r.estimated)}
   <button class="sw-row is-{r.state}" onclick={() => ontrip(r.trip_id)} title={timeTitle(r)}>
     {#if controls.full}
       <span class="sw-t">{hhmm(r.scheduled)}</span>
-      <span class="sw-t" class:mp-tone-late={tag.tone === "late"}>{r.estimated ? hhmm(r.estimated) : BLANK}</span>
+      <span class="sw-t">{r.estimated ? hhmm(r.estimated) : BLANK}</span>
     {:else}
-      <span class="sw-t" class:mp-tone-late={tag.tone === "late"}>{hhmm(r.estimated ?? r.scheduled)}</span>
+      <span class="sw-t">{hhmm(r.estimated ?? r.scheduled)}</span>
     {/if}
     <span class="sw-n">{r.agency} {r.train ?? ""}</span>
     {#if controls.full}<span class="sw-d">{r.route_name ?? BLANK}</span>{/if}
     <span class="sw-d">{r.headsign ?? r.route_name ?? BLANK}</span>
-    <span class="sw-k sw-tag mp-tone-{tag.tone}">{tag.text}</span>
+    <span class="sw-k sw-tag">{#if r.state === "cancelled"}CANCELLED{:else}<Delay {...tag} />{/if}</span>
     <span class="sw-k">{stateText(r)}</span>
   </button>
 {/snippet}
@@ -135,11 +136,11 @@
   .sw-board { flex: 1; min-height: 160px; display: flex; flex-direction: column; }
   .sw-list { flex: 1; min-height: 0; overflow-y: auto; margin-right: -8px; padding-right: 8px; }
   .sw-row {
-    display: grid; grid-template-columns: 44px 104px 1fr 62px auto; column-gap: 8px; align-items: baseline; width: 100%; padding: 5px 4px;
+    display: grid; grid-template-columns: 44px 104px 1fr 92px auto; column-gap: 8px; align-items: baseline; width: 100%; padding: 5px 4px;
     border: 0; border-bottom: 1px solid var(--grid); background: none; text-align: left; cursor: pointer;
     font: 400 var(--fs-12)/1.2 var(--font-data); color: var(--ink); text-transform: uppercase;
   }
-  .sw-board.is-wide .sw-row { grid-template-columns: 84px 84px 130px 1fr 1fr 80px 64px; }
+  .sw-board.is-wide .sw-row { grid-template-columns: 84px 84px 130px 1fr 1fr 100px 64px; }
   .sw-head { cursor: default; padding-top: 0; font: 500 var(--fs-11)/1.2 var(--font-label); letter-spacing: 0.08em; color: var(--ink-3); }
   .sw-tag { text-align: right; }
   .sw-row:hover:not(.sw-head) { background: var(--bg-panel); }

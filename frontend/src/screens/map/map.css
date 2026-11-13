@@ -102,13 +102,6 @@
 .hud .mp-snum { font: 500 var(--fs-11) var(--font-data); fill: var(--ink); }
 .hud .mp-plat { stroke-dasharray: 3 3; }
 
-/* delay tones for the train list and windows: on time reads as plain ink, late warms, early cools */
-.mp-tone-ok      { color: var(--ink); }
-.mp-tone-late    { color: var(--state-recent); }
-.mp-tone-early   { color: var(--state-idle); }
-.mp-tone-unknown { color: var(--ink-3); }
-
 /* transit layers: stops take a generous click target; the train marker's ring and labels */
 .hud .mp-stop-hit { fill: transparent; stroke: none; }
 .hud .mp-vlabel      { font: 500 var(--fs-12) var(--font-data); letter-spacing: 0.04em; fill: var(--ink); }
-.hud .mp-vlabel.late { fill: var(--state-recent); }

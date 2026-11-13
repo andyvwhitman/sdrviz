@@ -1,0 +1,36 @@
+/* sdrviz styles: 12  SVG classes.
+   Ported verbatim from design/mockups/_shared/hud.css (lines 766-798). Colours come from tokens.css only. */
+
+/* --------------------------------------------------------------------------
+   12 SVG CLASSES (plots, map, rulers). Every stroke non-scaling, integer width.
+   -------------------------------------------------------------------------- */
+svg.hud { overflow: visible; }
+.hud .s-hair, .hud .s-emph, .hud .s-active, .hud .s-hero, .hud [class*="s-"] { vector-effect: non-scaling-stroke; fill: none; }
+.hud .s-hair   { stroke-width: 1px; }
+.hud .s-emph   { stroke-width: 1.5px; }
+.hud .s-active { stroke-width: 2px; }
+.hud .s-hero   { stroke-width: 3px; }
+.hud .k-grid { stroke: var(--grid); } .hud .k-faint { stroke: var(--line-faint); } .hud .k-line { stroke: var(--line); }
+.hud .k-ink { stroke: var(--ink); } .hud .k-idle { stroke: var(--state-idle); } .hud .k-idle-dim { stroke: var(--state-idle-dim); }
+.hud .k-tx { stroke: var(--state-tx); } .hud .k-tx-hot { stroke: var(--state-tx-hot); } .hud .k-recent { stroke: var(--state-recent); }
+.hud .k-stale { stroke: var(--state-stale); } .hud .k-offline { stroke: var(--state-offline); } .hud .k-fault { stroke: var(--state-fault); }
+.hud .k-fault-dim { stroke: var(--state-fault-dim); } .hud .k-select { stroke: var(--state-select); }
+.hud .d-stale { stroke-dasharray: var(--dash-stale); } .hud .d-offline { stroke-dasharray: var(--dash-offline); }
+.hud .d-threshold { stroke-dasharray: var(--dash-threshold); } .hud .d-measure { stroke-dasharray: var(--dash-measure); }
+.hud .glow-1 { stroke-width: 3px; stroke-opacity: 0.18; } /* draw beneath the same path */
+.hud .glow-2 { stroke-width: 6px; stroke-opacity: 0.06; } /* TX only */
+.hud .f-void { fill: var(--bg-void); } .hud .f-line { fill: var(--line); } .hud .f-ink { fill: var(--ink); }
+.hud .f-tx { fill: var(--state-tx); } .hud .f-fault { fill: var(--state-fault); } .hud .f-idle { fill: var(--state-idle); }
+.hud .f-wash-tx-plot { fill: var(--wash-tx-plot); }
+.hud text { font-family: var(--font-label); }
+.hud .tx-lab   { font: 500 11px var(--font-label); letter-spacing: 0.1em; text-transform: uppercase; fill: var(--ink-3); }
+.hud .tx-lab2  { font: 500 12px var(--font-label); letter-spacing: 0.1em; text-transform: uppercase; fill: var(--ink-2); }
+.hud .tx-term  { font: 600 13px var(--font-display); letter-spacing: 0.12em; text-transform: uppercase; fill: var(--ink); }
+.hud .tx-num   { font: 400 11px var(--font-data); fill: var(--ink-3); }
+.hud .tx-num2  { font: 400 12px var(--font-data); fill: var(--ink-2); }
+.hud .tx-data  { font: 400 12px var(--font-data); fill: var(--ink); }
+.hud .tx-data.is-tx { fill: var(--state-tx); }
+.hud .tx-hero  { font: 500 48px var(--font-data); fill: var(--ink); }
+.hud .ping { fill: none; stroke: var(--state-tx); stroke-width: 1px; transform-box: fill-box; transform-origin: center; }
+.hud .ping.is-primary { stroke-width: 1.5px; }
+

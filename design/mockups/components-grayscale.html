@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1920">
+<title>WLT-1 Grayscale Test</title>
+<meta name="description" content="Brief §10.4 grayscale test: any component-sheet board rendered through filter: grayscale(1). Pass ?state=<board id> (default combos-2).">
+<style>
+  html, body { margin: 0; background: #04070A; }
+  iframe { display: block; width: 1920px; height: 1080px; border: 0; filter: grayscale(1); }
+</style>
+</head>
+<body>
+<iframe id="f" title="Component sheet, grayscale"></iframe>
+<script>
+  /* Pass every query parameter through; one board per frame. */
+  const q = new URLSearchParams(location.search);
+  if (!q.get("state") || q.get("state") === "all") q.set("state", "combos-2");
+  document.getElementById("f").src = "components.html?" + q.toString();
+</script>
+</body>
+</html>

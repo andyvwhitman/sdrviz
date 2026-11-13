@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# Start rtl_tcp from the settings in /etc/sdrviz/rtltcp.env (loaded by systemd).
+# Installed to /usr/local/bin/sdrviz-rtltcp-run by setup.sh.
+set -euo pipefail
+
+args=(
+  -a "${RTLTCP_ADDRESS:-0.0.0.0}"
+  -p "${RTLTCP_PORT:-1234}"
+  -f "${RTLTCP_FREQ:-160897500}"
+  -s "${RTLTCP_RATE:-2400000}"
+  -d "${RTLTCP_DEVICE:-0}"
+)
+
+# Gain 0 means automatic gain: leave -g off so rtl_tcp uses AGC.
+if [[ "${RTLTCP_GAIN:-0}" != "0" ]]; then
+  args+=(-g "${RTLTCP_GAIN}")
+fi
+
+if [[ "${RTLTCP_PPM:-0}" != "0" ]]; then
+  args+=(-P "${RTLTCP_PPM}")
+fi
+
+echo "sdrviz: rtl_tcp ${args[*]}"
+exec rtl_tcp "${args[@]}"

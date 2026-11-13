@@ -1,0 +1,59 @@
+/* sdrviz styles: 15  Consistency-pass folds.
+   Ported verbatim from design/mockups/_shared/hud.css (lines 854-909). Colours come from tokens.css only. */
+
+/* --------------------------------------------------------------------------
+   15 CONSISTENCY-PASS FOLDS (spec rev 2, §12). Rules that screens composed
+   locally under REQUEST and that every screen now shares.
+   -------------------------------------------------------------------------- */
+/* M7 shared-frequency suffix ("6464 LND-02"): in compact and strip tiles the suffix takes the MHz slot
+   (both channels share the MHz; the inspector keeps it). Strip: suffix sits at x 176, clear of a right status. */
+.tile--compact .tile__aar:has(small) ~ .tile__mhz { display: none; }
+.tile--strip .tile__aar small { position: absolute; left: 176px; top: 2px; margin: 0; }
+.tile--strip .tile__aar:has(small) ~ .tile__mhz { display: none; }
+/* a muted strip tile has no footer or levers: MUTED sits after the MHz at rest, in the MHz slot during TX */
+.tile--strip[data-muted]::before {
+  content: "MUTED"; position: absolute; left: 266px; top: 8px; font: 500 var(--fs-11)/12px var(--font-label);
+  letter-spacing: 0.06em; color: var(--ink-2);
+}
+.tile--strip[data-muted][data-tx]::before { left: 208px; }
+
+/* M15 tile waveform (§5.6): the standard TX tile hides MHz + sparkline; the waveform runs in the freed band
+   x 8-192, y 64-80 (184 x 16), newest audio at the right edge, 30 px/s. Levers (x 128-200, y 72-96)
+   leave the newest 112 px. HUD.c.tile(ch, { ..., wave: svgString }) emits it. */
+.tile__wave { left: 8px; top: 64px; width: 184px; height: 16px; display: none; overflow: hidden; justify-content: flex-end; }
+.tile__wave svg { display: block; overflow: visible; flex: none; }
+.tile--standard[data-tx] > .tile__wave, .tile--standard.show-wave > .tile__wave { display: flex; }
+.tile[data-selected] > .tile__wave, .tile[data-levers] > .tile__wave, .tile:hover > .tile__wave, .tile:focus-within > .tile__wave { width: 112px; }
+
+/* detector rows: each field is one non-breaking unit; a wrap only falls after a separator dot */
+.txrow[data-det] .fld { white-space: nowrap; }
+.txrow[data-det] .sep::before { content: "\00a0·\0020"; white-space: normal; }
+
+/* M21 lever states beyond off/on (§5.19): tx (2 px orange frame, orange AAR), stale (dashed 4/4), no feeds (dotted, ink-3).
+   Markup: <span class="lever-wrap is-tx|is-stale|is-off">HUD.c.lever(...)</span> */
+.lever-wrap { display: inline-block; width: 24px; }
+.lever-wrap .lever-aar { font-size: var(--fs-11); }
+.lever-wrap.is-tx .lever-aar { color: var(--state-tx); }
+.lever-wrap.is-tx .lever > b { box-shadow: inset 0 0 0 2px var(--state-tx), 0 0 0 2px var(--glow-tx-1); color: var(--state-tx); background: var(--wash-tx-surface); }
+.lever-wrap.is-stale .lever > b {
+  box-shadow: none; color: var(--state-stale);
+  background:
+    repeating-linear-gradient(90deg, var(--state-stale) 0 4px, transparent 4px 8px) left top / 100% 1px,
+    repeating-linear-gradient(90deg, var(--state-stale) 0 4px, transparent 4px 8px) left bottom / 100% 1px,
+    repeating-linear-gradient(180deg, var(--state-stale) 0 4px, transparent 4px 8px) left top / 1px 100%,
+    repeating-linear-gradient(180deg, var(--state-stale) 0 4px, transparent 4px 8px) right top / 1px 100%;
+  background-repeat: no-repeat;
+}
+.lever-wrap.is-stale .lever-aar { color: var(--state-stale); }
+.lever-wrap.is-off .lever-aar { color: var(--ink-3); }
+.lever-wrap.is-off .lever > b { box-shadow: none; outline: 1px dotted var(--state-stale); outline-offset: -1px; color: var(--ink-3); }
+
+/* status line: when a fault and a stale item share the line, pass status.html with per-item spans
+   (.c-fault / .c-stale / .c-ink-2 utilities, §2.3); .is-fault colours the whole message only for a lone fault. */
+
+/* M23 coverage hatch (CR map-01): at rest line-faint at 45 %; the unacked fault hatch (state-fault-dim) stays 100 % */
+.hud .hatch-rest { opacity: 0.45; }
+/* ink-3 stroke for leaders that must never read as track (map leaders, CTC ties) */
+.hud .k-ink3 { stroke: var(--ink-3); }
+/* inspector ACTIONS row (Live Ops and Map feed inspectors, brief §8.3) */
+.insp-btns { display: flex; gap: 8px; flex-wrap: wrap; }

@@ -1,0 +1,134 @@
+/* sdrviz styles: 6-7  Channel tile, meter, sparkline, pips, waveform.
+   Ported verbatim from design/mockups/_shared/hud.css (lines 344-474). Colours come from tokens.css only. */
+
+/* --------------------------------------------------------------------------
+   6  CHANNEL TILE (brief §9.1.3, §3.5). Geometry in spec §5.6.
+   Root: <div class="tile tile--standard|compact|strip" data-*>
+   Layer attributes (set by HUD.resolveTile): data-frame, data-glyph, data-tx,
+   data-ember (recent|recent-dim), data-coverage (ok|partial|stale|offline),
+   data-fault (unacked|acked), overlays data-selected, data-muted, data-solo, data-levers.
+   -------------------------------------------------------------------------- */
+.tile { position: relative; width: 200px; height: 112px; color: var(--ink); background: transparent; flex: none; text-align: left; }
+.tile--compact { height: 56px; }
+.tile--strip   { width: 384px; height: 28px; }
+.tile > * { position: absolute; }
+.tile > .frame, .tile > .sel { position: absolute; }
+.tile:focus-visible { outline: none; }
+.tile[data-focused]::after, .tile:focus-visible::after {
+  content: ""; position: absolute; inset: -3.5px; border-radius: 2px; pointer-events: none;
+  box-shadow: 0 0 0 var(--stroke-emph) var(--state-select);
+}
+
+.tile__glyph  { left: 8px; top: 7px; }
+.tile__label  { left: 32px; top: 8px; height: 16px; line-height: 16px; max-width: 96px;
+  font: 600 var(--fs-13)/16px var(--font-label); text-transform: uppercase; letter-spacing: 0.08em; white-space: nowrap; overflow: hidden; }
+.tile__ember  { left: 32px; top: 25px; height: 2px; width: var(--ember-w, 56px); background: var(--state-recent); display: none; }
+.tile[data-ember="recent"] .tile__ember     { display: block; background: var(--state-recent); }
+.tile[data-ember="recent-dim"] .tile__ember { display: block; background: var(--state-recent-dim); }
+.tile__status { right: 8px; top: 8px; height: 16px; line-height: 16px;
+  font: 400 var(--fs-11)/16px var(--font-data); color: var(--ink-2); white-space: nowrap; text-align: right; }
+.tile__status.is-dim { color: var(--ink-3); }
+.has-wash .tile__status.is-dim { color: var(--ink-2); }
+.tile__status.is-stale { color: var(--state-stale); }
+
+.tile__aar  { left: 8px; top: 32px; font: 500 var(--fs-24)/24px var(--font-data); white-space: nowrap; }
+.tile__aar small { font: 400 var(--fs-12)/1 var(--font-data); color: var(--ink-2); margin-left: 6px; letter-spacing: 0; }
+.tile__mhz  { left: 8px; top: 58px; font: 400 var(--fs-12)/12px var(--font-data); color: var(--ink-2); }
+.tile__spark { right: 8px; top: 42px; width: 64px; height: 14px; }
+.tile__timer { right: 8px; top: 30px; font: 500 var(--fs-32)/32px var(--font-data); color: var(--state-tx); display: none; white-space: nowrap; }
+.tile__meter { left: 8px; top: 84px; width: 120px; height: 12px; }
+.tile__levers { right: 0; top: 72px; display: none; }
+.tile__foot { left: 8px; right: 8px; top: 98px; height: 12px; display: flex; align-items: center; gap: 6px;
+  font: 500 var(--fs-11)/12px var(--font-label); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-3); white-space: nowrap; overflow: hidden; }
+.has-wash .tile__foot { color: var(--ink-2); }
+.tile__foot .grow { flex: 1; min-width: 0; overflow: hidden; }
+.tile__foot .is-fault { color: var(--state-fault); }
+.tile__foot .tag-muted { color: var(--ink-2); }
+.tile__foot .tag-solo  { color: var(--ink); }
+.tile__pips { display: none; }
+.tile[data-coverage="partial"] .tile__pips { display: inline-flex; }
+
+/* TX: AAR steps down to 13 px in place; MHz + sparkline hide; 32 px timer in right zone */
+.tile[data-tx] .tile__aar { font-size: var(--fs-13); line-height: 24px; color: var(--ink); }
+.tile[data-tx] .tile__aar small { font-size: var(--fs-11); }
+.tile[data-tx] .tile__mhz, .tile[data-tx] .tile__spark, .tile[data-tx] .tile__status { display: none; }
+.tile[data-tx] .tile__timer { display: block; }
+.tile[data-tx] .tile__label { max-width: 150px; }
+
+/* levers on hover, focus or selection */
+.tile:hover .tile__levers, .tile:focus-within .tile__levers, .tile[data-selected] .tile__levers, .tile[data-levers] .tile__levers { display: flex; }
+
+/* offline / stale: values blanked or greyed */
+.tile[data-coverage="stale"] .tile__aar, .tile[data-coverage="stale"] .tile__label { color: var(--state-stale); }
+.tile[data-coverage="offline"] .tile__aar, .tile[data-coverage="offline"] .tile__label { color: var(--state-stale); }
+
+/* compact 200 x 56: row 1 glyph/label/status; row 2 AAR 18, MHz 12, 64 px meter */
+.tile--compact .tile__aar   { top: 30px; font-size: var(--fs-18); line-height: 18px; }
+.tile--compact .tile__aar small { font-size: var(--fs-11); margin-left: 4px; }
+.tile--compact .tile__mhz   { left: 64px; top: 33px; }
+.tile--compact .tile__meter { left: auto; right: 8px; top: 33px; width: 64px; }
+.tile--compact .tile__spark, .tile--compact .tile__foot { display: none; }
+.tile--compact .tile__timer { top: 27px; font-size: var(--fs-24); line-height: 24px; }
+.tile--compact[data-tx] .tile__aar { font-size: var(--fs-18); line-height: 18px; }
+.tile--compact[data-tx] .tile__meter { display: none; }
+.tile--compact .tile__reason { left: 64px; right: 8px; top: 33px; font: 500 var(--fs-11)/12px var(--font-label); letter-spacing: 0.06em; text-transform: uppercase; color: var(--state-fault); white-space: nowrap; }
+.tile--compact .tile__reason ~ .tile__mhz, .tile--compact .tile__reason ~ .tile__meter { display: none; }
+.tile--compact[data-tx] .tile__reason { left: auto; right: 8px; top: 8px; height: 16px; line-height: 16px; } /* TX + fault: reason takes the empty status slot */
+.tile--compact[data-tx] .tile__reason ~ .tile__mhz { display: none; }
+.tile--compact .tile__pips2 { right: 8px; top: 12px; display: none; }
+.tile--compact[data-coverage="partial"] .tile__pips2 { display: inline-flex; }
+.tile--compact[data-coverage="partial"] .tile__status { right: 36px; }
+.tile--compact .tile__levers { top: 6px; right: 2px; } /* M21 pip y 6-8, 4 px inside the 2 px TX frame */
+.tile--compact:hover .tile__status, .tile--compact:focus-within .tile__status,
+.tile--compact[data-selected] .tile__status, .tile--compact[data-levers] .tile__status { visibility: hidden; } /* levers take row 1 right */
+.tile--compact[data-tx][data-selected] .tile__reason, .tile--compact[data-tx][data-levers] .tile__reason { visibility: hidden; }
+.tile--compact .tile__label { max-width: 90px; }
+
+/* strip 384 x 28: glyph, CH54, label, MHz, status */
+.tile--strip .tile__glyph  { top: 5px; }
+.tile--strip .tile__aar    { left: 32px; top: 6px; font: 500 var(--fs-13)/16px var(--font-data); }
+.tile--strip .tile__label  { left: 80px; top: 6px; max-width: 120px; }
+.tile--strip .tile__ember  { left: 80px; top: 22px; }
+.tile--strip .tile__mhz    { left: 208px; top: 8px; }
+.tile--strip .tile__status { top: 6px; }
+.tile--strip .tile__timer  { top: 5px; font-size: var(--fs-18); line-height: 18px; }
+.tile--strip .tile__meter, .tile--strip .tile__spark, .tile--strip .tile__foot, .tile--strip .tile__levers { display: none; }
+.tile--strip[data-tx] .tile__aar { font-size: var(--fs-13); line-height: 16px; }
+.tile--strip[data-tx] .tile__mhz { display: none; }
+.tile--strip .tile__reason { left: 208px; top: 8px; font: 500 var(--fs-11)/12px var(--font-label); letter-spacing: 0.06em; text-transform: uppercase; color: var(--state-fault); }
+.tile--strip .tile__reason ~ .tile__mhz { display: none; }
+.tile--strip .tile__pips2 { right: 96px; top: 8px; display: none; }
+.tile--strip[data-coverage="partial"] .tile__pips2 { display: inline-flex; }
+
+/* tile grid: re-pack with ease-in-out 400 ms */
+.tile-grid { display: grid; gap: var(--gap-cell); grid-template-columns: repeat(var(--tile-cols, 5), auto); justify-content: start; align-content: start; }
+.tile-grid > .tile { transition: transform var(--t-settle) var(--ease-in-out); }
+
+/* --------------------------------------------------------------------------
+   7  METER (M16), SPARKLINE (M22), COVERAGE PIPS (M25), WAVEFORM (M15)
+   Meter/sparkline are SVG built by HUD.c.meter / HUD.c.spark. Classes here.
+   -------------------------------------------------------------------------- */
+.meter-svg, .spark-svg, .wave-svg { display: block; overflow: visible; shape-rendering: crispEdges; }
+.meter-svg .tick       { fill: var(--line-faint); }
+.meter-svg .tick.major { fill: var(--line-faint); }
+.meter-svg .base       { fill: var(--grid); }
+.meter-svg .bar        { fill: var(--state-idle); }
+.meter-svg .bar.is-tx  { fill: var(--state-tx); }
+.meter-svg .bar.is-muted { fill: none; stroke: var(--state-tx); stroke-width: 1px; }
+.meter-svg .bar.is-muted.is-idle { stroke: var(--state-idle); }
+.meter-svg .peak       { fill: var(--ink); }
+.meter-svg .floor      { fill: var(--state-idle-dim); }
+.meter-svg.is-na .tick { fill: var(--line-faint); }
+.spark-svg .col        { fill: var(--line); }
+.spark-svg .col.is-now { fill: var(--state-tx); }
+.spark-svg .col.is-zero{ fill: var(--grid); }
+.wave-svg path         { fill: none; stroke: var(--line); stroke-width: 1px; vector-effect: non-scaling-stroke; }
+.wave-svg.is-live path { stroke: var(--state-tx); }
+.wave-svg.is-live path.glow-1 { stroke: var(--glow-tx-1); stroke-width: 3px; }
+
+.pips { display: inline-flex; align-items: center; gap: 3px; vertical-align: middle; }
+.pips i { display: block; width: 3px; height: 7px; background: var(--line); }
+.pips i.is-bad { background: none; box-shadow: inset 0 0 0 1px var(--state-stale); }
+.pips + .pips-n { font: 400 var(--fs-11)/1 var(--font-data); color: var(--ink-2); margin-left: 4px; }
+.pips-n .label { font-size: var(--fs-11); letter-spacing: 0.06em; }
+

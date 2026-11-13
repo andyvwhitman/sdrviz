@@ -1,0 +1,123 @@
+/* sdrviz styles: 1  Tokens (spec 1-3).
+   Ported verbatim from design/mockups/_shared/hud.css (lines 17-135). Colours come from tokens.css only. */
+
+/* --------------------------------------------------------------------------
+   1  TOKENS
+   -------------------------------------------------------------------------- */
+@property --arm { syntax: "<length>"; inherits: true; initial-value: 8px; }
+
+:root {
+  color-scheme: dark;
+
+  /* 1.1 surfaces + ink (brief §3.1) */
+  --bg-void:   #04070A;
+  --bg-panel:  #081015;
+  --bg-raised: #0C171D;
+  --grid:       #12232B;   /* decorative */
+  --line-faint: #2C4A55;   /* decorative */
+  --line:       #9CC9D6;
+  --ink:   #E4F1F5;
+  --ink-2: #8FAFBA;
+  --ink-3: #67868F;        /* text floor; never inside a wash */
+
+  /* 1.2 state (brief §3.2) */
+  --state-idle:       #4FCBE6;
+  --state-idle-dim:   #2F7D91;  /* never text */
+  --state-tx:         #FF8A2B;  /* exclusive: live TX only */
+  --state-tx-hot:     #FFD3A6;  /* 120 ms flash + glow core only */
+  --state-recent:     #B9773F;
+  --state-recent-dim: #6E4A2C;  /* decorative */
+  --state-stale:      #71838C;
+  --state-offline:    #3A474E;  /* decorative */
+  --state-fault:      #FF4A3D;
+  --state-fault-dim:  #7A2620;  /* decorative: map hatch */
+  --state-select:     #F5FBFD;
+
+  /* 1.3 washes (brief §3.6). Surface washes never exceed 8 %. */
+  --wash-tx-surface: rgb(255 138 43 / 0.06);
+  --wash-tx-plot:    rgb(255 138 43 / 0.12);  /* plots only, never under text */
+  --wash-fault:      rgb(255 74 61 / 0.06);
+  --wash-select:     transparent;             /* selection has no fill */
+
+  /* 1.4 glow strokes (brief §3.4): 3x @18 %, TX adds 6x @6 % */
+  --glow-tx-1:    rgb(255 138 43 / 0.18);
+  --glow-tx-2:    rgb(255 138 43 / 0.06);
+  --glow-trace-1: rgb(156 201 214 / 0.18);
+  --sweep-line:   rgb(156 201 214 / 0.06);  /* M13 sweep line, 6 % peak */
+
+  /* 1.5 waterfall / heatmap ramp (brief §3.3), single hue, lightness only */
+  --ramp-0: #04070A;
+  --ramp-1: #0A1F28;
+  --ramp-2: #124A5A;
+  --ramp-3: #2C8FA8;
+  --ramp-4: #7FD8EC;
+  --ramp-5: #E8FBFF;
+  --ramp: linear-gradient(90deg, var(--ramp-0) 0%, var(--ramp-1) 20%, var(--ramp-2) 40%, var(--ramp-3) 60%, var(--ramp-4) 80%, var(--ramp-5) 100%);
+
+  /* 1.6 type families (brief §4) */
+  --font-display: "Rajdhani", "Barlow Semi Condensed", "DIN Alternate", "Arial Narrow", sans-serif;
+  --font-label:   "Barlow Semi Condensed", "Barlow", "Roboto Condensed", "Arial Narrow", sans-serif;
+  --font-read:    "Barlow", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-data:    "JetBrains Mono", "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  /* 1.7 type scale (brief §4), px */
+  --fs-11: 11px; --fs-12: 12px; --fs-13: 13px; --fs-15: 15px; --fs-18: 18px;
+  --fs-24: 24px; --fs-32: 32px; --fs-48: 48px; --fs-72: 72px;
+  --track-label: 0.10em;
+  --track-display: 0.12em;
+
+  /* 1.8 strokes (brief §5.2) */
+  --stroke-hair:   1px;
+  --stroke-emph:   1.5px;
+  --stroke-active: 2px;
+  --stroke-hero:   3px;
+
+  /* 1.9 dash patterns (brief §5.3), as stroke-dasharray values */
+  --dash-stale:     4 4;
+  --dash-offline:   1 5;
+  --dash-threshold: 2 3;
+  --dash-measure:   6 3;
+
+  /* 1.10 grid (brief §5.1) */
+  --unit: 4px;
+  --layout-unit: 8px;
+  --margin-x: 32px;        /* outer margin left/right */
+  --gap-chrome: 16px;      /* header/status line to content */
+  --gap-panel: 16px;       /* stacked panels */
+  --gap-cell: 8px;         /* cells inside a panel (tiles) */
+  --gutter: 24px;          /* 12-col gutter */
+  --cols: 12;
+  --header-h: 40px;
+  --status-h: 24px;
+  --hero-h: 64px;
+  --tabs-h: 32px;
+  --inspector-w: 480px;
+  --arm-len: 8px;          /* M1 bracket arm */
+  --sel-arm: 14px;         /* selection bracket arm */
+  --chamfer: 8px;          /* tab/bank/route selectors only */
+
+  /* 1.11 easing (brief §7.1) */
+  --ease-instrument: cubic-bezier(0.2, 0, 0, 1);
+  --ease-in-out:     cubic-bezier(0.4, 0, 0.2, 1);
+  --linear:          linear;
+  /* `step` is steps(n, end); n is per use, e.g. steps(3, end) */
+
+  /* 1.12 durations (brief §7.2) */
+  --t-instant: 0ms;
+  --t-micro:   80ms;
+  --t-flash:   120ms;
+  --t-tick:    240ms;
+  --t-commit:  250ms;
+  --t-settle:  400ms;
+  --t-build:   600ms;
+  --t-ping:    1200ms;
+  --t-sweep:   8000ms;
+  --t-ember:   120000ms;
+  --t-cool:    600000ms;
+
+  /* 1.13 stage (set by hud.js from ?size=) */
+  --stage-w: 1920px;
+  --stage-h: 1080px;
+}
+:root[data-size="1440"] { --stage-w: 1440px; --stage-h: 900px; }
+

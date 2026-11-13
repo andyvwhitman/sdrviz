@@ -1,0 +1,6 @@
+/* App-level styles that are not part of the ported HUD stylesheet: the page frame around the stage. */
+
+html, body, #app { height: 100%; margin: 0; overflow: hidden; }
+
+/* ?gray=1: grayscale test on the stage (spec 7) */
+:root[data-gray] .hud-stage { filter: grayscale(1); }

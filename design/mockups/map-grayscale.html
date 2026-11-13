@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Map Grayscale Test</title>
+<!--
+  Brief §10.4 grayscale test. Wraps any Map frame (same query string) in filter: grayscale(1).
+  map-grayscale.html?state=keyed              talking trains + pinged feeds read by shape, not hue
+  map-grayscale.html?state=fault              faulted feed: triangle glyph + hatch, not just red
+  map-grayscale.html?state=fault&mode=schematic
+-->
+<style>
+  html, body { margin: 0; background: #04070A; overflow: hidden; }
+  iframe { display: block; border: 0; filter: grayscale(1); }
+</style>
+</head>
+<body>
+<iframe id="f" title="Grayscale test frame"></iframe>
+<script>
+  const qs = new URLSearchParams(location.search);
+  if (!qs.has("state")) qs.set("state", "keyed");
+  const small = qs.get("size") === "1440";
+  const f = document.getElementById("f");
+  f.width = small ? 1440 : 1920;
+  f.height = small ? 900 : 1080;
+  f.src = "map.html?" + qs.toString();
+</script>
+</body>
+</html>

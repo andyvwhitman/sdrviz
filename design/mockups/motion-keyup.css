@@ -1,0 +1,48 @@
+/* ==========================================================================
+   sdrviz · WLT-1 · Motion study: key-up choreography (brief §7.3, spec §6.3).
+   Page-local; builds on _shared/hud.css and live-ops.css (tile waveform band).
+   ========================================================================== */
+
+.mk-box { position: absolute; }
+.mk-title { display: flex; align-items: baseline; gap: 16px; }
+.mk-controls { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
+
+.mk-lanehead { display: flex; align-items: baseline; gap: 12px; white-space: nowrap; }
+.mk-lanehead .mono { font: 400 var(--fs-12)/1 var(--font-data); color: var(--ink-2); }
+
+/* the live tile at 2x (scaled from its true 200 x 112 px geometry) and at 1x */
+.mk-zoom { width: 400px; height: 224px; }
+.mk-zoom > .tile { transform: scale(2); transform-origin: 0 0; }
+.mk-zoom.is-compact { height: 112px; }
+
+/* ghost TX frame that retracts over t-settle at release + 400 ms */
+.tile > .mk-ghost { position: absolute; inset: 0; pointer-events: none; }
+
+.mk-readout { display: grid; gap: 6px; }
+.mk-readout .t { font: 500 var(--fs-24)/1 var(--font-data); color: var(--ink); white-space: nowrap; }
+.mk-readout .ph { font: 600 var(--fs-13)/1 var(--font-label); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink); white-space: nowrap; }
+.mk-readout .what { font: 400 var(--fs-13)/1.4 var(--font-read); color: var(--ink-2); width: 192px; }
+
+/* connect panel */
+.mk-cap { font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--ink-3); white-space: nowrap; }
+.mk-hero { box-shadow: inset 0 -1px 0 var(--grid), inset 0 1px 0 var(--grid); padding-left: 8px; }
+.mk-log { width: 560px; }
+.mk-log .txrow { border-bottom: 0; }
+.mk-svgcell svg { display: block; overflow: visible; }
+.mk-notes { display: grid; gap: 4px; }
+.mk-notes span { font: 500 var(--fs-11)/1.4 var(--font-label); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--ink-2); }
+
+/* timeline (piecewise time ruler with breaks) */
+.mk-tl svg { display: block; overflow: visible; }
+.mk-tl text.lab { font: 500 11px var(--font-label); letter-spacing: 0.1em; text-transform: uppercase; fill: var(--ink-2); }
+.mk-tl text.num { font: 400 11px var(--font-data); fill: var(--ink-3); }
+.mk-tl text.brk { font: 400 11px var(--font-data); fill: var(--ink-3); }
+
+/* filmstrip */
+.mk-strip { display: flex; gap: 7px; }
+.mk-strip.is-8 { gap: 8px; }
+.mk-frame { display: grid; gap: 6px; }
+.mk-frame .cap { display: flex; gap: 6px; align-items: baseline; height: 12px; white-space: nowrap; }
+.mk-frame .cap .mono { font: 400 var(--fs-11)/1 var(--font-data); color: var(--ink-2); }
+.mk-frame .cap .label { font: 600 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink); text-transform: uppercase; }
+.mk-frame .tile { flex: none; }

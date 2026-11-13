@@ -1,0 +1,50 @@
+/* sdrviz styles: 3  Stage and shell grid (spec 4).
+   Ported verbatim from design/mockups/_shared/hud.css (lines 192-238). Colours come from tokens.css only. */
+
+/* --------------------------------------------------------------------------
+   3  STAGE + SHELL GRID  (spec §4)
+   -------------------------------------------------------------------------- */
+.hud-stage {
+  position: relative; width: var(--stage-w); height: var(--stage-h);
+  overflow: hidden; background: var(--bg-void); isolation: isolate;
+}
+.hud-header {
+  position: absolute; left: 0; right: 0; top: 0; height: var(--header-h);
+  padding: 0 var(--margin-x); display: grid; grid-template-columns: auto 1fr auto;
+  align-items: center; gap: 24px; border-bottom: 1px solid var(--grid);
+}
+.hud-header__left  { display: flex; align-items: baseline; gap: 16px; min-width: 0; }
+.hud-header__right { grid-column: 3; display: flex; align-items: center; justify-content: flex-end; gap: 8px; min-width: 0; }
+.hud-mark { font: 600 var(--fs-18)/1 var(--font-display); letter-spacing: 0.16em; color: var(--ink); }
+.hud-screen-name { font: 500 var(--fs-12)/1 var(--font-label); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--ink-2); }
+.hud-clock { font: 400 var(--fs-13)/1 var(--font-data); color: var(--ink); padding: 0 8px; white-space: nowrap; }
+
+/* nav anchored at grid column 3 (x 345 at 1920, 265 at 1440), independent of the chip cluster, which
+   grows leftward into the reserved space. LIVE OPS sits at the same x in every state (review r1 #4, §9.1.7). */
+.hud-nav { position: absolute; top: 0; left: 345px; display: flex; gap: 4px; align-items: flex-end; height: var(--header-h); }
+:root[data-size="1440"] .hud-nav { left: 265px; }
+:root[data-size="1440"] .hud-nav .tab { padding: 0 16px 0 10px; letter-spacing: 0.08em; }
+:root[data-size="1440"] .hud-header { gap: 16px; }
+.hud-nav .tab { height: 28px; margin-bottom: 0; }
+
+.hud-content {
+  position: absolute; left: var(--margin-x); right: var(--margin-x);
+  top: calc(var(--header-h) + var(--gap-chrome));
+  bottom: calc(var(--status-h) + var(--gap-chrome));
+}
+.hud-content.cols12 { display: grid; grid-template-columns: repeat(12, 1fr); column-gap: var(--gutter); }
+
+.hud-status {
+  position: absolute; left: 0; right: 0; bottom: 0; height: var(--status-h);
+  padding: 0 0 0 var(--margin-x); display: flex; align-items: center; gap: 16px;
+  border-top: 1px solid var(--grid);
+}
+.hud-status__msg { flex: 1; min-width: 0; font: 400 var(--fs-12)/1 var(--font-data); color: var(--ink-2); white-space: nowrap; overflow: hidden; }
+.hud-status__msg .label { font-size: var(--fs-11); }
+.hud-status__msg.is-fault { color: var(--state-fault); }
+.hud-status__ack { font: 400 var(--fs-12)/1 var(--font-data); color: var(--ink-2); white-space: nowrap; }
+
+/* Live Ops layout helpers (brief §9.1.3 arithmetic; spec §4.3) */
+.span-tiles { grid-column: 1 / span 7; }
+.span-log   { grid-column: 8 / span 5; }
+

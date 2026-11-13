@@ -1,0 +1,89 @@
+/* map.css — Map screen (brief §9.5, spec §4.5). Page-local only; tokens come from _shared/hud.css.
+   Class names avoid the substring "s-": hud.css styles every .hud [class*="s-"] as a stroke. */
+
+/* ---- canvas: the full content box, 1856 × 984 (1440: 1376 × 804), with .bezel */
+.mp-frame  { position: absolute; inset: 0; }
+.mp-canvas { position: absolute; inset: 0; overflow: hidden; }
+.mp-svg    { position: absolute; left: 0; top: 0; display: block; }
+.mp-origin { position: absolute; left: -10.5px; top: -10.5px; width: 21px; height: 21px; overflow: visible; pointer-events: none; z-index: 2; }
+
+/* geo ↔ schematic layers cross-fade during the 600 ms morph */
+.mp-geo, .mp-sch { transition: none; }
+
+/* ---- SVG text roles (fonts per spec §2.3) */
+.hud .mp-stn     { font: 500 11px var(--font-label); letter-spacing: 0.1em; text-transform: uppercase; fill: var(--ink-2); }
+.hud .mp-term    { font: 600 13px var(--font-display); letter-spacing: 0.12em; text-transform: uppercase; fill: var(--ink); }
+.hud .mp-linelab { font: 500 11px var(--font-label); letter-spacing: 0.16em; text-transform: uppercase; fill: var(--ink-3); }
+.hud .mp-coord   { font: 400 11px var(--font-data); fill: var(--ink-3); }
+.hud .mp-mp      { font: 400 11px var(--font-data); fill: var(--ink-3); }
+.hud .mp-l2-fault { fill: var(--state-fault); }
+.hud .mp-l2-stale { fill: var(--state-stale); }
+.hud .mp-tx-lab  { font: 400 11px var(--font-data); fill: var(--state-tx); }
+.hud .mp-feedlab { font: 500 12px var(--font-data); fill: var(--ink); }
+.hud .mp-feedlab.mp-fault { fill: var(--state-fault); }
+.hud .mp-feedlab.mp-stale { fill: var(--state-stale); }
+
+/* fills that hud.css does not carry */
+.hud .mp-f-idle-dim { fill: var(--state-idle-dim); }   /* REQUEST: HUD.svg.glyph(…, "idle", {dim}) — feeds at rest use the dim armed mark */
+.hud .mp-f-ink  { fill: var(--ink); }
+.hud .mp-f-line { fill: var(--line); }
+.hud .mp-f-void { fill: var(--bg-void); }
+.hud .mp-k-faint-dash { stroke-dasharray: 1 5; }
+
+/* train tail: bright head fading over 600 m of past track (gradient set per train) */
+.hud .mp-tail { fill: none; stroke-width: 2px; stroke-linecap: butt; vector-effect: non-scaling-stroke; }
+
+/* ---- HTML overlays inside the bezel */
+.mp-readout { position: absolute; left: 24px; top: 16px; display: grid; gap: 14px; pointer-events: none; z-index: 3; }
+.mp-readout .hero__big { line-height: 48px; }
+.mp-readout__row { display: flex; align-items: center; gap: 16px; }
+.mp-readout .hero__stack .b { color: var(--ink-2); }
+
+.mp-onair { display: grid; gap: 2px; }
+.mp-onair__head { font: 500 var(--fs-11)/16px var(--font-label); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--ink-3); }
+.mp-onair__row {
+  display: grid; grid-template-columns: 18px 44px 112px 104px auto; align-items: center; column-gap: 8px;
+  height: 22px; font: 400 var(--fs-12)/1 var(--font-data); color: var(--ink); white-space: nowrap;
+}
+.mp-onair__row .via { color: var(--ink-2); }
+.mp-onair__row .tm  { color: var(--state-tx); font-weight: 500; text-align: right; min-width: 56px; }
+.mp-onair__row .ch  { font-weight: 500; }
+
+.mp-ctl { position: absolute; right: 24px; top: 16px; display: flex; align-items: center; gap: 8px; z-index: 3; }
+.mp-ctl .mp-zoom { font: 400 var(--fs-12)/1 var(--font-data); color: var(--ink-2); padding: 0 0 0 8px; }
+.mp-ctl .mp-zoom .k { font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink-3); margin-right: 6px; }
+
+.mp-attrib { position: absolute; left: 24px; bottom: 12px; font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: 0.04em; z-index: 3; }
+.mp-attrib a { color: var(--ink-3); text-decoration: none; border: 0; }
+.mp-attrib a:hover { color: var(--ink-2); }
+
+.mp-cursor { position: absolute; right: 24px; bottom: 12px; font: 400 var(--fs-11)/1 var(--font-data); color: var(--ink-2); z-index: 3; white-space: nowrap; }
+.mp-cursor .k { font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink-3); margin-right: 8px; }
+
+.mp-demo { position: absolute; left: 50%; bottom: 40px; transform: translateX(-50%); display: flex; gap: 12px; align-items: center;
+  font: 400 var(--fs-11)/1 var(--font-data); color: var(--ink-3); z-index: 3; white-space: nowrap; }
+.mp-demo .k { font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink-3); }
+.mp-demo .v { color: var(--ink-2); }
+
+/* inspector sits inside the canvas, overlaying its right 480 px (brief §8.3) */
+.mp-canvas .inspector { z-index: 4; overflow: hidden; }
+.mp-insp-lead { padding: 4px 0 0; display: grid; gap: 8px; }
+/* the selected train's or feed's data block is the Map hero (brief §9.5): ID at hero__big 48 px, line 2 at 13 px */
+.mp-insp-hero { line-height: 48px; }
+.mp-insp-hero.mp-hero-fault { color: var(--state-fault); }
+.mp-insp-hero.mp-hero-stale { color: var(--state-stale); }
+.mp-insp-sub { display: flex; align-items: baseline; gap: 8px; font: 400 13px/1 var(--font-data); color: var(--ink-2); white-space: nowrap; }
+.mp-insp-sub .tag-sim { font-size: 13px; }
+.mp-insp-mp { display: flex; gap: 16px; align-items: flex-start; }
+
+/* coverage hatch at rest (CR map-01): hud.css §15 .hatch-rest */
+
+/* knockout halo: every map label gets a bg-void stroke under its glyphs so rail, hatch and shore
+   hairlines never run through the type (cartographic halo, 3 px) */
+.hud.mp-svg text { paint-order: stroke fill; stroke: var(--bg-void); stroke-width: 3px; stroke-linejoin: round; }
+
+/* leaders: hud.css §15 .k-ink3, so a leader never reads as a route */
+
+/* overlays carry the data-block knockout: a bg-void plate 4 px past their content (box-shadow, so nothing moves),
+   so a panned view (select) never runs line work through the readout, ON AIR list, mode chips or attribution */
+.mp-readout, .mp-ctl, .mp-attrib, .mp-cursor { background: var(--bg-void); box-shadow: 0 0 0 4px var(--bg-void); }

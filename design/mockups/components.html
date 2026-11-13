@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en" data-default-state="all">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1920">
+<title>WLT-1 Component Sheet</title>
+<meta name="description" content="sdrviz component sheet (brief §12 item 5): every tile state, the §3.5 combination frames in three variants, every transcript row state, and the meter, glyph, data block, milepost, title block, lever, chip, input and N/A treatments. Every value comes from data/sim/.">
+<!--
+  Boards (one 1920 x 1080 plate each; ?state=<id>, default "all" stacks them):
+    tiles        C1  tile states, standard 200 x 112, + anatomy at 2x
+    tiles-small  C2  tile states, compact 200 x 56 and strip 384 x 28
+    combos       C3  combination frames 1/2 (selected + TX, focused + selected, selected + fault, recent + stale)
+    combos-2     C4  combination frames 2/2 (TX + fault unacked, TX + fault acked, muted + TX, partial + TX)
+    rows         C5  transcript row states, 760 px log (1920)
+    rows-1440    C6  transcript row states, 560 px log (1440, speaker folds inline)
+    instruments  C7  M16 meter, M6 glyph set, M21 levers, M22 sparkline, M25 pips
+    controls     C8  chips (nominal, degraded, fault, acked, ...), inputs, N/A · RTL_TCP
+    readouts     C9  M8 data block, M7 AAR readout, M9 milepost tags, M10 title block (+ Map / OSM)
+  Data: components-data.js, written by components-data.py from data/sim/ and tools/gen_sim.py.
+  Grayscale test (brief §10.4): components-grayscale.html?state=<id>
+-->
+<link rel="stylesheet" href="_shared/hud.css">
+<link rel="stylesheet" href="components.css">
+</head>
+<body>
+<div id="sheet" class="cs"></div>
+<script src="_shared/hud.js"></script>
+<script src="components-data.js"></script>
+<script src="components.js"></script>
+</body>
+</html>

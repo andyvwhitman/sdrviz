@@ -1,0 +1,55 @@
+/* sdrviz styles: 8  Readouts and tags: AAR, SIM, M9, M10, N/A, data block.
+   Ported verbatim from design/mockups/_shared/hud.css (lines 475-526). Colours come from tokens.css only. */
+
+/* --------------------------------------------------------------------------
+   8  READOUTS + TAGS: AAR (M7), SIM, DEFECT, M9 milepost, M10 title block, N/A field, data block (M8)
+   -------------------------------------------------------------------------- */
+.aar { font: 500 var(--fs-24)/1 var(--font-data); color: var(--ink); white-space: nowrap; }
+.aar small, .aar .suffix { font: 400 var(--fs-12)/1 var(--font-data); color: var(--ink-2); margin-left: 6px; }
+.aar-mhz { display: block; font: 400 var(--fs-12)/1 var(--font-data); color: var(--ink-2); margin-top: 6px; }
+
+.tag-sim { font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink-3); text-transform: uppercase; }
+.has-wash .tag-sim { color: var(--ink-2); }
+.tag-defect {
+  display: inline-block; padding: 3px 4px 2px; box-shadow: inset 0 0 0 1px var(--ink);
+  font: 600 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--ink);
+}
+.tag-role { font: 500 var(--fs-11)/1 var(--font-data); color: var(--ink-2); }
+
+/* M9 milepost tag: 32 x 48 post */
+.mp-tag {
+  display: inline-grid; width: 32px; height: 48px; padding: 4px 0; box-shadow: inset 0 0 0 1px var(--line);
+  grid-template-rows: repeat(3, 13px); align-content: center; justify-items: center; text-align: center; vertical-align: middle;
+}
+.mp-tag .p { font: 500 var(--fs-11)/13px var(--font-label); letter-spacing: 0.04em; color: var(--ink-3); text-transform: uppercase; }
+.mp-tag .i { font: 400 var(--fs-11)/13px var(--font-data); color: var(--ink); }
+.mp-tag .d { font: 400 var(--fs-11)/13px var(--font-data); color: var(--ink-2); }
+.mp-tag.is-derived .p { color: var(--ink-3); }
+.mp-inline { font: 400 var(--fs-12)/1 var(--font-data); color: var(--ink); white-space: nowrap; }
+.mp-inline.is-derived { color: var(--ink-3); }
+
+/* M10 title block: lives at the status line's right end, 24 px tall */
+.title-block { display: flex; height: var(--status-h); align-items: stretch; border-left: 1px solid var(--line-faint); flex: none; }
+.title-block > div { display: flex; align-items: center; gap: 6px; padding: 0 10px; border-right: 1px solid var(--line-faint); white-space: nowrap; }
+.title-block > div:last-child { border-right: 0; padding-right: var(--margin-x); }
+.title-block .k { font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--ink-3); }
+.title-block .v { font: 400 var(--fs-11)/1 var(--font-data); color: var(--ink-2); }
+.title-block .v.is-sheet { color: var(--ink); font-weight: 500; }
+.title-block a { border: 0; color: var(--ink-3); font: 400 var(--fs-11)/1 var(--font-label); letter-spacing: 0.04em; }
+
+/* N/A · RTL_TCP field (brief §9.4) */
+.kv { display: grid; grid-template-columns: 1fr auto; align-items: baseline; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--grid); }
+.kv > .k { font: 500 var(--fs-11)/1.2 var(--font-label); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--ink-3); }
+.kv > .v { font: 400 var(--fs-13)/1.2 var(--font-data); color: var(--ink); text-align: right; white-space: nowrap; }
+.kv > .v .u { color: var(--ink-2); font-size: var(--fs-12); margin-left: 4px; }
+.kv.is-na > .v { color: var(--ink-3); }
+.kv .na { font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink-3); text-transform: uppercase; margin-left: 8px; }
+.kv .meter-svg { grid-column: 1 / -1; margin-top: 4px; }
+
+/* M8 data block (HTML form; SVG form in §12) */
+.datablock { display: inline-block; font: 400 var(--fs-12)/16px var(--font-data); color: var(--ink); white-space: nowrap; }
+.datablock .l2 { color: var(--ink-2); }
+.datablock.is-tx .l1 { color: var(--state-tx); }
+.datablock.is-lg { font-size: var(--fs-24); line-height: 30px; font-weight: 500; }
+.datablock.is-lg .l2 { font-size: var(--fs-13); line-height: 18px; font-weight: 400; }
+

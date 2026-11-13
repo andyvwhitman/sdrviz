@@ -1,0 +1,1284 @@
+{
+ "fault-1440": {
+  "audit": [
+   {
+    "gaps": [
+     90,
+     56,
+     32,
+     89,
+     42,
+     146,
+     56,
+     12,
+     105
+    ],
+    "names": [
+     "NEC \u00b7 RF&P",
+     "VRE 301",
+     "AMTRAK 53",
+     "FRANCONIA",
+     "ALEXANDRIA UNION",
+     "CFP\u2248 | NEC 135.7",
+     "MARC 433",
+     "MARC 432",
+     "AMTRAK 137",
+     "EDGEWOOD"
+    ],
+    "row": "0"
+   },
+   {
+    "gaps": [
+     558,
+     125,
+     18,
+     12,
+     37
+    ],
+    "names": [
+     "CSX CAPITAL SUB",
+     "WASHINGTON UNION",
+     "MARC 861",
+     "SAVAGE",
+     "JESSUP",
+     "CAMDEN"
+    ],
+    "row": "1"
+   },
+   {
+    "gaps": [
+     522,
+     126
+    ],
+    "names": [
+     "CSX METROPOLITAN SUB",
+     "WASHINGTON UNION",
+     "ROCKVILLE"
+    ],
+    "row": "2"
+   },
+   {
+    "gaps": [
+     136,
+     21,
+     19
+    ],
+    "names": [
+     "NS \u00b7 VRE MANASSAS",
+     "MANASSAS",
+     "BACKLICK",
+     "ALEXANDRIA UNION"
+    ],
+    "row": "3"
+   },
+   {
+    "gaps": [],
+    "names": [
+     "CSX PHILADELPHIA SUB"
+    ],
+    "row": "4"
+   }
+  ],
+  "widths": {
+   "equation|CFP\u2248 | NEC 135.7": 105.625,
+   "route|CSX CAPITAL SUB": 91.6875,
+   "route|CSX METROPOLITAN SUB": 127.890625,
+   "route|CSX PHILADELPHIA SUB": 124.453125,
+   "route|NEC \u00b7 RF&P": 59.40625,
+   "route|NS \u00b7 VRE MANASSAS": 103.96875,
+   "station|ABERDEEN": 52.328125,
+   "station|ALEXANDRIA": 61.921875,
+   "station|ALEXANDRIA UNION": 95.6875,
+   "station|AUTO TRAIN": 58.5625,
+   "station|BACKLICK": 48.234375,
+   "station|BACKLICK ROAD": 77.34375,
+   "station|BALTIMORE": 54.53125,
+   "station|BALTIMORE PENN": 84.296875,
+   "station|BAYVIEW YARD": 71.734375,
+   "station|BAYVIEW YD": 59.390625,
+   "station|BOWIE STATE": 64.8125,
+   "station|BURKE": 32.875,
+   "station|BURKE CENTRE": 74.75,
+   "station|BWI AIRPORT": 63.703125,
+   "station|BWI MARSHALL AIRPORT RAIL": 144.28125,
+   "station|CAMDEN": 40.515625,
+   "station|COLLEGE PARK": 72.9375,
+   "station|COLLEGE PARK-UNIVERSITY OF MARYLAND": 207.59375,
+   "station|CRYSTAL CITY": 68.46875,
+   "station|DORSEY": 38.65625,
+   "station|EDGEWOOD": 54.625,
+   "station|FRANCONIA": 56.453125,
+   "station|FRANCONIA-SPRINGFIELD": 125.390625,
+   "station|GAITHERSBG": 61.546875,
+   "station|GAITHERSBURG": 74.890625,
+   "station|GREENBELT": 57.0625,
+   "station|HALETHORPE": 64.671875,
+   "station|JESSUP": 38.125,
+   "station|JESSUP YARD": 66.140625,
+   "station|JESSUP YD": 53.78125,
+   "station|KENSINGTON": 62.8125,
+   "station|L'ENFANT": 46.671875,
+   "station|LAUREL": 38.578125,
+   "station|LORTON": 38.734375,
+   "station|LORTON AUTO TRAIN TERMINAL": 152.578125,
+   "station|MANASSAS": 52.25,
+   "station|MARTIN STATE": 70.203125,
+   "station|MARTIN STATE AIRPORT": 115.203125,
+   "station|MUIRKIRK": 47.203125,
+   "station|N CARROLLTON": 73.390625,
+   "station|NEW CARROLLTON": 88.75,
+   "station|ODENTON": 46.28125,
+   "station|PERRYVILLE": 60.0625,
+   "station|QUANTICO": 49.328125,
+   "station|RIPPON": 36.375,
+   "station|ROCKVILLE": 54.40625,
+   "station|SAVAGE": 37.078125,
+   "station|SEABROOK": 52.15625,
+   "station|SILVER SPG": 56.65625,
+   "station|SILVER SPRING": 73.59375,
+   "station|ST. DENIS": 47.5625,
+   "station|W BALTIMORE": 66.4375,
+   "station|WASHINGTON": 63.96875,
+   "station|WASHINGTON UNION": 97.71875,
+   "station|WEST BALTIMORE": 85.015625,
+   "station|WOODBRIDGE": 64.625,
+   "train|AMTRAK 137": 66,
+   "train|AMTRAK 2164": 72.609375,
+   "train|AMTRAK 53": 59.40625,
+   "train|AMTRAK 94": 59.40625,
+   "train|MARC 432": 52.8125,
+   "train|MARC 433": 52.8125,
+   "train|MARC 861": 52.8125,
+   "train|VRE 301": 46.203125
+  }
+ },
+ "fault-1920": {
+  "audit": [
+   {
+    "gaps": [
+     56,
+     25,
+     18,
+     11,
+     67,
+     19,
+     123,
+     55,
+     69,
+     61,
+     15,
+     15,
+     39,
+     56,
+     36
+    ],
+    "names": [
+     "NEC \u00b7 RF&P",
+     "QUANTICO",
+     "VRE 301",
+     "WOODBRIDGE",
+     "AMTRAK 53",
+     "FRANCONIA",
+     "ALEXANDRIA UNION",
+     "CRYSTAL CITY",
+     "CFP\u2248 | NEC 135.7",
+     "N CARROLLTON",
+     "MARC 433",
+     "BWI AIRPORT",
+     "MARC 432",
+     "AMTRAK 137",
+     "MARTIN STATE",
+     "EDGEWOOD"
+    ],
+    "row": "0"
+   },
+   {
+    "gaps": [
+     817,
+     179,
+     43,
+     32,
+     63,
+     18
+    ],
+    "names": [
+     "CSX CAPITAL SUB",
+     "WASHINGTON UNION",
+     "MARC 861",
+     "SAVAGE",
+     "JESSUP",
+     "ST. DENIS",
+     "CAMDEN"
+    ],
+    "row": "1"
+   },
+   {
+    "gaps": [
+     781,
+     18,
+     86
+    ],
+    "names": [
+     "CSX METROPOLITAN SUB",
+     "WASHINGTON UNION",
+     "SILVER SPRING",
+     "ROCKVILLE"
+    ],
+    "row": "2"
+   },
+   {
+    "gaps": [
+     215,
+     34,
+     60
+    ],
+    "names": [
+     "NS \u00b7 VRE MANASSAS",
+     "MANASSAS",
+     "BACKLICK ROAD",
+     "ALEXANDRIA UNION"
+    ],
+    "row": "3"
+   },
+   {
+    "gaps": [
+     1419
+    ],
+    "names": [
+     "CSX PHILADELPHIA SUB",
+     "BAYVIEW YARD"
+    ],
+    "row": "4"
+   }
+  ],
+  "widths": {
+   "equation|CFP\u2248 | NEC 135.7": 105.625,
+   "route|CSX CAPITAL SUB": 91.6875,
+   "route|CSX METROPOLITAN SUB": 127.890625,
+   "route|CSX PHILADELPHIA SUB": 124.453125,
+   "route|NEC \u00b7 RF&P": 59.40625,
+   "route|NS \u00b7 VRE MANASSAS": 103.96875,
+   "station|ABERDEEN": 52.328125,
+   "station|ALEXANDRIA": 61.921875,
+   "station|ALEXANDRIA UNION": 95.6875,
+   "station|AUTO TRAIN": 58.5625,
+   "station|BACKLICK": 48.234375,
+   "station|BACKLICK ROAD": 77.34375,
+   "station|BALTIMORE": 54.53125,
+   "station|BALTIMORE PENN": 84.296875,
+   "station|BAYVIEW YARD": 71.734375,
+   "station|BAYVIEW YD": 59.390625,
+   "station|BOWIE STATE": 64.8125,
+   "station|BURKE": 32.875,
+   "station|BURKE CENTRE": 74.75,
+   "station|BWI AIRPORT": 63.703125,
+   "station|BWI MARSHALL AIRPORT RAIL": 144.28125,
+   "station|CAMDEN": 40.515625,
+   "station|COLLEGE PARK": 72.9375,
+   "station|COLLEGE PARK-UNIVERSITY OF MARYLAND": 207.59375,
+   "station|CRYSTAL CITY": 68.46875,
+   "station|DORSEY": 38.65625,
+   "station|EDGEWOOD": 54.625,
+   "station|FRANCONIA": 56.453125,
+   "station|FRANCONIA-SPRINGFIELD": 125.390625,
+   "station|GAITHERSBG": 61.546875,
+   "station|GAITHERSBURG": 74.890625,
+   "station|GREENBELT": 57.0625,
+   "station|HALETHORPE": 64.671875,
+   "station|JESSUP": 38.125,
+   "station|JESSUP YARD": 66.140625,
+   "station|JESSUP YD": 53.78125,
+   "station|KENSINGTON": 62.8125,
+   "station|L'ENFANT": 46.671875,
+   "station|LAUREL": 38.578125,
+   "station|LORTON": 38.734375,
+   "station|LORTON AUTO TRAIN TERMINAL": 152.578125,
+   "station|MANASSAS": 52.25,
+   "station|MARTIN STATE": 70.203125,
+   "station|MARTIN STATE AIRPORT": 115.203125,
+   "station|MUIRKIRK": 47.203125,
+   "station|N CARROLLTON": 73.390625,
+   "station|NEW CARROLLTON": 88.75,
+   "station|ODENTON": 46.28125,
+   "station|PERRYVILLE": 60.0625,
+   "station|QUANTICO": 49.328125,
+   "station|RIPPON": 36.375,
+   "station|ROCKVILLE": 54.40625,
+   "station|SAVAGE": 37.078125,
+   "station|SEABROOK": 52.15625,
+   "station|SILVER SPG": 56.65625,
+   "station|SILVER SPRING": 73.59375,
+   "station|ST. DENIS": 47.5625,
+   "station|W BALTIMORE": 66.4375,
+   "station|WASHINGTON": 63.96875,
+   "station|WASHINGTON UNION": 97.71875,
+   "station|WEST BALTIMORE": 85.015625,
+   "station|WOODBRIDGE": 64.625,
+   "train|AMTRAK 137": 66,
+   "train|AMTRAK 2164": 72.609375,
+   "train|AMTRAK 53": 59.40625,
+   "train|AMTRAK 94": 59.40625,
+   "train|MARC 432": 52.8125,
+   "train|MARC 433": 52.8125,
+   "train|MARC 861": 52.8125,
+   "train|VRE 301": 46.203125
+  }
+ },
+ "fault-acked-1440": {
+  "audit": [
+   {
+    "gaps": [
+     90,
+     56,
+     32,
+     89,
+     42,
+     146,
+     56,
+     72,
+     26
+    ],
+    "names": [
+     "NEC \u00b7 RF&P",
+     "VRE 301",
+     "AMTRAK 53",
+     "FRANCONIA",
+     "ALEXANDRIA UNION",
+     "CFP\u2248 | NEC 135.7",
+     "MARC 433",
+     "MARC 432",
+     "BALTIMORE PENN",
+     "EDGEWOOD"
+    ],
+    "row": "0"
+   },
+   {
+    "gaps": [
+     558,
+     125,
+     18,
+     12,
+     37
+    ],
+    "names": [
+     "CSX CAPITAL SUB",
+     "WASHINGTON UNION",
+     "MARC 861",
+     "SAVAGE",
+     "JESSUP",
+     "CAMDEN"
+    ],
+    "row": "1"
+   },
+   {
+    "gaps": [
+     522,
+     126
+    ],
+    "names": [
+     "CSX METROPOLITAN SUB",
+     "WASHINGTON UNION",
+     "ROCKVILLE"
+    ],
+    "row": "2"
+   },
+   {
+    "gaps": [
+     136,
+     21,
+     19
+    ],
+    "names": [
+     "NS \u00b7 VRE MANASSAS",
+     "MANASSAS",
+     "BACKLICK",
+     "ALEXANDRIA UNION"
+    ],
+    "row": "3"
+   },
+   {
+    "gaps": [],
+    "names": [
+     "CSX PHILADELPHIA SUB"
+    ],
+    "row": "4"
+   }
+  ],
+  "widths": {
+   "equation|CFP\u2248 | NEC 135.7": 105.625,
+   "route|CSX CAPITAL SUB": 91.6875,
+   "route|CSX METROPOLITAN SUB": 127.890625,
+   "route|CSX PHILADELPHIA SUB": 124.453125,
+   "route|NEC \u00b7 RF&P": 59.40625,
+   "route|NS \u00b7 VRE MANASSAS": 103.96875,
+   "station|ABERDEEN": 52.328125,
+   "station|ALEXANDRIA": 61.921875,
+   "station|ALEXANDRIA UNION": 95.6875,
+   "station|AUTO TRAIN": 58.5625,
+   "station|BACKLICK": 48.234375,
+   "station|BACKLICK ROAD": 77.34375,
+   "station|BALTIMORE": 54.53125,
+   "station|BALTIMORE PENN": 84.296875,
+   "station|BAYVIEW YARD": 71.734375,
+   "station|BAYVIEW YD": 59.390625,
+   "station|BOWIE STATE": 64.8125,
+   "station|BURKE": 32.875,
+   "station|BURKE CENTRE": 74.75,
+   "station|BWI AIRPORT": 63.703125,
+   "station|BWI MARSHALL AIRPORT RAIL": 144.28125,
+   "station|CAMDEN": 40.515625,
+   "station|COLLEGE PARK": 72.9375,
+   "station|COLLEGE PARK-UNIVERSITY OF MARYLAND": 207.59375,
+   "station|CRYSTAL CITY": 68.46875,
+   "station|DORSEY": 38.65625,
+   "station|EDGEWOOD": 54.625,
+   "station|FRANCONIA": 56.453125,
+   "station|FRANCONIA-SPRINGFIELD": 125.390625,
+   "station|GAITHERSBG": 61.546875,
+   "station|GAITHERSBURG": 74.890625,
+   "station|GREENBELT": 57.0625,
+   "station|HALETHORPE": 64.671875,
+   "station|JESSUP": 38.125,
+   "station|JESSUP YARD": 66.140625,
+   "station|JESSUP YD": 53.78125,
+   "station|KENSINGTON": 62.8125,
+   "station|L'ENFANT": 46.671875,
+   "station|LAUREL": 38.578125,
+   "station|LORTON": 38.734375,
+   "station|LORTON AUTO TRAIN TERMINAL": 152.578125,
+   "station|MANASSAS": 52.25,
+   "station|MARTIN STATE": 70.203125,
+   "station|MARTIN STATE AIRPORT": 115.203125,
+   "station|MUIRKIRK": 47.203125,
+   "station|N CARROLLTON": 73.390625,
+   "station|NEW CARROLLTON": 88.75,
+   "station|ODENTON": 46.28125,
+   "station|PERRYVILLE": 60.0625,
+   "station|QUANTICO": 49.328125,
+   "station|RIPPON": 36.375,
+   "station|ROCKVILLE": 54.40625,
+   "station|SAVAGE": 37.078125,
+   "station|SEABROOK": 52.15625,
+   "station|SILVER SPG": 56.65625,
+   "station|SILVER SPRING": 73.59375,
+   "station|ST. DENIS": 47.5625,
+   "station|W BALTIMORE": 66.4375,
+   "station|WASHINGTON": 63.96875,
+   "station|WASHINGTON UNION": 97.71875,
+   "station|WEST BALTIMORE": 85.015625,
+   "station|WOODBRIDGE": 64.625,
+   "train|AMTRAK 137": 66,
+   "train|AMTRAK 2164": 72.609375,
+   "train|AMTRAK 53": 59.40625,
+   "train|AMTRAK 94": 59.40625,
+   "train|MARC 432": 52.8125,
+   "train|MARC 433": 52.8125,
+   "train|MARC 861": 52.8125,
+   "train|VRE 301": 46.203125
+  }
+ },
+ "fault-acked-1920": {
+  "audit": [
+   {
+    "gaps": [
+     56,
+     25,
+     18,
+     11,
+     67,
+     19,
+     123,
+     55,
+     69,
+     61,
+     15,
+     15,
+     107,
+     81
+    ],
+    "names": [
+     "NEC \u00b7 RF&P",
+     "QUANTICO",
+     "VRE 301",
+     "WOODBRIDGE",
+     "AMTRAK 53",
+     "FRANCONIA",
+     "ALEXANDRIA UNION",
+     "CRYSTAL CITY",
+     "CFP\u2248 | NEC 135.7",
+     "N CARROLLTON",
+     "MARC 433",
+     "BWI AIRPORT",
+     "MARC 432",
+     "BALTIMORE PENN",
+     "EDGEWOOD"
+    ],
+    "row": "0"
+   },
+   {
+    "gaps": [
+     817,
+     179,
+     43,
+     32,
+     63,
+     18
+    ],
+    "names": [
+     "CSX CAPITAL SUB",
+     "WASHINGTON UNION",
+     "MARC 861",
+     "SAVAGE",
+     "JESSUP",
+     "ST. DENIS",
+     "CAMDEN"
+    ],
+    "row": "1"
+   },
+   {
+    "gaps": [
+     781,
+     18,
+     86
+    ],
+    "names": [
+     "CSX METROPOLITAN SUB",
+     "WASHINGTON UNION",
+     "SILVER SPRING",
+     "ROCKVILLE"
+    ],
+    "row": "2"
+   },
+   {
+    "gaps": [
+     215,
+     34,
+     60
+    ],
+    "names": [
+     "NS \u00b7 VRE MANASSAS",
+     "MANASSAS",
+     "BACKLICK ROAD",
+     "ALEXANDRIA UNION"
+    ],
+    "row": "3"
+   },
+   {
+    "gaps": [
+     1419
+    ],
+    "names": [
+     "CSX PHILADELPHIA SUB",
+     "BAYVIEW YARD"
+    ],
+    "row": "4"
+   }
+  ],
+  "widths": {
+   "equation|CFP\u2248 | NEC 135.7": 105.625,
+   "route|CSX CAPITAL SUB": 91.6875,
+   "route|CSX METROPOLITAN SUB": 127.890625,
+   "route|CSX PHILADELPHIA SUB": 124.453125,
+   "route|NEC \u00b7 RF&P": 59.40625,
+   "route|NS \u00b7 VRE MANASSAS": 103.96875,
+   "station|ABERDEEN": 52.328125,
+   "station|ALEXANDRIA": 61.921875,
+   "station|ALEXANDRIA UNION": 95.6875,
+   "station|AUTO TRAIN": 58.5625,
+   "station|BACKLICK": 48.234375,
+   "station|BACKLICK ROAD": 77.34375,
+   "station|BALTIMORE": 54.53125,
+   "station|BALTIMORE PENN": 84.296875,
+   "station|BAYVIEW YARD": 71.734375,
+   "station|BAYVIEW YD": 59.390625,
+   "station|BOWIE STATE": 64.8125,
+   "station|BURKE": 32.875,
+   "station|BURKE CENTRE": 74.75,
+   "station|BWI AIRPORT": 63.703125,
+   "station|BWI MARSHALL AIRPORT RAIL": 144.28125,
+   "station|CAMDEN": 40.515625,
+   "station|COLLEGE PARK": 72.9375,
+   "station|COLLEGE PARK-UNIVERSITY OF MARYLAND": 207.59375,
+   "station|CRYSTAL CITY": 68.46875,
+   "station|DORSEY": 38.65625,
+   "station|EDGEWOOD": 54.625,
+   "station|FRANCONIA": 56.453125,
+   "station|FRANCONIA-SPRINGFIELD": 125.390625,
+   "station|GAITHERSBG": 61.546875,
+   "station|GAITHERSBURG": 74.890625,
+   "station|GREENBELT": 57.0625,
+   "station|HALETHORPE": 64.671875,
+   "station|JESSUP": 38.125,
+   "station|JESSUP YARD": 66.140625,
+   "station|JESSUP YD": 53.78125,
+   "station|KENSINGTON": 62.8125,
+   "station|L'ENFANT": 46.671875,
+   "station|LAUREL": 38.578125,
+   "station|LORTON": 38.734375,
+   "station|LORTON AUTO TRAIN TERMINAL": 152.578125,
+   "station|MANASSAS": 52.25,
+   "station|MARTIN STATE": 70.203125,
+   "station|MARTIN STATE AIRPORT": 115.203125,
+   "station|MUIRKIRK": 47.203125,
+   "station|N CARROLLTON": 73.390625,
+   "station|NEW CARROLLTON": 88.75,
+   "station|ODENTON": 46.28125,
+   "station|PERRYVILLE": 60.0625,
+   "station|QUANTICO": 49.328125,
+   "station|RIPPON": 36.375,
+   "station|ROCKVILLE": 54.40625,
+   "station|SAVAGE": 37.078125,
+   "station|SEABROOK": 52.15625,
+   "station|SILVER SPG": 56.65625,
+   "station|SILVER SPRING": 73.59375,
+   "station|ST. DENIS": 47.5625,
+   "station|W BALTIMORE": 66.4375,
+   "station|WASHINGTON": 63.96875,
+   "station|WASHINGTON UNION": 97.71875,
+   "station|WEST BALTIMORE": 85.015625,
+   "station|WOODBRIDGE": 64.625,
+   "train|AMTRAK 137": 66,
+   "train|AMTRAK 2164": 72.609375,
+   "train|AMTRAK 53": 59.40625,
+   "train|AMTRAK 94": 59.40625,
+   "train|MARC 432": 52.8125,
+   "train|MARC 433": 52.8125,
+   "train|MARC 861": 52.8125,
+   "train|VRE 301": 46.203125
+  }
+ },
+ "keyed-1440": {
+  "audit": [
+   {
+    "gaps": [
+     52,
+     11,
+     42,
+     32,
+     89,
+     42,
+     90,
+     31,
+     18,
+     72,
+     26
+    ],
+    "names": [
+     "NEC \u00b7 RF&P",
+     "VRE 301",
+     "RIPPON",
+     "AMTRAK 53",
+     "FRANCONIA",
+     "ALEXANDRIA UNION",
+     "CFP\u2248 | NEC 135.7",
+     "SEABROOK",
+     "MARC 433",
+     "MARC 432",
+     "BALTIMORE PENN",
+     "EDGEWOOD"
+    ],
+    "row": "0"
+   },
+   {
+    "gaps": [
+     558,
+     125,
+     18,
+     12,
+     37
+    ],
+    "names": [
+     "CSX CAPITAL SUB",
+     "WASHINGTON UNION",
+     "MARC 861",
+     "SAVAGE",
+     "JESSUP",
+     "CAMDEN"
+    ],
+    "row": "1"
+   },
+   {
+    "gaps": [
+     522,
+     126
+    ],
+    "names": [
+     "CSX METROPOLITAN SUB",
+     "WASHINGTON UNION",
+     "ROCKVILLE"
+    ],
+    "row": "2"
+   },
+   {
+    "gaps": [
+     136,
+     21,
+     19
+    ],
+    "names": [
+     "NS \u00b7 VRE MANASSAS",
+     "MANASSAS",
+     "BACKLICK",
+     "ALEXANDRIA UNION"
+    ],
+    "row": "3"
+   },
+   {
+    "gaps": [],
+    "names": [
+     "CSX PHILADELPHIA SUB"
+    ],
+    "row": "4"
+   }
+  ],
+  "widths": {
+   "equation|CFP\u2248 | NEC 135.7": 105.625,
+   "route|CSX CAPITAL SUB": 91.6875,
+   "route|CSX METROPOLITAN SUB": 127.890625,
+   "route|CSX PHILADELPHIA SUB": 124.453125,
+   "route|NEC \u00b7 RF&P": 59.40625,
+   "route|NS \u00b7 VRE MANASSAS": 103.96875,
+   "station|ABERDEEN": 52.328125,
+   "station|ALEXANDRIA": 61.921875,
+   "station|ALEXANDRIA UNION": 95.6875,
+   "station|AUTO TRAIN": 58.5625,
+   "station|BACKLICK": 48.234375,
+   "station|BACKLICK ROAD": 77.34375,
+   "station|BALTIMORE": 54.53125,
+   "station|BALTIMORE PENN": 84.296875,
+   "station|BAYVIEW YARD": 71.734375,
+   "station|BAYVIEW YD": 59.390625,
+   "station|BOWIE STATE": 64.8125,
+   "station|BURKE": 32.875,
+   "station|BURKE CENTRE": 74.75,
+   "station|BWI AIRPORT": 63.703125,
+   "station|BWI MARSHALL AIRPORT RAIL": 144.28125,
+   "station|CAMDEN": 40.515625,
+   "station|COLLEGE PARK": 72.9375,
+   "station|COLLEGE PARK-UNIVERSITY OF MARYLAND": 207.59375,
+   "station|CRYSTAL CITY": 68.46875,
+   "station|DORSEY": 38.65625,
+   "station|EDGEWOOD": 54.625,
+   "station|FRANCONIA": 56.453125,
+   "station|FRANCONIA-SPRINGFIELD": 125.390625,
+   "station|GAITHERSBG": 61.546875,
+   "station|GAITHERSBURG": 74.890625,
+   "station|GREENBELT": 57.0625,
+   "station|HALETHORPE": 64.671875,
+   "station|JESSUP": 38.125,
+   "station|JESSUP YARD": 66.140625,
+   "station|JESSUP YD": 53.78125,
+   "station|KENSINGTON": 62.8125,
+   "station|L'ENFANT": 46.671875,
+   "station|LAUREL": 38.578125,
+   "station|LORTON": 38.734375,
+   "station|LORTON AUTO TRAIN TERMINAL": 152.578125,
+   "station|MANASSAS": 52.25,
+   "station|MARTIN STATE": 70.203125,
+   "station|MARTIN STATE AIRPORT": 115.203125,
+   "station|MUIRKIRK": 47.203125,
+   "station|N CARROLLTON": 73.390625,
+   "station|NEW CARROLLTON": 88.75,
+   "station|ODENTON": 46.28125,
+   "station|PERRYVILLE": 60.0625,
+   "station|QUANTICO": 49.328125,
+   "station|RIPPON": 36.375,
+   "station|ROCKVILLE": 54.40625,
+   "station|SAVAGE": 37.078125,
+   "station|SEABROOK": 52.15625,
+   "station|SILVER SPG": 56.65625,
+   "station|SILVER SPRING": 73.59375,
+   "station|ST. DENIS": 47.5625,
+   "station|W BALTIMORE": 66.4375,
+   "station|WASHINGTON": 63.96875,
+   "station|WASHINGTON UNION": 97.71875,
+   "station|WEST BALTIMORE": 85.015625,
+   "station|WOODBRIDGE": 64.625,
+   "train|AMTRAK 137": 66,
+   "train|AMTRAK 2164": 72.609375,
+   "train|AMTRAK 53": 59.40625,
+   "train|AMTRAK 94": 59.40625,
+   "train|MARC 432": 52.8125,
+   "train|MARC 433": 52.8125,
+   "train|MARC 861": 52.8125,
+   "train|VRE 301": 46.203125
+  }
+ },
+ "keyed-1920": {
+  "audit": [
+   {
+    "gaps": [
+     83,
+     32,
+     77,
+     67,
+     19,
+     123,
+     55,
+     69,
+     106,
+     46,
+     107,
+     81
+    ],
+    "names": [
+     "NEC \u00b7 RF&P",
+     "VRE 301",
+     "RIPPON",
+     "AMTRAK 53",
+     "FRANCONIA",
+     "ALEXANDRIA UNION",
+     "CRYSTAL CITY",
+     "CFP\u2248 | NEC 135.7",
+     "N CARROLLTON",
+     "MARC 433",
+     "MARC 432",
+     "BALTIMORE PENN",
+     "EDGEWOOD"
+    ],
+    "row": "0"
+   },
+   {
+    "gaps": [
+     817,
+     179,
+     43,
+     32,
+     63,
+     18
+    ],
+    "names": [
+     "CSX CAPITAL SUB",
+     "WASHINGTON UNION",
+     "MARC 861",
+     "SAVAGE",
+     "JESSUP",
+     "ST. DENIS",
+     "CAMDEN"
+    ],
+    "row": "1"
+   },
+   {
+    "gaps": [
+     781,
+     18,
+     86
+    ],
+    "names": [
+     "CSX METROPOLITAN SUB",
+     "WASHINGTON UNION",
+     "SILVER SPRING",
+     "ROCKVILLE"
+    ],
+    "row": "2"
+   },
+   {
+    "gaps": [
+     215,
+     34,
+     60
+    ],
+    "names": [
+     "NS \u00b7 VRE MANASSAS",
+     "MANASSAS",
+     "BACKLICK ROAD",
+     "ALEXANDRIA UNION"
+    ],
+    "row": "3"
+   },
+   {
+    "gaps": [
+     1419
+    ],
+    "names": [
+     "CSX PHILADELPHIA SUB",
+     "BAYVIEW YARD"
+    ],
+    "row": "4"
+   }
+  ],
+  "widths": {
+   "equation|CFP\u2248 | NEC 135.7": 105.625,
+   "route|CSX CAPITAL SUB": 91.6875,
+   "route|CSX METROPOLITAN SUB": 127.890625,
+   "route|CSX PHILADELPHIA SUB": 124.453125,
+   "route|NEC \u00b7 RF&P": 59.40625,
+   "route|NS \u00b7 VRE MANASSAS": 103.96875,
+   "station|ABERDEEN": 52.328125,
+   "station|ALEXANDRIA": 61.921875,
+   "station|ALEXANDRIA UNION": 95.6875,
+   "station|AUTO TRAIN": 58.5625,
+   "station|BACKLICK": 48.234375,
+   "station|BACKLICK ROAD": 77.34375,
+   "station|BALTIMORE": 54.53125,
+   "station|BALTIMORE PENN": 84.296875,
+   "station|BAYVIEW YARD": 71.734375,
+   "station|BAYVIEW YD": 59.390625,
+   "station|BOWIE STATE": 64.8125,
+   "station|BURKE": 32.875,
+   "station|BURKE CENTRE": 74.75,
+   "station|BWI AIRPORT": 63.703125,
+   "station|BWI MARSHALL AIRPORT RAIL": 144.28125,
+   "station|CAMDEN": 40.515625,
+   "station|COLLEGE PARK": 72.9375,
+   "station|COLLEGE PARK-UNIVERSITY OF MARYLAND": 207.59375,
+   "station|CRYSTAL CITY": 68.46875,
+   "station|DORSEY": 38.65625,
+   "station|EDGEWOOD": 54.625,
+   "station|FRANCONIA": 56.453125,
+   "station|FRANCONIA-SPRINGFIELD": 125.390625,
+   "station|GAITHERSBG": 61.546875,
+   "station|GAITHERSBURG": 74.890625,
+   "station|GREENBELT": 57.0625,
+   "station|HALETHORPE": 64.671875,
+   "station|JESSUP": 38.125,
+   "station|JESSUP YARD": 66.140625,
+   "station|JESSUP YD": 53.78125,
+   "station|KENSINGTON": 62.8125,
+   "station|L'ENFANT": 46.671875,
+   "station|LAUREL": 38.578125,
+   "station|LORTON": 38.734375,
+   "station|LORTON AUTO TRAIN TERMINAL": 152.578125,
+   "station|MANASSAS": 52.25,
+   "station|MARTIN STATE": 70.203125,
+   "station|MARTIN STATE AIRPORT": 115.203125,
+   "station|MUIRKIRK": 47.203125,
+   "station|N CARROLLTON": 73.390625,
+   "station|NEW CARROLLTON": 88.75,
+   "station|ODENTON": 46.28125,
+   "station|PERRYVILLE": 60.0625,
+   "station|QUANTICO": 49.328125,
+   "station|RIPPON": 36.375,
+   "station|ROCKVILLE": 54.40625,
+   "station|SAVAGE": 37.078125,
+   "station|SEABROOK": 52.15625,
+   "station|SILVER SPG": 56.65625,
+   "station|SILVER SPRING": 73.59375,
+   "station|ST. DENIS": 47.5625,
+   "station|W BALTIMORE": 66.4375,
+   "station|WASHINGTON": 63.96875,
+   "station|WASHINGTON UNION": 97.71875,
+   "station|WEST BALTIMORE": 85.015625,
+   "station|WOODBRIDGE": 64.625,
+   "train|AMTRAK 137": 66,
+   "train|AMTRAK 2164": 72.609375,
+   "train|AMTRAK 53": 59.40625,
+   "train|AMTRAK 94": 59.40625,
+   "train|MARC 432": 52.8125,
+   "train|MARC 433": 52.8125,
+   "train|MARC 861": 52.8125,
+   "train|VRE 301": 46.203125
+  }
+ },
+ "listening-1440": {
+  "audit": [
+   {
+    "gaps": [
+     32,
+     28,
+     71,
+     24,
+     89,
+     42,
+     30,
+     75,
+     69,
+     126
+    ],
+    "names": [
+     "NEC \u00b7 RF&P",
+     "QUANTICO",
+     "RIPPON",
+     "LORTON",
+     "FRANCONIA",
+     "ALEXANDRIA UNION",
+     "CFP\u2248 | NEC 135.7",
+     "AMTRAK 65",
+     "ODENTON",
+     "BALTIMORE PENN",
+     "EDGEWOOD"
+    ],
+    "row": "0"
+   },
+   {
+    "gaps": [
+     558,
+     172,
+     38,
+     37
+    ],
+    "names": [
+     "CSX CAPITAL SUB",
+     "WASHINGTON UNION",
+     "LAUREL",
+     "JESSUP",
+     "CAMDEN"
+    ],
+    "row": "1"
+   },
+   {
+    "gaps": [
+     522,
+     126
+    ],
+    "names": [
+     "CSX METROPOLITAN SUB",
+     "WASHINGTON UNION",
+     "ROCKVILLE"
+    ],
+    "row": "2"
+   },
+   {
+    "gaps": [
+     136,
+     21,
+     19
+    ],
+    "names": [
+     "NS \u00b7 VRE MANASSAS",
+     "MANASSAS",
+     "BACKLICK",
+     "ALEXANDRIA UNION"
+    ],
+    "row": "3"
+   },
+   {
+    "gaps": [],
+    "names": [
+     "CSX PHILADELPHIA SUB"
+    ],
+    "row": "4"
+   }
+  ],
+  "widths": {
+   "equation|CFP\u2248 | NEC 135.7": 105.625,
+   "route|CSX CAPITAL SUB": 91.6875,
+   "route|CSX METROPOLITAN SUB": 127.890625,
+   "route|CSX PHILADELPHIA SUB": 124.453125,
+   "route|NEC \u00b7 RF&P": 59.40625,
+   "route|NS \u00b7 VRE MANASSAS": 103.96875,
+   "station|ABERDEEN": 52.328125,
+   "station|ALEXANDRIA": 61.921875,
+   "station|ALEXANDRIA UNION": 95.6875,
+   "station|AUTO TRAIN": 58.5625,
+   "station|BACKLICK": 48.234375,
+   "station|BACKLICK ROAD": 77.34375,
+   "station|BALTIMORE": 54.53125,
+   "station|BALTIMORE PENN": 84.296875,
+   "station|BAYVIEW YARD": 71.734375,
+   "station|BAYVIEW YD": 59.390625,
+   "station|BOWIE STATE": 64.8125,
+   "station|BURKE": 32.875,
+   "station|BURKE CENTRE": 74.75,
+   "station|BWI AIRPORT": 63.703125,
+   "station|BWI MARSHALL AIRPORT RAIL": 144.28125,
+   "station|CAMDEN": 40.515625,
+   "station|COLLEGE PARK": 72.9375,
+   "station|COLLEGE PARK-UNIVERSITY OF MARYLAND": 207.59375,
+   "station|CRYSTAL CITY": 68.46875,
+   "station|DORSEY": 38.65625,
+   "station|EDGEWOOD": 54.625,
+   "station|FRANCONIA": 56.453125,
+   "station|FRANCONIA-SPRINGFIELD": 125.390625,
+   "station|GAITHERSBG": 61.546875,
+   "station|GAITHERSBURG": 74.890625,
+   "station|GREENBELT": 57.0625,
+   "station|HALETHORPE": 64.671875,
+   "station|JESSUP": 38.125,
+   "station|JESSUP YARD": 66.140625,
+   "station|JESSUP YD": 53.78125,
+   "station|KENSINGTON": 62.8125,
+   "station|L'ENFANT": 46.671875,
+   "station|LAUREL": 38.578125,
+   "station|LORTON": 38.734375,
+   "station|LORTON AUTO TRAIN TERMINAL": 152.578125,
+   "station|MANASSAS": 52.25,
+   "station|MARTIN STATE": 70.203125,
+   "station|MARTIN STATE AIRPORT": 115.203125,
+   "station|MUIRKIRK": 47.203125,
+   "station|N CARROLLTON": 73.390625,
+   "station|NEW CARROLLTON": 88.75,
+   "station|ODENTON": 46.28125,
+   "station|PERRYVILLE": 60.0625,
+   "station|QUANTICO": 49.328125,
+   "station|RIPPON": 36.375,
+   "station|ROCKVILLE": 54.40625,
+   "station|SAVAGE": 37.078125,
+   "station|SEABROOK": 52.15625,
+   "station|SILVER SPG": 56.65625,
+   "station|SILVER SPRING": 73.59375,
+   "station|ST. DENIS": 47.5625,
+   "station|W BALTIMORE": 66.4375,
+   "station|WASHINGTON": 63.96875,
+   "station|WASHINGTON UNION": 97.71875,
+   "station|WEST BALTIMORE": 85.015625,
+   "station|WOODBRIDGE": 64.625,
+   "train|AMTRAK 65": 59.40625
+  }
+ },
+ "listening-1920": {
+  "audit": [
+   {
+    "gaps": [
+     56,
+     56,
+     51,
+     93,
+     19,
+     123,
+     55,
+     51,
+     17,
+     50,
+     43,
+     26,
+     71,
+     36
+    ],
+    "names": [
+     "NEC \u00b7 RF&P",
+     "QUANTICO",
+     "RIPPON",
+     "AUTO TRAIN",
+     "FRANCONIA",
+     "ALEXANDRIA UNION",
+     "CRYSTAL CITY",
+     "CFP\u2248 | NEC 135.7",
+     "AMTRAK 65",
+     "SEABROOK",
+     "ODENTON",
+     "HALETHORPE",
+     "BALTIMORE PENN",
+     "MARTIN STATE",
+     "EDGEWOOD"
+    ],
+    "row": "0"
+   },
+   {
+    "gaps": [
+     817,
+     163,
+     27,
+     23,
+     23,
+     26,
+     18
+    ],
+    "names": [
+     "CSX CAPITAL SUB",
+     "WASHINGTON UNION",
+     "MUIRKIRK",
+     "LAUREL",
+     "JESSUP YD",
+     "DORSEY",
+     "ST. DENIS",
+     "CAMDEN"
+    ],
+    "row": "1"
+   },
+   {
+    "gaps": [
+     781,
+     18,
+     86
+    ],
+    "names": [
+     "CSX METROPOLITAN SUB",
+     "WASHINGTON UNION",
+     "SILVER SPRING",
+     "ROCKVILLE"
+    ],
+    "row": "2"
+   },
+   {
+    "gaps": [
+     215,
+     34,
+     60
+    ],
+    "names": [
+     "NS \u00b7 VRE MANASSAS",
+     "MANASSAS",
+     "BACKLICK ROAD",
+     "ALEXANDRIA UNION"
+    ],
+    "row": "3"
+   },
+   {
+    "gaps": [
+     1419
+    ],
+    "names": [
+     "CSX PHILADELPHIA SUB",
+     "BAYVIEW YARD"
+    ],
+    "row": "4"
+   }
+  ],
+  "widths": {
+   "equation|CFP\u2248 | NEC 135.7": 105.625,
+   "route|CSX CAPITAL SUB": 91.6875,
+   "route|CSX METROPOLITAN SUB": 127.890625,
+   "route|CSX PHILADELPHIA SUB": 124.453125,
+   "route|NEC \u00b7 RF&P": 59.40625,
+   "route|NS \u00b7 VRE MANASSAS": 103.96875,
+   "station|ABERDEEN": 52.328125,
+   "station|ALEXANDRIA": 61.921875,
+   "station|ALEXANDRIA UNION": 95.6875,
+   "station|AUTO TRAIN": 58.5625,
+   "station|BACKLICK": 48.234375,
+   "station|BACKLICK ROAD": 77.34375,
+   "station|BALTIMORE": 54.53125,
+   "station|BALTIMORE PENN": 84.296875,
+   "station|BAYVIEW YARD": 71.734375,
+   "station|BAYVIEW YD": 59.390625,
+   "station|BOWIE STATE": 64.8125,
+   "station|BURKE": 32.875,
+   "station|BURKE CENTRE": 74.75,
+   "station|BWI AIRPORT": 63.703125,
+   "station|BWI MARSHALL AIRPORT RAIL": 144.28125,
+   "station|CAMDEN": 40.515625,
+   "station|COLLEGE PARK": 72.9375,
+   "station|COLLEGE PARK-UNIVERSITY OF MARYLAND": 207.59375,
+   "station|CRYSTAL CITY": 68.46875,
+   "station|DORSEY": 38.65625,
+   "station|EDGEWOOD": 54.625,
+   "station|FRANCONIA": 56.453125,
+   "station|FRANCONIA-SPRINGFIELD": 125.390625,
+   "station|GAITHERSBG": 61.546875,
+   "station|GAITHERSBURG": 74.890625,
+   "station|GREENBELT": 57.0625,
+   "station|HALETHORPE": 64.671875,
+   "station|JESSUP": 38.125,
+   "station|JESSUP YARD": 66.140625,
+   "station|JESSUP YD": 53.78125,
+   "station|KENSINGTON": 62.8125,
+   "station|L'ENFANT": 46.671875,
+   "station|LAUREL": 38.578125,
+   "station|LORTON": 38.734375,
+   "station|LORTON AUTO TRAIN TERMINAL": 152.578125,
+   "station|MANASSAS": 52.25,
+   "station|MARTIN STATE": 70.203125,
+   "station|MARTIN STATE AIRPORT": 115.203125,
+   "station|MUIRKIRK": 47.203125,
+   "station|N CARROLLTON": 73.390625,
+   "station|NEW CARROLLTON": 88.75,
+   "station|ODENTON": 46.28125,
+   "station|PERRYVILLE": 60.0625,
+   "station|QUANTICO": 49.328125,
+   "station|RIPPON": 36.375,
+   "station|ROCKVILLE": 54.40625,
+   "station|SAVAGE": 37.078125,
+   "station|SEABROOK": 52.15625,
+   "station|SILVER SPG": 56.65625,
+   "station|SILVER SPRING": 73.59375,
+   "station|ST. DENIS": 47.5625,
+   "station|W BALTIMORE": 66.4375,
+   "station|WASHINGTON": 63.96875,
+   "station|WASHINGTON UNION": 97.71875,
+   "station|WEST BALTIMORE": 85.015625,
+   "station|WOODBRIDGE": 64.625,
+   "train|AMTRAK 65": 59.40625
+  }
+ }
+}

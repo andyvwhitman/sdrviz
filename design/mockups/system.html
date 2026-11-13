@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en" data-default-state="login" data-lo-module>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SDRVIZ · SYSTEM</title>
+<!-- sdrviz · WLT-1 · System states (brief §8.4–§8.7, §9.6). Screen designer: feeds-banks.
+     States: ?state=login | login-error | loading | connecting | empty-bank | reconnecting | no-link   (1920 × 1080)
+     Extras: &build=0 · &gray=1 (grayscale test, brief §10.4) -->
+<link rel="stylesheet" href="_shared/hud.css">
+<link rel="stylesheet" href="live-ops.css"> <!-- reconnecting · no-link · empty-bank reuse the Live Ops wall -->
+<link rel="stylesheet" href="system.css">
+</head>
+<body>
+<div id="stage"></div>
+<script src="_shared/hud.js"></script>
+<script src="live-ops.js"></script> <!-- library mode (data-lo-module): window.LiveOps -->
+<script src="system.js"></script>
+</body>
+</html>

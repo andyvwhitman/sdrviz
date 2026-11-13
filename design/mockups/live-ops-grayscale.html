@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Live Ops Grayscale Test · SDRVIZ WLT-1</title>
+<!--
+  Brief §10.4 grayscale test. Wraps any Live Ops frame (same query string) in filter: grayscale(1).
+  live-ops-grayscale.html?state=keyed            talker: vertical glyph, 2 px frame, waveform, timer
+  live-ops-grayscale.html?state=fault            faulted feed: triangle + FAULT label; recent vs offline
+  live-ops-grayscale.html?state=fault-acked&inspect=feed-lnd
+  motion study: live-ops-grayscale.html?page=motion-keyup.html&t=7.4&tb=1.2
+-->
+<style>
+  html, body { margin: 0; background: #04070A; overflow: hidden; }
+  iframe { display: block; border: 0; filter: grayscale(1); }
+</style>
+</head>
+<body>
+<iframe id="f" title="Grayscale test frame"></iframe>
+<script>
+  const qs = new URLSearchParams(location.search);
+  const page = qs.get("page") || "live-ops.html";
+  qs.delete("page");
+  if (!qs.has("state") && page === "live-ops.html") qs.set("state", "keyed");
+  const small = qs.get("size") === "1440";
+  const f = document.getElementById("f");
+  f.width = small ? 1440 : 1920;
+  f.height = small ? 900 : 1080;
+  f.src = page + "?" + qs.toString();
+</script>
+</body>
+</html>

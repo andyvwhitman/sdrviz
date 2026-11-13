@@ -1,0 +1,89 @@
+{
+ "meta": {
+  "generated_by": "tools/gen_sim.py",
+  "seed": 1919,
+  "date": "2026-11-10",
+  "tz": {
+   "name": "EST",
+   "iana": "America/New_York",
+   "utc_offset": "-05:00"
+  },
+  "sim": true,
+  "period": "24h, t_offset_s counted from 00:00:00 local; the day repeats"
+ },
+ "banks": [
+  {
+   "id": "bank-nec",
+   "name": "NEC Corridor",
+   "description": "Amtrak Northeast Corridor road/dispatch plus Washington Terminal and MOW.",
+   "frequency_ids": [
+    "amtk-nec-road",
+    "amtk-wash-term",
+    "amtk-k-tower",
+    "amtk-wash-ops2",
+    "amtk-ivy-city",
+    "amtk-mow-27",
+    "amtk-mow-47",
+    "amtk-auto-train"
+   ],
+   "home_feed": "feed-lnd"
+  },
+  {
+   "id": "bank-freight",
+   "name": "Freight - CSX/NS",
+   "description": "CSX Baltimore Division road/dispatcher/yard channels and NS Hagerstown District and Bayview.",
+   "frequency_ids": [
+    "csx-road",
+    "csx-bc-disp",
+    "csx-be-disp",
+    "csx-rfp-road",
+    "csx-bd-disp",
+    "csx-landover",
+    "csx-ni-disp",
+    "csx-mow",
+    "csx-bayview",
+    "csx-curtis-bay",
+    "csx-locust-pt",
+    "csx-jessup",
+    "ns-road",
+    "ns-hag-disp",
+    "ns-bayview"
+   ],
+   "home_feed": "feed-bay"
+  },
+  {
+   "id": "bank-commuter",
+   "name": "Commuter",
+   "description": "Channels MARC and VRE trains run on as tenants of Amtrak, CSX and NS.",
+   "frequency_ids": [
+    "amtk-nec-road",
+    "csx-road",
+    "csx-bc-disp",
+    "csx-rfp-road",
+    "csx-bd-disp",
+    "ns-road",
+    "ns-hag-disp",
+    "amtk-ivy-city"
+   ],
+   "home_feed": "feed-lnd"
+  },
+  {
+   "id": "bank-harbor",
+   "name": "Baltimore Harbor",
+   "description": "Director-added view (brief 9.4): Canton, Tradepoint, Curtis Bay, Locust Point, the Bayviews, coal pier and Seawall.",
+   "frequency_ids": [
+    "canton-1",
+    "tpr-road",
+    "tpr-mow",
+    "csx-curtis-bay",
+    "csx-locust-pt",
+    "csx-bayview",
+    "ns-bayview",
+    "csx-coal-pier",
+    "csx-ind-switch"
+   ],
+   "sim": true,
+   "home_feed": "feed-bay"
+  }
+ ]
+}

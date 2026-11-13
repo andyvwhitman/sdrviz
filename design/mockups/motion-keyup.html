@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Key-up Motion Study · SDRVIZ WLT-1</title>
+<!--
+  Motion study of the key-up choreography (brief §7.3, spec §6.3) on one tile, CH54 AMTK NEC.
+    A  sim-0648 (MARC 433, 9.6 s): squelch-open -> commit -> lock -> populate -> release hold -> settle -> cool
+    B  kc-040 (0.10 s): squelch-open that never commits (kerchunk)
+  motion-keyup.html                 plays on a loop (Space toggles)
+  motion-keyup.html?t=0.31&tb=0.05  frozen frame for review/screenshots
+  &speed=0.25  slow motion   &motion=reduced  reduced-motion variant (no flash, no step, instant)
+-->
+<link rel="stylesheet" href="_shared/hud.css">
+<link rel="stylesheet" href="live-ops.css">
+<link rel="stylesheet" href="motion-keyup.css">
+</head>
+<body>
+<div id="stage"></div>
+<script src="_shared/hud.js"></script>
+<script src="motion-keyup.js"></script>
+</body>
+</html>

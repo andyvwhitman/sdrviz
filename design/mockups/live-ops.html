@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en" data-default-state="listening">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Live Ops · SDRVIZ WLT-1</title>
+<!--
+  Live Ops mockup (brief §9.1). Frames:
+    live-ops.html?state=listening          03:40 EST, dark cockpit
+    live-ops.html?state=keyed              14:07:30 EST, CH54 + CH08 keyed, off-bank CH66
+    live-ops.html?state=fault              14:06:22 EST, LND-02 FAULT · LINK LOST (unacked), BAY-04 stale
+    live-ops.html?state=fault-acked        14:06:36 EST, as fault after ACK at 14:06:31
+    &size=1440                             1440 x 900, compact tiles
+    &inspect=feed-lnd | amtk-nec-road      inspector open on a feed or channel
+    &build=0                               skip build-on (screenshots)
+  Data: data/sim/scenarios/<state>.js and data/sim/day.js (JS twins; file:// safe).
+-->
+<link rel="stylesheet" href="_shared/hud.css">
+<link rel="stylesheet" href="live-ops.css">
+</head>
+<body>
+<div id="stage"></div>
+<script src="_shared/hud.js"></script>
+<script src="live-ops.js"></script>
+</body>
+</html>

@@ -1,0 +1,535 @@
+<!doctype html>
+<html lang="en" data-default-state="listening">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SDRVIZ · FEEDS &amp; BANKS</title>
+<!-- sdrviz · WLT-1 · Feeds & Banks admin (brief §9.4). Screen designer: feeds-banks.
+     States: ?state=listening | keyed | fault | fault-acked   (1920 × 1080)
+     Extras: &feed=alx|lnd|bwi|bay (inspector feed) · &build=0 · &gray=1 (grayscale test, brief §10.4) -->
+<link rel="stylesheet" href="_shared/hud.css">
+<link rel="stylesheet" href="feeds.css">
+<style>html, body { margin: 0; background: var(--bg-void); }</style>
+</head>
+<body>
+<div id="stage"></div>
+<!--SEED:BEGIN data/seed/frequencies.json, verbatim (file:// blocks fetch; refresh with the seed) -->
+<script type="application/json" data-path="data/seed/frequencies.json">
+{
+  "meta": {
+    "generated": "2026-11-08",
+    "aar_formula": "aar_channel = (freq_mhz - 160.110) / 0.015, valid for channels 07-97 (160.215-161.565 MHz)",
+    "mode_note": "All entries are logged as analog narrowband FM (NFM, 12.5 kHz). CSX and NS licenses also include NXDN 6.25 kHz; no NXDN channel in this corridor is specifically documented in the sources used.",
+    "data_vintage": "Mixed: RadioReference wiki pages edited 2017-2023; Broadcastify feed listings 2025-2026.",
+    "verified": "2026-11-08 adversarial audit; see 'Verification log' in docs/research/04-corridor-radio.md"
+  },
+  "frequencies": [
+    {
+      "id": "amtk-nec-road",
+      "label": "AMTK NEC",
+      "freq_mhz": 160.92,
+      "aar_channel": 54,
+      "railroad": "Amtrak",
+      "use": "road/dispatcher",
+      "line": "Northeast Corridor (Washington - Perryville and beyond); MARC Penn Line",
+      "mode": "NFM",
+      "confidence": "high",
+      "notes": "NEC road channel; RRDB labels AAR54 'Road/Dispatch'. MARC Penn Line trains run on Amtrak and use Amtrak channels (inferred from host-railroad practice; no MARC-specific listing found).",
+      "sources": [
+        "https://www.on-track-on-line.com/amtfreq-nec.shtml",
+        "https://www.radioreference.com/db/subcat/89592",
+        "https://www.broadcastify.com/listen/feed/43356",
+        "https://railfanguides.us/dc/map2/index.htm"
+      ]
+    },
+    {
+      "id": "amtk-wash-term",
+      "label": "WASH TERM",
+      "freq_mhz": 160.44,
+      "aar_channel": 22,
+      "railroad": "Amtrak",
+      "use": "terminal",
+      "line": "Washington Terminal / Union Station",
+      "mode": "NFM",
+      "confidence": "med",
+      "notes": "Washington Union Station area. Franconia feed (2026) marks it sporadic and removed from scan.",
+      "sources": [
+        "https://www.on-track-on-line.com/amtfreq-nec.shtml",
+        "https://philadelphiatransitvehicles.info/?p=2721",
+        "https://railfanguides.us/dc/map2/index.htm",
+        "https://www.broadcastify.com/listen/feed/34638"
+      ]
+    },
+    {
+      "id": "amtk-k-tower",
+      "label": "K TOWER",
+      "freq_mhz": 160.29,
+      "aar_channel": 12,
+      "railroad": "Amtrak",
+      "use": "terminal",
+      "line": "Washington Terminal (K Tower)",
+      "mode": "NFM",
+      "confidence": "med",
+      "notes": "Listed as K-Tower, Union Station; a 2021 Amtrak Mid-Atlantic document (seen only as a search snippet, PDF now 404) called it 'Washington Terminal Operations 1'. Feed owner reports it turned off.",
+      "sources": [
+        "https://www.broadcastify.com/listen/feed/34638"
+      ]
+    },
+    {
+      "id": "amtk-wash-ops2",
+      "label": "WASH OPS2",
+      "freq_mhz": 160.35,
+      "aar_channel": 16,
+      "railroad": "Amtrak",
+      "use": "terminal",
+      "line": "Washington Union Station operations",
+      "mode": "NFM",
+      "confidence": "med",
+      "notes": "Listed as WAOPS2 'Union Station operations'; 2021 doc snippet called it 'Washington Terminal Operations 2'. Turned off in Franconia feed. [verify] A 2026-11-08 search snippet of the same 2021 PDF again shows '160.350 MHz Washington Terminal Operations 2'; the PDF itself still returns 404, so this is unverified.",
+      "sources": [
+        "https://www.broadcastify.com/listen/feed/34638"
+      ]
+    },
+    {
+      "id": "amtk-ivy-city",
+      "label": "IVY CITY",
+      "freq_mhz": 160.995,
+      "aar_channel": 59,
+      "railroad": "Amtrak",
+      "use": "yard",
+      "line": "Ivy City Yard (DC)",
+      "mode": "NFM",
+      "confidence": "med",
+      "notes": "Ivy City Yard per Franconia feed (sporadic). [verify] The 160.350 Ivy City conflict could not be reproduced from any primary page; a search summary in the audit made the same kind of mix-up (attaching 'Ivy City' to the wrong row), so it is probably a summary artifact. No second source ties 160.995 to Ivy City: single-source.",
+      "sources": [
+        "https://www.broadcastify.com/listen/feed/34638"
+      ]
+    },
+    {
+      "id": "amtk-mow-27",
+      "label": "AMTK MOW",
+      "freq_mhz": 160.515,
+      "aar_channel": 27,
+      "railroad": "Amtrak",
+      "use": "MOW",
+      "line": "Northeast Corridor",
+      "mode": "NFM",
+      "confidence": "med",
+      "notes": "Amtrak maintenance of way; listed in PA RRDB (AAR27 MOW) and Franconia feed (AMTKMW).",
+      "sources": [
+        "https://www.radioreference.com/db/subcat/89592",
+        "https://www.broadcastify.com/listen/feed/34638"
+      ]
+    },
+    {
+      "id": "amtk-mow-47",
+      "label": "AMTK 47",
+      "freq_mhz": 160.815,
+      "aar_channel": 47,
+      "railroad": "Amtrak",
+      "use": "MOW",
+      "line": "Northeast Corridor (Philadelphia area listing)",
+      "mode": "NFM",
+      "confidence": "low",
+      "notes": "RRDB PA lists AAR47 MOW; Franconia feed labels 160.815 'Amtrak road'. Use near DC/Baltimore unconfirmed.",
+      "sources": [
+        "https://www.radioreference.com/db/subcat/89592",
+        "https://www.broadcastify.com/listen/feed/34638"
+      ]
+    },
+    {
+      "id": "amtk-auto-train",
+      "label": "AUTO TRN",
+      "freq_mhz": 160.365,
+      "aar_channel": 17,
+      "railroad": "Amtrak",
+      "use": "onboard/service",
+      "line": "Auto Train (Lorton, VA)",
+      "mode": "NFM",
+      "confidence": "med",
+      "notes": "Franconia feed lists AUTO 3 on 160.365 (sporadic, turned off). Exact use is not documented. [verify] A 2015 DC scanning blog (self-reported) says 160.3650 is licensed to Amtrak at Lorton. The frequency at Lorton is now supported by two sources; its use is still undocumented. Raised low -> med.",
+      "sources": [
+        "https://www.broadcastify.com/listen/feed/34638",
+        "https://dcscanning.blogspot.com/2015/08"
+      ]
+    },
+    {
+      "id": "csx-road",
+      "label": "CSX ROAD",
+      "freq_mhz": 160.23,
+      "aar_channel": 8,
+      "railroad": "CSX",
+      "use": "road",
+      "line": "Capital Sub, Alexandria Ext., Metropolitan Sub, Old Main Line, Baltimore Terminal Sub, Philadelphia Sub; MARC Camden & Brunswick Lines",
+      "mode": "NFM",
+      "confidence": "high",
+      "notes": "Standard CSX ex-B&O road channel. Defect detectors on these subs talk on the road channel (standard practice; detector frequencies are not listed on the wiki pages). [verify] Kensington feed 35407: on 2026-11-08 the page served a different (non-rail) feed, probably because the feed is offline. Its description (160.23 road plus 452/457 MHz DPU) is known only from a search-engine snippet.",
+      "sources": [
+        "https://wiki.radioreference.com/index.php/WS-Capital_Sub",
+        "https://wiki.radioreference.com/index.php/BZ-Baltimore_Terminal_Sub",
+        "https://wiki.radioreference.com/index.php/ME-Metropolitan_Sub",
+        "https://wiki.radioreference.com/index.php/OM-Old_Main_Line_Sub",
+        "https://wiki.radioreference.com/index.php/PA-Philadelphia_Sub",
+        "https://www.broadcastify.com/listen/feed/43356",
+        "https://m.broadcastify.com/listen/feed/35407"
+      ]
+    },
+    {
+      "id": "csx-bc-disp",
+      "label": "CSX BC",
+      "freq_mhz": 160.32,
+      "aar_channel": 14,
+      "railroad": "CSX",
+      "use": "dispatcher",
+      "line": "BC desk: Capital Sub, Alexandria Ext., Metropolitan Sub, Old Main Line",
+      "mode": "NFM",
+      "confidence": "high",
+      "notes": "BC dispatcher (Capital and OML subs) per Broadcastify Baltimore feed dated 10/22/2025.",
+      "sources": [
+        "https://wiki.radioreference.com/index.php/WS-Capital_Sub",
+        "https://wiki.radioreference.com/index.php/ME-Metropolitan_Sub",
+        "https://wiki.radioreference.com/index.php/OM-Old_Main_Line_Sub",
+        "https://www.broadcastify.com/listen/feed/43356"
+      ]
+    },
+    {
+      "id": "csx-be-disp",
+      "label": "CSX BE",
+      "freq_mhz": 161.1,
+      "aar_channel": 66,
+      "railroad": "CSX",
+      "use": "dispatcher",
+      "line": "BE desk: Baltimore Terminal Sub, Philadelphia Sub",
+      "mode": "NFM",
+      "confidence": "high",
+      "notes": "BE dispatcher. Note: Franconia feed separately lists 161.100 as an Auto Train channel (different area, same frequency). [verify] On Track On Line's Auto Train page (https://on-track-on-line.com/autotrain-misc.shtml) also says 161.100 is 'heavily used at Lorton', so it is a second, independent Lorton use. The ALX-01 feed would hear Auto Train, not CSX BE, on 161.100.",
+      "sources": [
+        "https://wiki.radioreference.com/index.php/BZ-Baltimore_Terminal_Sub",
+        "https://wiki.radioreference.com/index.php/PA-Philadelphia_Sub",
+        "https://www.broadcastify.com/listen/feed/43356"
+      ]
+    },
+    {
+      "id": "csx-rfp-road",
+      "label": "RF&P ROAD",
+      "freq_mhz": 161.55,
+      "aar_channel": 96,
+      "railroad": "CSX",
+      "use": "road",
+      "line": "RF&P Sub (Washington - Richmond); VRE Fredericksburg Line",
+      "mode": "NFM",
+      "confidence": "high",
+      "notes": "RF&P road channel; Franconia feed (2026) marks it active.",
+      "sources": [
+        "https://wiki.radioreference.com/index.php/RR-Richmond_Fredericksburg_and_Potomac_Sub",
+        "https://www.on-track-on-line.com/amtfreq-nec.shtml",
+        "https://www.broadcastify.com/listen/feed/34638"
+      ]
+    },
+    {
+      "id": "csx-bd-disp",
+      "label": "CSX BD",
+      "freq_mhz": 160.41,
+      "aar_channel": 20,
+      "railroad": "CSX",
+      "use": "dispatcher",
+      "line": "BD desk: RF&P Sub",
+      "mode": "NFM",
+      "confidence": "high",
+      "notes": "BD (RF&P) dispatcher; active in Franconia feed.",
+      "sources": [
+        "https://wiki.radioreference.com/index.php/RR-Richmond_Fredericksburg_and_Potomac_Sub",
+        "https://www.on-track-on-line.com/amtfreq-nec.shtml",
+        "https://www.broadcastify.com/listen/feed/34638"
+      ]
+    },
+    {
+      "id": "csx-bf-disp",
+      "label": "CSX BF",
+      "freq_mhz": 161.4,
+      "aar_channel": 86,
+      "railroad": "CSX",
+      "use": "dispatcher",
+      "line": "BF desk: Hanover Sub",
+      "mode": "NFM",
+      "confidence": "high",
+      "notes": "BF dispatcher (Hanover Sub) per Baltimore feed. Hanover Sub is at the north-west edge of the map area. [verify] Confirmed by the Hanover Sub wiki (2017): road 160.230, BF dispatcher 161.400. RRDB Pennsylvania (aid 3166) labels 161.400 '086 BE Disp - Hanover, Lurgan Subs', so the desk letter conflicts. The frequency is solid. Raised med -> high.",
+      "sources": [
+        "https://www.broadcastify.com/listen/feed/43356",
+        "https://wiki.radioreference.com/index.php/HV-Hanover_Sub"
+      ]
+    },
+    {
+      "id": "csx-landover",
+      "label": "CSX LNDVR",
+      "freq_mhz": 161.07,
+      "aar_channel": 64,
+      "railroad": "CSX",
+      "use": "road",
+      "line": "Landover Sub (DC: Landover - Virginia Ave)",
+      "mode": "NFM",
+      "confidence": "med",
+      "notes": "Wiki (2017) gives 161.070 for Landover Sub; Franconia feed labels 161.070 'CSX road (Herbert, Landover, Pope's Creek)', turned off. Same frequency is NS Bayview in Baltimore.",
+      "sources": [
+        "https://wiki.radioreference.com/index.php/L0-Landover_Sub",
+        "https://www.broadcastify.com/listen/feed/34638"
+      ]
+    },
+    {
+      "id": "csx-ni-disp",
+      "label": "CSX NI",
+      "freq_mhz": 161.34,
+      "aar_channel": 82,
+      "railroad": "CSX",
+      "use": "dispatcher",
+      "line": "Landover Sub dispatcher (desk 'BC' per 2017 wiki; 'NI' per Franconia feed label)",
+      "mode": "NFM",
+      "confidence": "med",
+      "notes": "Wiki (2017) says Landover Sub is controlled by 'BC' on 161.340; Franconia feed calls 161.340 'CSX NI dispatcher'. Desk name uncertain. [verify] No source places the NI desk on the Landover Sub. Search results tie NI to CSX's Trenton Sub, which is unverified. Treat the 'NI' label as doubtful. The 161.340 frequency itself has two sources.",
+      "sources": [
+        "https://wiki.radioreference.com/index.php/L0-Landover_Sub",
+        "https://www.broadcastify.com/listen/feed/34638"
+      ]
+    },
+    {
+      "id": "csx-mow",
+      "label": "CSX MOW",
+      "freq_mhz": 160.785,
+      "aar_channel": 45,
+      "railroad": "CSX",
+      "use": "MOW",
+      "line": "CSX (Northern Virginia)",
+      "mode": "NFM",
+      "confidence": "high",
+      "notes": "CSX maintenance of way, active in Franconia feed. [verify] RRDB Pennsylvania CSX listing tags 160.785 '045 MOW', which fits a system-wide CSX MOW channel. Raised med -> high.",
+      "sources": [
+        "https://www.broadcastify.com/listen/feed/34638",
+        "https://www.radioreference.com/db/aid/3166"
+      ]
+    },
+    {
+      "id": "csx-jessup",
+      "label": "JESSUP YD",
+      "freq_mhz": 161.49,
+      "aar_channel": 92,
+      "railroad": "CSX",
+      "use": "yard",
+      "line": "Jessup Yard (Capital Sub MP BAA17.0)",
+      "mode": "NFM",
+      "confidence": "med",
+      "notes": "Wiki page last edited 2018.",
+      "sources": [
+        "https://wiki.radioreference.com/index.php/WS-Capital_Sub"
+      ]
+    },
+    {
+      "id": "csx-benning",
+      "label": "BENNING YD",
+      "freq_mhz": 160.8,
+      "aar_channel": 46,
+      "railroad": "CSX",
+      "use": "yard",
+      "line": "Benning Yard (Landover Sub MP QL133.5)",
+      "mode": "NFM",
+      "confidence": "low",
+      "notes": "Wiki page last edited 2017. An old forum post also cites 160.800 near Union Station. [verify] CONFLICT: the Franconia feed labels 160.800 'AMTK01 Amtrak' (sporadic, turned off), not CSX Benning Yard. The only CSX-yard source is a 2017 wiki page. Lowered med -> low.",
+      "sources": [
+        "https://wiki.radioreference.com/index.php/L0-Landover_Sub",
+        "https://www.broadcastify.com/listen/feed/34638"
+      ]
+    },
+    {
+      "id": "csx-bayview",
+      "label": "BAYVIEW YD",
+      "freq_mhz": 160.53,
+      "aar_channel": 28,
+      "railroad": "CSX",
+      "use": "yard",
+      "line": "Bayview Yard (Philadelphia Sub MP BAK89.6), Baltimore",
+      "mode": "NFM",
+      "confidence": "high",
+      "notes": "Also used at Wilsmere (DE) and Brunswick (MD) yards. [verify] Brunswick (MD) Yard on 160.530 confirmed on Metropolitan Sub wiki (2021).",
+      "sources": [
+        "https://wiki.radioreference.com/index.php/PA-Philadelphia_Sub",
+        "https://www.broadcastify.com/listen/feed/43356",
+        "https://wiki.radioreference.com/index.php/ME-Metropolitan_Sub"
+      ]
+    },
+    {
+      "id": "csx-locust-pt",
+      "label": "LOCUST PT",
+      "freq_mhz": 160.47,
+      "aar_channel": 24,
+      "railroad": "CSX",
+      "use": "yard",
+      "line": "Locust Point Yard, Baltimore",
+      "mode": "NFM",
+      "confidence": "high",
+      "notes": "",
+      "sources": [
+        "https://wiki.radioreference.com/index.php/BZ-Baltimore_Terminal_Sub",
+        "https://www.broadcastify.com/listen/feed/43356"
+      ]
+    },
+    {
+      "id": "csx-curtis-bay",
+      "label": "CURTIS BAY",
+      "freq_mhz": 161.16,
+      "aar_channel": 70,
+      "railroad": "CSX",
+      "use": "yard",
+      "line": "Curtis Bay Yard (MP BAO0.0), Baltimore",
+      "mode": "NFM",
+      "confidence": "high",
+      "notes": "",
+      "sources": [
+        "https://wiki.radioreference.com/index.php/BZ-Baltimore_Terminal_Sub",
+        "https://www.broadcastify.com/listen/feed/43356"
+      ]
+    },
+    {
+      "id": "csx-ind-switch",
+      "label": "CSX IND",
+      "freq_mhz": 161.055,
+      "aar_channel": 63,
+      "railroad": "CSX",
+      "use": "yard/industrial",
+      "line": "Seawall and Marley Neck industrial tracks, Baltimore",
+      "mode": "NFM",
+      "confidence": "med",
+      "notes": "'CSX Industrial Track Switch' per Baltimore feed.",
+      "sources": [
+        "https://www.broadcastify.com/listen/feed/43356"
+      ]
+    },
+    {
+      "id": "csx-coal-pier",
+      "label": "COAL PIER",
+      "freq_mhz": 161.22,
+      "aar_channel": 74,
+      "railroad": "CSX",
+      "use": "yard/industrial",
+      "line": "Curtis Bay Coal Pier, Baltimore",
+      "mode": "NFM",
+      "confidence": "med",
+      "notes": "Listed but temporarily removed from feed scan list.",
+      "sources": [
+        "https://www.broadcastify.com/listen/feed/43356"
+      ]
+    },
+    {
+      "id": "ns-road",
+      "label": "NS ROAD",
+      "freq_mhz": 160.95,
+      "aar_channel": 56,
+      "railroad": "Norfolk Southern",
+      "use": "road",
+      "line": "Hagerstown District (Alexandria - Manassas - B-Line); VRE Manassas Line",
+      "mode": "NFM",
+      "confidence": "high",
+      "notes": "NS road channel (AAR 56). Feeds call the territory 'Hagerstown District' while older sources say 'Washington District'.",
+      "sources": [
+        "https://www.broadcastify.com/listen/feed/20190",
+        "https://www.broadcastify.com/listen/feed/34638"
+      ]
+    },
+    {
+      "id": "ns-hag-disp",
+      "label": "NS DISP",
+      "freq_mhz": 160.245,
+      "aar_channel": 9,
+      "railroad": "Norfolk Southern",
+      "use": "dispatcher",
+      "line": "Hagerstown District dispatcher (Atlanta desk)",
+      "mode": "NFM",
+      "confidence": "med",
+      "notes": "Listed as 'NS Hagerstown dispatcher', active, in Franconia feed. NS moved to a two-channel road + dispatcher scheme (RadioReference forum reports). [verify] Only the Manassas feed (search snippet) supports 'Hagerstown desk in Atlanta'. No second source ties 160.245 to the Hagerstown District. 160.245 (AAR 09) is a documented NS dispatcher channel in other districts, which makes it plausible. Kept at med as a single good source.",
+      "sources": [
+        "https://www.broadcastify.com/listen/feed/34638",
+        "https://www.broadcastify.com/listen/feed/20190",
+        "https://railroadfan.com/wiki/index.php/NS_Radio_Frequencies"
+      ]
+    },
+    {
+      "id": "ns-mow",
+      "label": "NS MOW",
+      "freq_mhz": 161.565,
+      "aar_channel": 97,
+      "railroad": "Norfolk Southern",
+      "use": "MOW",
+      "line": "NS (Northern Virginia)",
+      "mode": "NFM",
+      "confidence": "low",
+      "notes": "Active in Franconia feed. [verify] No independent source. Searches found 161.565 as an NS dispatcher channel elsewhere, plus a forum claim (unverified) that NS has no system-wide MOW channel. Lowered med -> low.",
+      "sources": [
+        "https://www.broadcastify.com/listen/feed/34638"
+      ]
+    },
+    {
+      "id": "ns-bayview",
+      "label": "NS BAYVIEW",
+      "freq_mhz": 161.07,
+      "aar_channel": 64,
+      "railroad": "Norfolk Southern",
+      "use": "yard",
+      "line": "NS Bayview Yard / Baltimore ops",
+      "mode": "NFM",
+      "confidence": "med",
+      "notes": "Controlled by the Lancaster (PA) yardmaster per Baltimore feed. Same frequency as CSX Landover Sub, ~35 mi away.",
+      "sources": [
+        "https://www.broadcastify.com/listen/feed/43356"
+      ]
+    },
+    {
+      "id": "canton-1",
+      "label": "CANTON 1",
+      "freq_mhz": 160.98,
+      "aar_channel": 58,
+      "railroad": "Canton Railroad",
+      "use": "road/yard",
+      "line": "Canton RR, Baltimore harbor",
+      "mode": "NFM",
+      "confidence": "med",
+      "notes": "",
+      "sources": [
+        "https://www.broadcastify.com/listen/feed/43356"
+      ]
+    },
+    {
+      "id": "tpr-road",
+      "label": "TPR ROAD",
+      "freq_mhz": 160.59,
+      "aar_channel": 32,
+      "railroad": "Tradepoint Rail",
+      "use": "road",
+      "line": "Tradepoint Atlantic (Sparrows Point)",
+      "mode": "NFM",
+      "confidence": "med",
+      "notes": "",
+      "sources": [
+        "https://www.radioreference.com/db/subcat/90744"
+      ]
+    },
+    {
+      "id": "tpr-mow",
+      "label": "TPR MOW",
+      "freq_mhz": 160.845,
+      "aar_channel": 49,
+      "railroad": "Tradepoint Rail",
+      "use": "MOW",
+      "line": "Tradepoint Atlantic (Sparrows Point)",
+      "mode": "NFM",
+      "confidence": "med",
+      "notes": "Franconia feed separately lists 160.845 as an Amtrak road channel in Virginia. [verify] A 2015 DC scanning blog also says 160.845 is licensed to Amtrak at Lorton, VA, consistent with the Franconia 'AMTK 1' label. The Baltimore and Lorton uses are about 70 km apart.",
+      "sources": [
+        "https://www.radioreference.com/db/subcat/90744"
+      ]
+    }
+  ]
+}
+</script>
+<!--SEED:END-->
+<script src="_shared/hud.js"></script>
+<script src="feeds.js"></script>
+</body>
+</html>

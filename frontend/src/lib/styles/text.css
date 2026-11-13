@@ -1,0 +1,59 @@
+/* sdrviz styles: 2  Base and type (spec 2).
+   Ported verbatim from design/mockups/_shared/hud.css (lines 136-191). Colours come from tokens.css only. */
+
+/* --------------------------------------------------------------------------
+   2  BASE + TYPE
+   -------------------------------------------------------------------------- */
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg-void); color: var(--ink); }
+body {
+  font-family: var(--font-read); font-size: var(--fs-15); line-height: 1.45;
+  -webkit-font-smoothing: antialiased; text-rendering: geometricPrecision;
+}
+a { color: var(--line); text-decoration: none; border-bottom: 1px solid var(--line-faint); }
+a:hover { color: var(--ink); border-bottom-color: var(--line); }
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+:focus { outline: none; }
+:focus-visible { outline: var(--stroke-emph) solid var(--state-select); outline-offset: 2px; border-radius: 2px; }
+
+/* families */
+.display { font-family: var(--font-display); font-weight: 600; text-transform: uppercase; letter-spacing: var(--track-display); line-height: 1; }
+.label   { font-family: var(--font-label); font-weight: 500; text-transform: uppercase; letter-spacing: var(--track-label); line-height: 1.2; }
+.read    { font-family: var(--font-read); font-weight: 400; font-size: var(--fs-15); line-height: 1.45; }
+.mono    { font-family: var(--font-data); font-weight: 400; font-variant-numeric: tabular-nums; letter-spacing: 0; line-height: 1.2; }
+
+/* sizes (combine with a family) */
+.fs-11 { font-size: var(--fs-11); } .fs-12 { font-size: var(--fs-12); } .fs-13 { font-size: var(--fs-13); }
+.fs-15 { font-size: var(--fs-15); } .fs-18 { font-size: var(--fs-18); } .fs-24 { font-size: var(--fs-24); }
+.fs-32 { font-size: var(--fs-32); } .fs-48 { font-size: var(--fs-48); } .fs-72 { font-size: var(--fs-72); }
+.w-500 { font-weight: 500; } .w-600 { font-weight: 600; }
+
+/* named type roles (spec §2.3) */
+.t-micro   { font: 500 var(--fs-11)/1.2 var(--font-label); text-transform: uppercase; letter-spacing: var(--track-label); color: var(--ink-3); }
+.t-label   { font: 500 var(--fs-12)/1.2 var(--font-label); text-transform: uppercase; letter-spacing: var(--track-label); color: var(--ink-2); }
+.t-tile    { font: 600 var(--fs-13)/1.2 var(--font-label); text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink); }
+.t-panel   { font: 600 var(--fs-13)/1 var(--font-display); text-transform: uppercase; letter-spacing: 0.14em; color: var(--ink); }
+.t-section { font: 600 var(--fs-24)/1 var(--font-display); text-transform: uppercase; letter-spacing: var(--track-display); color: var(--ink); }
+.t-mark    { font: 600 var(--fs-48)/1 var(--font-display); text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink); }
+.t-alarm   { font: 600 var(--fs-72)/1 var(--font-display); text-transform: uppercase; letter-spacing: 0.08em; color: var(--state-fault); }
+.t-body    { font: 400 var(--fs-15)/1.45 var(--font-read); color: var(--ink); }
+.t-data-11 { font: 400 var(--fs-11)/1.2 var(--font-data); font-variant-numeric: tabular-nums; color: var(--ink-3); }
+.t-data-12 { font: 400 var(--fs-12)/1.2 var(--font-data); font-variant-numeric: tabular-nums; color: var(--ink-2); }
+.t-data-13 { font: 400 var(--fs-13)/1.2 var(--font-data); font-variant-numeric: tabular-nums; color: var(--ink); }
+.t-data-18 { font: 500 var(--fs-18)/1 var(--font-data); font-variant-numeric: tabular-nums; color: var(--ink); }
+.t-data-24 { font: 500 var(--fs-24)/1 var(--font-data); font-variant-numeric: tabular-nums; color: var(--ink); }
+.t-data-32 { font: 500 var(--fs-32)/1 var(--font-data); font-variant-numeric: tabular-nums; color: var(--ink); }
+.t-hero    { font: 500 var(--fs-48)/1 var(--font-data); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; color: var(--ink); }
+
+/* color utilities (text) */
+.c-ink { color: var(--ink); } .c-ink-2 { color: var(--ink-2); } .c-ink-3 { color: var(--ink-3); }
+.c-line { color: var(--line); } .c-idle { color: var(--state-idle); } .c-tx { color: var(--state-tx); }
+.c-recent { color: var(--state-recent); } .c-stale { color: var(--state-stale); }
+.c-fault { color: var(--state-fault); } .c-select { color: var(--state-select); }
+/* Inside any wash, ink-3 is promoted to ink-2 (brief §3.6). */
+.has-wash .c-ink-3, .has-wash .t-micro, .has-wash .t-data-11 { color: var(--ink-2); }
+
+.sep::before { content: " · "; white-space: pre; color: var(--ink-3); }
+.blank::after { content: "— — —"; } /* unknown value; never zero */
+.minus { font-family: var(--font-data); } /* use U+2212 in text */
+

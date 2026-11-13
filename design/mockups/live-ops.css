@@ -1,0 +1,86 @@
+/* ==========================================================================
+   sdrviz · WLT-1 · Live Ops (page-local). Builds on _shared/hud.css; never edits it.
+   Geometry: design/spec.md §4.3. Every box below is placed by live-ops.js from
+   the binding Live Ops arithmetic (content-relative px), so this file carries
+   only looks, never positions of the big boxes.
+   ========================================================================== */
+
+.lo-box { position: absolute; }
+
+/* ---- hero strip (spec §5.27) ------------------------------------------- */
+.lo-hero { padding: 0 8px 0 0; box-shadow: inset 0 -1px 0 var(--grid); }
+.lo-hero .hero__text.c-ink-2 { color: var(--ink-2); }
+.lo-hero .lo-offbank { font: 500 var(--fs-12)/1 var(--font-label); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--ink-2); white-space: nowrap; }
+.lo-hero .lo-offbank .mono { font: 400 var(--fs-13)/1 var(--font-data); letter-spacing: 0; }
+
+/* ---- front wall: spectrum, ruler, waterfall, LOFAR (brief §9.1.2) -------- */
+.lo-plot { overflow: hidden; }
+.lo-plot > canvas, .lo-plot > svg { position: absolute; left: 0; top: 0; display: block; }
+.lo-plot > canvas { image-rendering: pixelated; }
+.lo-plot > .lo-bezel { position: absolute; inset: 0; box-shadow: inset 0 0 0 1px var(--line-faint); pointer-events: none; }
+/* waterfall and LOFAR: bezel left and right only (brief §9.1.2: 91 x 2 + 2 = 184), so canvas row 0
+   (the newest 30 s / 0.5 s) and the last row are never under a stroke */
+.lo-fall > .lo-bezel, .lo-lofar > .lo-bezel { box-shadow: inset 1px 0 0 var(--line-faint), inset -1px 0 0 var(--line-faint); }
+.lo-spec .sweep { --sweep-w: inherit; }
+.lo-scale { position: absolute; font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink-3); white-space: nowrap; } /* labels written uppercase; units keep their case (dBFS, kHz) */
+.lo-scale .mono { font: 400 var(--fs-11)/1 var(--font-data); letter-spacing: 0; }
+.lo-lofar-head .lo-ramp { position: absolute; left: 0; height: 6px; width: 184px; background: var(--ramp); box-shadow: inset 0 0 0 1px var(--line-faint); }
+
+/* frozen front wall: the displayed feed is stale or faulted (brief §9.1.7) */
+.lo-wall-frozen canvas { opacity: 0.35; }
+.lo-wall-frozen .lo-scale, .lo-wall-frozen .ruler text { color: var(--ink-3); fill: var(--ink-3); }
+.lo-wallmsg {
+  position: absolute; z-index: 2; display: grid; justify-items: center; gap: 6px; padding: 10px 16px;
+  background: var(--bg-void); transform: translate(-50%, -50%); white-space: nowrap;
+}
+.lo-wallmsg .m1 { display: flex; align-items: center; gap: 8px; font: 500 var(--fs-13)/16px var(--font-data); color: var(--state-fault); }
+/* acked: the frames and the pulse go; the red glyph and the red FAULT · <reason> stay (brief §8.9, §3.5).
+   Only the suffix is new, in ink-2, with no box or emphasis. Stale (no fault) reads in ink-2. */
+.lo-wallmsg .m1a { color: var(--ink-2); }
+.lo-wallmsg.is-stale .m1 { color: var(--ink-2); }
+.lo-wallmsg .m2 { font: 400 var(--fs-11)/1 var(--font-data); color: var(--ink-3); }
+.lo-wallmsg .m2 .label { font-size: var(--fs-11); letter-spacing: var(--track-label); }
+
+/* ---- bank tabs row ------------------------------------------------------ */
+.lo-tabs { display: flex; align-items: flex-end; justify-content: space-between; }
+.lo-tabs .t-micro { padding-bottom: 8px; }
+
+/* ---- inspector waveform (the tile waveform is shared: hud.css .tile__wave, spec §5.6) ---- */
+.lo-wave { display: flex; overflow: hidden; justify-content: flex-end; }
+.lo-wave svg { display: block; overflow: visible; flex: none; }
+
+/* ---- transcript log ----------------------------------------------------- */
+.lo-log { overflow: hidden; }
+.lo-log .txlog__head .t-panel { flex: none; }
+.lo-log .txlog__head .grow { flex: 1; }
+.lo-log .txlog__head .mono { font: 400 var(--fs-12)/1 var(--font-data); color: var(--ink-2); }
+.lo-log .lo-rows { position: relative; }
+
+/* ---- CTC track strip (M18, brief §9.1.6) -------------------------------- */
+.lo-ctc { box-shadow: inset 0 1px 0 var(--grid); }
+.lo-ctc svg text.lo-rt { font: 500 11px var(--font-label); letter-spacing: 0.1em; text-transform: uppercase; fill: var(--ink-2); }
+.lo-ctc svg text.lo-st { font: 500 11px var(--font-label); letter-spacing: 0.06em; text-transform: uppercase; fill: var(--ink-3); }
+.lo-ctc svg text.lo-tr { font: 400 11px var(--font-data); fill: var(--ink-2); }
+.lo-ctc svg text.lo-tr.is-tx { fill: var(--state-tx); }
+.lo-ctc svg text.lo-eq { font: 400 11px var(--font-data); fill: var(--ink-3); }
+
+/* ---- inspector extras --------------------------------------------------- */
+.lo-insp .inspector__sec { gap: 0; }
+.lo-insp .lo-lead { display: grid; gap: 6px; }
+.lo-insp .lo-lead .row { display: flex; align-items: center; gap: 10px; }
+.lo-insp .lo-lead .big { font: 500 var(--fs-24)/1 var(--font-data); color: var(--ink); }
+.lo-insp .lo-lead .big.is-tx { color: var(--state-tx); }
+.lo-insp .lo-lead .reason { font: 500 var(--fs-13)/1 var(--font-data); color: var(--state-fault); }
+.lo-insp .lo-lead .sub { font: 400 var(--fs-12)/1 var(--font-data); color: var(--ink-2); }
+/* inspector ACTIONS row: .insp-btns in hud.css (shared with Map) */
+.lo-insp .lo-hears { display: grid; grid-template-columns: 1fr 1fr; column-gap: 16px; padding-top: 4px; }
+.lo-insp .lo-hears span { font: 400 var(--fs-12)/20px var(--font-data); color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lo-insp .lo-hears b { font-weight: 500; color: var(--ink); margin-right: 6px; }
+.lo-insp .lo-rx { display: grid; grid-template-columns: 18px 64px 1fr 1fr 1fr; column-gap: 8px; align-items: center; padding: 5px 0; border-bottom: 1px solid var(--grid); font: 400 var(--fs-12)/1 var(--font-data); color: var(--ink-2); }
+.lo-insp .lo-rx.is-head { font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink-3); } /* written uppercase; units keep case */
+.lo-insp .lo-rx .f { color: var(--ink); }
+.lo-insp .lo-rx .glyph { width: 14px; height: 14px; -webkit-mask-size: 14px 14px; mask-size: 14px 14px; }
+.lo-insp .lo-chart { padding-top: 6px; }
+.lo-insp .lo-chart .t-micro { display: block; margin-top: 4px; }
+
+/* compact shared-frequency suffix: folded into hud.css §15 */

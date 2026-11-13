@@ -1,0 +1,76 @@
+/* sdrviz styles: 10  Transcript rows.
+   Ported verbatim from design/mockups/_shared/hud.css (lines 666-724). Colours come from tokens.css only. */
+
+/* --------------------------------------------------------------------------
+   10 TRANSCRIPT ROWS (brief §9.1.4, §9.7, M24). Container query switches the
+   speaker column inline under 640 px.
+   <div class="txlog"><div class="txrow" data-row="final|decoding|partial|carrier_only|no_transcript_decoder_down|failed|undecodable|not_recorded" ...>
+   -------------------------------------------------------------------------- */
+.txlog { container-type: inline-size; container-name: txlog; position: relative; }
+.txlog__head { display: flex; align-items: center; gap: 8px; height: 32px; border-bottom: 1px solid var(--line-faint); }
+.txrow {
+  position: relative; display: grid; align-items: baseline;
+  grid-template-columns: 64px 40px 72px 32px 120px 1fr; column-gap: 12px;
+  padding: 7px 8px 8px; border-bottom: 1px solid var(--grid);
+}
+.txrow > * { min-width: 0; }
+.txrow .c-time  { font: 400 var(--fs-12)/20px var(--font-data); color: var(--ink-3); }
+.txrow .c-ch    { font: 500 var(--fs-12)/20px var(--font-data); color: var(--ink); }
+.txrow .c-feed  { font: 400 var(--fs-11)/20px var(--font-data); color: var(--ink-3); white-space: nowrap; }
+.txrow .c-role  { font: 500 var(--fs-11)/20px var(--font-data); color: var(--ink-2); }
+.txrow .c-who   { font: 400 var(--fs-12)/20px var(--font-data); color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.txrow .c-text .who-inline { display: none; font: 400 var(--fs-12)/20px var(--font-data); color: var(--ink-2); margin-right: 8px; }
+.txrow .c-text  { font: 400 var(--fs-15)/20px var(--font-read); color: var(--ink); }
+.txrow .c-text .lo { color: var(--ink-3); }               /* word conf < 0.6 */
+.txrow .c-text .meta { font: 400 var(--fs-12)/20px var(--font-data); color: var(--ink-3); }
+.txrow .c-text .w { opacity: 1; }
+.txrow .c-text .w.is-hidden { opacity: 0; }
+/* keyed / live */
+.txrow[data-live] { background: var(--wash-tx-surface); }
+.txrow[data-live] .c-ch { color: var(--state-tx); }
+.txrow[data-live] .c-time, .txrow[data-live] .c-feed { color: var(--ink-2); }
+.txrow[data-live] .c-text .lo { color: var(--ink); }      /* no ink-3 inside wash */
+.txrow[data-live][data-row="final"] .c-ch { color: var(--ink); transition: color var(--t-settle) var(--ease-instrument); }
+/* off-bank */
+.txrow[data-offbank] .c-ch { color: var(--ink-2); }
+.txrow[data-offbank][data-live] { background: none; }
+.txrow[data-offbank][data-live] .c-ch { color: var(--state-tx); }
+/* detector rows: structured, mono */
+.txrow[data-det] .c-text { font: 400 var(--fs-12)/20px var(--font-data); color: var(--ink); }
+.txrow[data-defect] .c-text { font-weight: 500; color: var(--ink); }
+.txrow[data-defect] .tag-defect { margin: 0 2px; vertical-align: 1px; }
+/* non-final states */
+.txrow[data-row="decoding"] .c-text, .txrow[data-row="carrier_only"] .c-text,
+.txrow[data-row="no_transcript_decoder_down"] .c-text, .txrow[data-row="failed"] .c-text,
+.txrow[data-row="undecodable"] .c-text, .txrow[data-row="partial"] .c-text { color: var(--ink-3); }
+.txrow[data-live][data-row="decoding"] .c-text, .txrow[data-live][data-row="partial"] .c-text { color: var(--ink-2); }
+.txrow[data-row="carrier_only"] .c-text { font: 400 var(--fs-12)/20px var(--font-data); }
+.decode-bar { display: inline-block; vertical-align: middle; height: 1px; margin-right: 8px; width: var(--bar-w, 24px); max-width: 100%;
+  background: repeating-linear-gradient(90deg, var(--ink-3) 0 6px, transparent 6px 9px); }
+.has-wash .decode-bar, .txrow[data-live] .decode-bar { background: repeating-linear-gradient(90deg, var(--ink-2) 0 6px, transparent 6px 9px); }
+.txrow .decode-lbl { font: 500 var(--fs-11)/20px var(--font-label); letter-spacing: var(--track-label); color: var(--ink-3); text-transform: uppercase; }
+.txrow[data-live] .decode-lbl { color: var(--ink-2); }
+.txrow .play { font: 400 var(--fs-11)/20px var(--font-data); color: var(--ink-2); }
+.txrow .not-rec { font: 500 var(--fs-11)/20px var(--font-label); letter-spacing: var(--track-label); color: var(--ink-3); text-transform: uppercase; }
+.txrow .sel { inset: -4px -4px -4px -4px; }
+.txrow-empty { padding: 12px 8px; font: 400 var(--fs-12)/1 var(--font-data); color: var(--ink-3); }
+@container txlog (max-width: 640px) {
+  .txrow { grid-template-columns: 64px 40px 72px 32px 1fr; }
+  .txrow .c-who { display: none; }
+  .txrow .c-text .who-inline { display: inline; }
+}
+
+
+/* History column set (spec 13.4 gap 8): time, AAR, channel name, feed, role, speaker, duration, text.
+   Ported from the page-local rules in design/mockups/history.css; History may override --txrow-cols (not --cols, which is the 12-column grid token). */
+.txrow--history {
+  grid-template-columns: var(--txrow-cols, 64px 40px 88px 72px 32px 120px 56px minmax(0, 1fr));
+  padding: 6px 8px 5px;
+}
+.txrow--history .c-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.txrow--history .c-aar { font: 500 var(--fs-12)/20px var(--font-data); color: var(--ink); }
+.txrow--history .c-chan { font: 500 var(--fs-12)/20px var(--font-label); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); white-space: nowrap; overflow: hidden; }
+.txrow--history .c-dur { font: 400 var(--fs-12)/20px var(--font-data); color: var(--ink-2); text-align: right; }
+.txrow--history[data-offbank] .c-aar { color: var(--ink-2); }
+.txrow--history.is-selected { background: none; }
+.txrow--history.is-selected .c-time { color: var(--ink); }

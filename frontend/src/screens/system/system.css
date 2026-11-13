@@ -1,0 +1,47 @@
+
+/* ---------- login (no shell): one 400 px panel, centre at 46 % ---------- */
+.sy-login { position: relative; width: var(--stage-w); height: var(--stage-h); background: var(--bg-void); overflow: hidden; }
+.sy-login__panel {
+  position: absolute; left: 50%; top: 46%; width: 400px; transform: translate(-50%, -50%);
+  padding: 40px 40px 36px; display: grid; gap: 0; box-sizing: border-box;
+}
+.sy-login__panel::before { --c: var(--line); }
+.sy-login .t-mark { color: var(--ink); line-height: 1; }
+.sy-login__sub { margin-top: 12px; font: 500 var(--fs-12)/1 var(--font-label); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--ink-2); white-space: nowrap; }
+/* the field row is built by hand: Field has no autofocus state (docs/requests/feeds-banks.md) */
+.sy-login__input { position: relative; display: flex; align-items: baseline; gap: 6px; }
+.sy-login__form { margin-top: 48px; display: grid; gap: 24px; }
+.sy-login__form .field { width: 100%; }
+.sy-login__form .field__input { width: 100%; letter-spacing: 0.3em; }
+.sy-login__form .btn { justify-self: start; }
+.sy-login__ruler { position: absolute; left: 32px; right: 32px; bottom: 24px; height: 40px; }
+
+/* ---------- blank Live Ops layout for loading and connecting (spec 4.3 boxes, content-relative) ---------- */
+.sy-abs { position: absolute; }
+.sy-hero { left: 0; right: 0; top: 0; }
+.sy-hero .hero__big.is-blank { color: var(--ink-3); }
+.sy-wall-spec { left: 0; top: 80px; width: 1656px; height: 72px; }
+.sy-wall-ruler { left: 0; top: 152px; width: 1656px; height: 32px; }
+.sy-wall-wf { left: 0; top: 184px; width: 1656px; height: 120px; }
+.sy-lofar-lab { left: 1672px; top: 80px; width: 184px; }
+.sy-lofar-ruler { left: 1672px; top: 168px; width: 184px; height: 16px; }
+.sy-lofar { left: 1672px; top: 184px; width: 184px; height: 120px; }
+.sy-tiles { left: 0; top: 368px; width: 1072px; height: 480px; }
+.sy-log { left: 1096px; top: 320px; width: 760px; height: 528px; overflow: hidden; }
+.sy-ctc { left: 0; top: 864px; width: 1856px; height: 120px; }
+.sy-svg .lab  { font: 500 11px var(--font-label); letter-spacing: 0.1em; text-transform: uppercase; fill: var(--ink-3); }
+.sy-svg .num  { font: 400 11px var(--font-data); fill: var(--ink-3); }
+.sy-svg .box  { fill: var(--bg-void); stroke: var(--line-faint); stroke-width: 1px; }
+.sy-lofar-lab { font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink-3); text-transform: uppercase; display: flex; justify-content: space-between; }
+.sy-lofar-lab .mono { font: 400 var(--fs-11)/1 var(--font-data); color: var(--ink-2); letter-spacing: 0; }
+.sy-log .txlog__head .t-panel { flex: none; }
+.sy-log .txlog__head .grow { flex: 1; }
+.sy-blank-panel { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 8px; }
+.sy-blank-panel .mono { font: 400 var(--fs-15)/1 var(--font-data); color: var(--ink-3); }
+.sy-blank-panel .t-panel { color: var(--ink-3); }
+
+/* revision 2 · login: the 13 px error line is reserved in both states, so the panel never moves */
+.sy-login .field__error { display: block; min-height: calc(var(--fs-13) * 1.3); }
+
+/* revision 3 · login error: the thin dim underline, never the bright autofocus underline or a ring */
+.sy-login .field.is-error .field__input { border-bottom: 1px solid var(--line-faint); outline: none; }

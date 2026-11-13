@@ -1,0 +1,1276 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sdrviz Mood Board</title>
+<meta name="description" content="Palette, type, stroke and motif reference sheet for the sdrviz Wayside Listening Table. Companion to docs/brief/creative-brief.md.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500&family=Barlow+Semi+Condensed:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Rajdhani:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* surfaces + ink */
+  --bg-void:#04070A; --bg-panel:#081015; --bg-raised:#0C171D;
+  --grid:#12232B; --line-faint:#2C4A55; --line:#9CC9D6;
+  --ink:#E4F1F5; --ink-2:#8FAFBA; --ink-3:#67868F;
+  /* state */
+  --state-idle:#4FCBE6; --state-idle-dim:#2F7D91;
+  --state-tx:#FF8A2B; --state-tx-hot:#FFD3A6;
+  --state-recent:#B9773F; --state-recent-dim:#6E4A2C;
+  --state-stale:#71838C; --state-offline:#3A474E;
+  --state-fault:#FF4A3D; --state-fault-dim:#7A2620;
+  --state-select:#F5FBFD;
+  /* type */
+  --f-display:"Rajdhani","Barlow Semi Condensed","DIN Alternate","Arial Narrow",sans-serif;
+  --f-label:"Barlow Semi Condensed","Barlow","Roboto Condensed","Arial Narrow",sans-serif;
+  --f-read:"Barlow",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:"JetBrains Mono","IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  /* motion */
+  --ease-instrument:cubic-bezier(0.2,0,0,1);
+  --t-micro:80ms; --t-flash:120ms; --t-tick:240ms; --t-settle:400ms;
+}
+* { box-sizing:border-box; }
+html { background:var(--bg-void); }
+body {
+  margin:0; background:var(--bg-void); color:var(--ink);
+  font-family:var(--f-read); font-size:15px; line-height:1.45;
+  -webkit-font-smoothing:antialiased;
+}
+a { color:var(--line); text-decoration:none; border-bottom:1px solid var(--line-faint); }
+a:hover { color:var(--ink); border-bottom-color:var(--line); }
+a:focus-visible, button:focus-visible { outline:1.5px solid var(--state-select); outline-offset:2px; border-radius:2px; }
+
+.wrap { max-width:1440px; margin:0 auto; padding:32px; }
+@media (max-width:720px){ .wrap{ padding:16px; } }
+
+.label { font-family:var(--f-label); font-weight:500; font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-3); }
+.label-2 { font-family:var(--f-label); font-weight:500; font-size:12px; letter-spacing:.10em; text-transform:uppercase; color:var(--ink-2); }
+.mono { font-family:var(--f-mono); font-variant-numeric:tabular-nums; }
+.display { font-family:var(--f-display); font-weight:600; letter-spacing:.10em; text-transform:uppercase; }
+
+/* bracket frame (M1) */
+.br { position:relative; padding:20px 20px 18px; }
+.br::before, .br::after, .br > .c1, .br > .c2 { content:""; position:absolute; width:10px; height:10px; border-color:var(--state-idle-dim); border-style:solid; pointer-events:none; }
+.br::before { top:0; left:0; border-width:1px 0 0 1px; }
+.br::after  { top:0; right:0; border-width:1px 1px 0 0; }
+.br > .c1   { bottom:0; left:0; border-width:0 0 1px 1px; }
+.br > .c2   { bottom:0; right:0; border-width:0 1px 1px 0; }
+
+/* header */
+header.top { display:grid; grid-template-columns:1fr auto; gap:24px; align-items:end; padding-bottom:12px; }
+.mark { font-family:var(--f-display); font-weight:600; font-size:56px; line-height:.9; letter-spacing:.14em; margin:0; }
+.mark small { display:block; font-family:var(--f-label); font-size:13px; letter-spacing:.18em; color:var(--ink-2); font-weight:500; margin-top:10px; }
+.hdr-meta { text-align:right; }
+.hdr-meta .mono { font-size:12px; color:var(--ink-2); }
+.hdr-ruler { width:100%; height:44px; display:block; margin:8px 0 4px; }
+@media (max-width:720px){ header.top{ grid-template-columns:1fr; } .hdr-meta{ text-align:left; } .mark{ font-size:40px; } }
+
+.intro { display:grid; grid-template-columns:repeat(3,1fr); gap:24px; margin:24px 0 8px; }
+.intro p { margin:6px 0 0; color:var(--ink-2); font-size:14px; }
+@media (max-width:900px){ .intro{ grid-template-columns:1fr; } }
+
+/* section heads */
+section { margin-top:64px; }
+.sh { display:grid; grid-template-columns:auto 1fr auto; gap:16px; align-items:baseline; border-top:1px solid var(--line-faint); padding-top:10px; margin-bottom:24px; }
+.sh .num { font-family:var(--f-mono); font-size:12px; color:var(--state-idle); }
+.sh h2 { margin:0; font-family:var(--f-display); font-weight:600; font-size:24px; letter-spacing:.12em; text-transform:uppercase; }
+.sh .note { font-size:13px; color:var(--ink-3); max-width:520px; text-align:right; }
+@media (max-width:720px){ .sh{ grid-template-columns:auto 1fr; } .sh .note{ grid-column:1/-1; text-align:left; } }
+
+/* palette */
+.pal-group { margin-bottom:28px; }
+.pal { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:16px; margin-top:10px; }
+.sw { background:var(--bg-panel); border:1px solid var(--grid); }
+.sw .chip { height:64px; position:relative; border-bottom:1px solid var(--grid); }
+.sw .chip svg { position:absolute; right:10px; top:10px; }
+.sw .meta { padding:10px 12px 12px; }
+.sw .tok { font-family:var(--f-mono); font-size:12px; color:var(--ink); }
+.sw .hex { font-family:var(--f-mono); font-size:12px; color:var(--ink-2); display:flex; justify-content:space-between; margin-top:2px; }
+.sw .what { font-size:13px; color:var(--ink-3); margin-top:6px; line-height:1.35; }
+.sw .deco { color:var(--state-stale); }
+.ramp { height:28px; border:1px solid var(--grid); margin-top:10px; background:linear-gradient(90deg,#04070A 0%,#0A1F28 20%,#124A5A 40%,#2C8FA8 60%,#7FD8EC 80%,#E8FBFF 100%); }
+.ramp-l { display:flex; justify-content:space-between; margin-top:4px; }
+
+/* type */
+.type { display:grid; grid-template-columns:repeat(2,1fr); gap:24px; }
+@media (max-width:900px){ .type{ grid-template-columns:1fr; } }
+.spec { background:var(--bg-panel); }
+.spec .fam { display:flex; justify-content:space-between; align-items:baseline; gap:12px; margin-bottom:14px; }
+.spec .fam a { font-size:12px; }
+.s-display { font-family:var(--f-display); font-weight:600; font-size:48px; letter-spacing:.12em; line-height:1; text-transform:uppercase; }
+.s-display-2 { font-family:var(--f-display); font-weight:500; font-size:24px; letter-spacing:.10em; text-transform:uppercase; color:var(--ink-2); margin-top:8px; }
+.s-label { font-family:var(--f-label); font-weight:500; font-size:12px; letter-spacing:.10em; text-transform:uppercase; color:var(--ink-2); }
+.s-label-b { font-family:var(--f-label); font-weight:600; font-size:18px; letter-spacing:.08em; text-transform:uppercase; }
+.s-read { font-family:var(--f-read); font-size:15px; line-height:1.45; }
+.s-mono-xl { font-family:var(--f-mono); font-weight:500; font-size:48px; line-height:1; letter-spacing:-.01em; }
+.s-mono { font-family:var(--f-mono); font-size:13px; color:var(--ink-2); }
+.scale { display:flex; flex-wrap:wrap; gap:4px 20px; align-items:baseline; margin-top:24px; border-top:1px solid var(--grid); padding-top:14px; }
+.scale span { font-family:var(--f-mono); color:var(--ink-2); }
+.scale i { font-style:normal; display:block; font-family:var(--f-label); font-size:11px; letter-spacing:.1em; color:var(--ink-3); }
+.rules { margin-top:16px; display:grid; grid-template-columns:repeat(3,1fr); gap:16px; font-size:13px; color:var(--ink-2); }
+@media (max-width:900px){ .rules{ grid-template-columns:1fr; } }
+.rules b { color:var(--ink); font-weight:500; }
+
+/* strokes */
+.strokes { display:grid; grid-template-columns:1.2fr 1fr 1fr; gap:24px; }
+@media (max-width:900px){ .strokes{ grid-template-columns:1fr; } }
+
+/* motifs */
+.motifs { display:grid; grid-template-columns:repeat(12,1fr); gap:20px; }
+.card { background:var(--bg-panel); grid-column:span 4; display:flex; flex-direction:column; }
+.card.w6 { grid-column:span 6; } .card.w8 { grid-column:span 8; } .card.w12 { grid-column:span 12; }
+@media (max-width:1100px){ .card, .card.w6, .card.w8 { grid-column:span 6; } }
+@media (max-width:720px){ .card, .card.w6, .card.w8, .card.w12 { grid-column:span 12; } }
+.card .ch { display:flex; justify-content:space-between; align-items:baseline; gap:12px; margin-bottom:12px; }
+.card .ch .id { font-family:var(--f-mono); font-size:11px; color:var(--state-idle); }
+.card h3 { margin:0; font-family:var(--f-label); font-weight:600; font-size:13px; letter-spacing:.12em; text-transform:uppercase; }
+.card .fig { flex:1; display:flex; align-items:center; justify-content:center; min-height:160px; }
+.card .fig svg { width:100%; height:auto; display:block; overflow:visible; }
+.card .ann { margin:14px 0 0; padding:0; list-style:none; font-size:13px; color:var(--ink-2); line-height:1.4; border-top:1px solid var(--grid); padding-top:10px; }
+.card .ann li { padding-left:14px; position:relative; margin-top:4px; }
+.card .ann li::before { content:""; position:absolute; left:0; top:.62em; width:6px; height:1px; background:var(--ink-3); }
+.card .ann b { color:var(--ink); font-weight:500; }
+.card .ann code, .rules code, .sw code { font-family:var(--f-mono); font-size:12px; color:var(--ink); }
+
+/* svg text classes */
+svg text { font-family:var(--f-label); }
+.t-lab { font-family:var(--f-label); font-weight:500; font-size:11px; letter-spacing:.12em; text-transform:uppercase; fill:var(--ink-3); }
+.t-lab2 { font-family:var(--f-label); font-weight:500; font-size:12px; letter-spacing:.10em; text-transform:uppercase; fill:var(--ink-2); }
+.t-lab-ink { font-family:var(--f-label); font-weight:600; font-size:12px; letter-spacing:.10em; text-transform:uppercase; fill:var(--ink); }
+.t-mono { font-family:var(--f-mono); font-size:11px; fill:var(--ink-2); }
+.t-mono3 { font-family:var(--f-mono); font-size:11px; fill:var(--ink-3); }
+.t-mono-ink { font-family:var(--f-mono); font-size:12px; fill:var(--ink); }
+.t-aar { font-family:var(--f-mono); font-weight:500; font-size:24px; fill:var(--ink); }
+.t-big { font-family:var(--f-mono); font-weight:500; font-size:32px; }
+.hair { vector-effect:non-scaling-stroke; }
+
+/* live tile choreography */
+.live-tile .frame { stroke:var(--state-idle-dim); opacity:0; transition:opacity var(--t-flash) var(--ease-instrument), stroke var(--t-flash) linear; }
+.live-tile .brk { stroke:var(--state-idle-dim); transition:stroke var(--t-flash) linear; }
+.live-tile .promo { opacity:0; transform:translateX(8px); transition:opacity var(--t-tick) var(--ease-instrument), transform var(--t-tick) var(--ease-instrument); }
+.live-tile .home { transition:opacity var(--t-tick) var(--ease-instrument); }
+.live-tile .ember { opacity:0; transition:opacity var(--t-settle) linear; }
+.live-tile .wash { opacity:0; transition:opacity var(--t-flash) linear; }
+.live-tile.tx .frame { opacity:1; stroke:var(--state-tx); }
+.live-tile.tx.flash .frame { stroke:var(--state-tx-hot); }
+.live-tile.tx .brk { stroke:var(--state-tx); }
+.live-tile.tx .promo { opacity:1; transform:none; }
+.live-tile.tx .home { opacity:0; }
+.live-tile.tx .wash { opacity:1; }
+.live-tile.recent .ember { opacity:1; }
+
+/* ping ring */
+@keyframes ping { 0% { transform:scale(.15); opacity:.6; } 100% { transform:scale(1); opacity:0; } }
+.ping { transform-box:fill-box; transform-origin:center; animation:ping 1200ms var(--ease-instrument) infinite; animation-delay:.6s; }
+@keyframes sweep { from { transform:translateX(-140px); } to { transform:translateX(1000px); } }
+.sweep { animation:sweep 8s linear infinite; }
+
+/* timeline */
+.tl { width:100%; height:auto; display:block; }
+
+/* refs */
+.refs { display:grid; grid-template-columns:repeat(3,1fr); gap:24px; }
+@media (max-width:900px){ .refs{ grid-template-columns:1fr; } }
+.refs h4 { margin:0 0 8px; font-family:var(--f-label); font-weight:600; font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-2); }
+.refs ul { margin:0 0 20px; padding:0; list-style:none; font-size:14px; }
+.refs li { padding:5px 0; border-bottom:1px solid var(--grid); }
+.refs li span { color:var(--ink-3); font-size:12px; }
+
+/* footer title block (M10) */
+.tblock { margin-top:64px; display:grid; grid-template-columns:1.2fr 1.4fr 1fr 1fr; border:1px solid var(--line-faint); }
+.tblock > div { padding:10px 12px; border-left:1px solid var(--line-faint); }
+.tblock > div:first-child { border-left:0; }
+.tblock .v { font-family:var(--f-mono); font-size:12px; color:var(--ink-2); margin-top:2px; }
+@media (max-width:720px){ .tblock{ grid-template-columns:1fr 1fr; } .tblock > div:nth-child(3){ border-left:0; } .tblock > div:nth-child(n+3){ border-top:1px solid var(--line-faint); } }
+
+.motion-toggle { background:none; border:1px solid var(--line-faint); color:var(--ink-2); font-family:var(--f-label); font-size:11px; letter-spacing:.12em; text-transform:uppercase; padding:6px 10px; cursor:pointer; margin-top:8px; }
+.motion-toggle[aria-pressed="true"] { color:var(--ink); border-color:var(--line); }
+
+@media (prefers-reduced-motion: reduce) {
+  .ping, .sweep { animation:none; opacity:0; }
+  * { transition-duration:0ms !important; }
+}
+body.reduced .ping, body.reduced .sweep { animation:none; opacity:0; }
+body.reduced * { transition-duration:0ms !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <div>
+    <div class="label">WLT-1 · Mood / Reference Sheet · Rev 2</div>
+    <h1 class="mark" style="margin-top:10px">SDRVIZ<small>Wayside Listening Table · NEC DC–BAL</small></h1>
+  </div>
+  <div class="hdr-meta">
+    <div class="label">Issued by</div>
+    <div class="mono">gmunk-director → film-graphics-designer</div>
+    <div class="mono">2026-11-08 · companion to creative-brief.md</div>
+    <button class="motion-toggle" id="motionBtn" aria-pressed="false">Motion: Full</button>
+  </div>
+</header>
+<svg class="hdr-ruler" id="hdrRuler" viewBox="0 0 1000 44" preserveAspectRatio="none" aria-label="AAR band ruler, 160.215 to 161.565 megahertz"></svg>
+
+<div class="intro">
+  <div class="br"><i class="c1"></i><i class="c2"></i><div class="label-2">Listening</div><p>Dark cockpit. Hairlines on near-black, dim cyan armed marks, one slow functional motion. Healthy is quiet, never green.</p></div>
+  <div class="br"><i class="c1"></i><i class="c2"></i><div class="label-2" style="color:var(--state-tx)">Keyed</div><p>Only the talking channel changes: orange frame, vertical glyph, promoted timer, live waveform. Same choreography everywhere.</p></div>
+  <div class="br"><i class="c1"></i><i class="c2"></i><div class="label-2" style="color:var(--state-fault)">Fault</div><p>Red on the faulted object only, plus one status line. Two 1&nbsp;Hz pulses, then steady. ACK drops the red frame; red is present tense.</p></div>
+</div>
+
+<!-- 01 PALETTE -->
+<section aria-labelledby="h-pal">
+  <div class="sh"><span class="num">01</span><h2 id="h-pal">Palette · semantic tokens</h2><span class="note">Hue is state, and only state. Ratios are WCAG 2.x against <code class="mono">bg-void</code>. Text ≥ 4.5, state strokes ≥ 3. Tokens marked <em>decorative</em> never carry meaning alone.</span></div>
+
+  <div class="pal-group">
+    <div class="label">Surfaces &amp; ink</div>
+    <div class="pal" id="palBase"></div>
+  </div>
+  <div class="pal-group">
+    <div class="label">State · each paired with a position-light glyph</div>
+    <div class="pal" id="palState"></div>
+  </div>
+  <div class="pal-group">
+    <div class="label">Washes · over bg-panel · text inside a wash is ink-2 or brighter</div>
+    <div class="pal" id="palWash"></div>
+  </div>
+  <div class="pal-group">
+    <div class="label">Waterfall / heatmap ramp · single hue, lightness only · no Turbo, Jet, viridis</div>
+    <div class="ramp" role="img" aria-label="Ramp from near-black through deep cyan to pale white-cyan"></div>
+    <div class="ramp-l mono" style="font-size:11px;color:var(--ink-3)"><span>#04070A</span><span>#0A1F28</span><span>#124A5A</span><span>#2C8FA8</span><span>#7FD8EC</span><span>#E8FBFF</span></div>
+  </div>
+</section>
+
+<!-- 02 TYPE -->
+<section aria-labelledby="h-type">
+  <div class="sh"><span class="num">02</span><h2 id="h-type">Typography</h2><span class="note">Google Fonts, all SIL OFL. Numbers are always mono, labels never are. Blender (the Oblivion face, reported secondhand) is not used.</span></div>
+  <div class="type">
+    <div class="spec br"><i class="c1"></i><i class="c2"></i>
+      <div class="fam"><span class="label">Display · Rajdhani 600 / 500</span><a href="https://fonts.google.com/specimen/Rajdhani">specimen ↗</a></div>
+      <div class="s-display">Listening Table</div>
+      <div class="s-display-2">Panel title · Feeds nominal</div>
+      <div class="s-mono" style="margin-top:10px">fallback: "Barlow Semi Condensed", "DIN Alternate", "Arial Narrow", sans-serif</div>
+    </div>
+    <div class="spec br"><i class="c1"></i><i class="c2"></i>
+      <div class="fam"><span class="label">Data · JetBrains Mono 500 / 400</span><a href="https://fonts.google.com/specimen/JetBrains+Mono">specimen ↗</a></div>
+      <div class="s-mono-xl">5454 <span style="color:var(--state-tx)">00:07.4</span></div>
+      <div class="s-mono" style="margin-top:10px;color:var(--ink)">160.920 MHz · −42.1 dBFS · SNR 18 dB · NEC 113.6 · 07:15:00 EST</div>
+      <div class="s-mono" style="margin-top:4px">0O 1lI 5S 8B · fallback: "IBM Plex Mono", ui-monospace, Menlo, Consolas</div>
+    </div>
+    <div class="spec br"><i class="c1"></i><i class="c2"></i>
+      <div class="fam"><span class="label">Label / UI · Barlow Semi Condensed 600 / 500 / 400</span><a href="https://fonts.google.com/specimen/Barlow+Semi+Condensed">specimen ↗</a></div>
+      <div class="s-label-b">AMTK NEC · Road / Dispatcher</div>
+      <div class="s-label" style="margin-top:8px">Channel · Bank · Feed · Speaker · Duration · Confidence</div>
+      <div class="s-mono" style="margin-top:10px">11–12 px uppercase, +0.10 em · fallback: "Barlow", "Roboto Condensed", "Arial Narrow"</div>
+    </div>
+    <div class="spec br"><i class="c1"></i><i class="c2"></i>
+      <div class="fam"><span class="label">Reading · Barlow 400 / 500</span><a href="https://fonts.google.com/specimen/Barlow">specimen ↗</a></div>
+      <div class="s-read">Yeah BC, I032 is sitting at a stop signal at Hyattsville on number 2, just checking on our lineup. <span style="color:var(--ink-3)">over</span></div>
+      <div class="s-mono" style="margin-top:10px">transcripts · 15 / 1.45 · sentence case · low-confidence words in ink-3</div>
+    </div>
+  </div>
+  <div class="scale" aria-label="Type scale">
+    <span style="font-size:11px">11<i>floor</i></span><span style="font-size:12px">12<i>meta</i></span><span style="font-size:13px">13<i>panel</i></span><span style="font-size:15px">15<i>read</i></span><span style="font-size:18px">18<i>MHz</i></span><span style="font-size:24px">24<i>AAR</i></span><span style="font-size:32px">32<i>promoted</i></span><span style="font-size:48px">48<i>hero</i></span><span style="font-size:72px;font-family:var(--f-display);color:var(--state-fault)">72<i>alarm only</i></span>
+  </div>
+</section>
+
+<!-- 03 STROKE -->
+<section aria-labelledby="h-str">
+  <div class="sh"><span class="num">03</span><h2 id="h-str">Stroke · grid · frame</h2><span class="note">Integer widths only, <code class="mono">non-scaling-stroke</code>, snapped to the half pixel. 4 px base, 8 px layout unit. Corner brackets instead of boxes.</span></div>
+  <div class="strokes">
+    <div class="spec br"><i class="c1"></i><i class="c2"></i>
+      <div class="label" style="margin-bottom:10px">Weights</div>
+      <svg viewBox="0 0 420 150" role="img" aria-label="Stroke weights 1, 1.5, 2 and 3 pixels">
+        <g id="weights"></g>
+      </svg>
+    </div>
+    <div class="spec br"><i class="c1"></i><i class="c2"></i>
+      <div class="label" style="margin-bottom:10px">Dash patterns carry state</div>
+      <svg viewBox="0 0 320 150" role="img" aria-label="Dash patterns">
+        <g id="dashes"></g>
+      </svg>
+    </div>
+    <div class="spec br"><i class="c1"></i><i class="c2"></i>
+      <div class="label" style="margin-bottom:10px">Brackets · rest / selected · 8 px grid</div>
+      <svg viewBox="0 0 320 150" role="img" aria-label="Corner bracket sizes on an 8 pixel grid">
+        <g id="brackets"></g>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- 04 MOTIFS -->
+<section aria-labelledby="h-mot">
+  <div class="sh"><span class="num">04</span><h2 id="h-mot">Motif library · functional accents</h2><span class="note">Every accent carries a scale, a position or a state. If you can't say what a circle measures, delete it. IDs match the brief, §6.</span></div>
+  <div class="motifs">
+
+    <article class="card w12 br"><i class="c1"></i><i class="c2"></i>
+      <div class="ch"><h3>Channel tile · states, combinations, compact variant</h3><span class="id">M1 · M6 · M7 · M16 · M22 · M25 · §3.5</span></div>
+      <div class="fig"><svg id="tiles" viewBox="0 -4 1376 486" role="img" aria-label="Channel tiles in every state, the required combinations and the compact variant"></svg></div>
+      <ul class="ann">
+        <li>Standard 200&nbsp;×&nbsp;112. Squelch-open (diagonal glyph, brighter brackets) lasts 250&nbsp;ms; then TX commits: full 2&nbsp;px frame, 6% wash, AAR steps down to 13&nbsp;px and the timer takes the right zone at 32&nbsp;px.</li>
+        <li>Five layers resolve separately (brief §3.5): frame, glyph, status readout, fault reason (footer line) and ember underline. Example: recent + stale keeps the ember under a dashed frame. An acked fault keeps its red triangle and label, but the frame falls back to dashed.</li>
+        <li>Selection is an outer bracket set 4&nbsp;px outside the tile, so it never collides with a TX or fault frame. Partial coverage shows M25 pips. Muted TX shows no flash and an outline meter. Compact 200&nbsp;×&nbsp;56 is used when a bank outgrows the standard grid.</li>
+      </ul>
+    </article>
+
+    <article class="card w12 br"><i class="c1"></i><i class="c2"></i>
+      <div class="ch"><h3>Live key-up loop · demo</h3><span class="id">§7.3</span></div>
+      <div class="fig"><svg id="liveSvg" viewBox="0 0 1376 300" role="img" aria-label="Animated tile showing squelch-open, commit to transmitting, release and ember"></svg></div>
+      <ul class="ann">
+        <li><b>Demo loop.</b> It repeats here so you can study it. In the product it fires once per key-up, and a channel at rest does not move.</li>
+        <li>0&nbsp;ms: squelch opens, glyph goes diagonal, audio flows. 250&nbsp;ms: commit with a 120&nbsp;ms <code>tx-hot</code> flash. Release: 400&nbsp;ms hold, then frame retracts and the ember underline remains (<code>recent</code> 2&nbsp;min, then <code>recent-dim</code> to 10&nbsp;min, compressed here). Every fourth cycle is a kerchunk that never commits.</li>
+      </ul>
+    </article>
+
+    <article class="card br"><i class="c1"></i><i class="c2"></i>
+      <div class="ch"><h3>Position-light glyphs</h3><span class="id">M6</span></div>
+      <div class="fig"><svg id="glyphs" viewBox="0 0 400 190" role="img" aria-label="Seven state glyphs"></svg></div>
+      <ul class="ann">
+        <li>State by <em>arrangement</em>, after the PRR position light native to the NEC. A grayscale screenshot must still read.</li>
+        <li>Dots r&nbsp;2.5, pitch 6&nbsp;px. TX and fault differ by shape because their luminance contrast is only 1.42:1.</li>
+      </ul>
+    </article>
+
+    <article class="card br"><i class="c1"></i><i class="c2"></i>
+      <div class="ch"><h3>Level meter · VU + peak hold</h3><span class="id">M16</span></div>
+      <div class="fig"><svg id="meter" viewBox="0 0 400 190" role="img" aria-label="Two level meters, one transmitting and one idle"></svg></div>
+      <ul class="ann">
+        <li>2&nbsp;px bar on a −60…0&nbsp;dBFS tick scale. VU ballistics of about 300&nbsp;ms rise and fall keep it calm with speech.</li>
+        <li>The 1×8&nbsp;px peak tick holds 1.5&nbsp;s, then falls at 20&nbsp;dB/s. Squelch closed: no bar, only a static 1×4&nbsp;px floor tick updated every 10&nbsp;s. Upper meter is a demo loop.</li>
+      </ul>
+    </article>
+
+    <article class="card br"><i class="c1"></i><i class="c2"></i>
+      <div class="ch"><h3>Feed site · range rings · ping</h3><span class="id">M4 · M5 · M14 · M23</span></div>
+      <div class="fig"><svg id="rings" viewBox="0 0 400 260" role="img" aria-label="Feed registration mark with range rings, coverage hatch and a ping ring"></svg></div>
+      <ul class="ann">
+        <li>The registration mark sits on the fictional feed site. Rings every 5&nbsp;km are labelled at 10&nbsp;km; the outer ring is the coverage radius (<code>2 3</code> dash), hatched at 45°.</li>
+        <li><b>Demo loop:</b> the ping repeats here only. In the product it fires once per TX commit, for every receiving feed (1200&nbsp;ms). There are no continuous sweeps on the map.</li>
+      </ul>
+    </article>
+
+    <article class="card w8 br"><i class="c1"></i><i class="c2"></i>
+      <div class="ch"><h3>Spectrum · graticule · squelch · dimension</h3><span class="id">M2 · M3 · M11 · M12 · M17</span></div>
+      <div class="fig"><svg id="spectrum" viewBox="0 0 860 300" role="img" aria-label="Spectrum trace over a graticule with squelch line and bandwidth dimension"></svg></div>
+      <ul class="ann">
+        <li>Scope-style graticule with the scale per division in a corner, not on every line. Frequency rises left to right (P8).</li>
+        <li>The dashed squelch line is the only threshold: it goes solid when crossed, audio opens, and TX commits 250&nbsp;ms later. The glow is the two-stroke trick, on the TX slot only (12% plot wash).</li>
+        <li>The dimension line measures the keyed channel's 12.5&nbsp;kHz NFM bandwidth. The cursor readout sits at the canvas edge.</li>
+      </ul>
+    </article>
+
+    <article class="card br"><i class="c1"></i><i class="c2"></i>
+      <div class="ch"><h3>Waterfall · TX slot overlay</h3><span class="id">§3.3</span></div>
+      <div class="fig"><svg id="waterfall" viewBox="0 0 400 300" role="img" aria-label="Monochrome waterfall with an orange outline on the transmitting channel slot"></svg></div>
+      <ul class="ann">
+        <li>Lightness carries power and hue carries state. Only the keyed slot gets the 1&nbsp;px orange outline and the 12% plot wash (<code>wash-tx-plot</code>; no text on it).</li>
+        <li>2 rows/s, so 120&nbsp;px is 60&nbsp;s. The floor is clamped just below noise, so a quiet band looks quiet. One feed is shown at a time (feed selector). Pattern is SIM.</li>
+      </ul>
+    </article>
+
+    <article class="card w6 br"><i class="c1"></i><i class="c2"></i>
+      <div class="ch"><h3>Waveform strip → transcript row</h3><span class="id">M15 · M24</span></div>
+      <div class="fig"><svg id="wave" viewBox="0 0 640 262" role="img" aria-label="Live scrolling waveform, frozen archived waveform and a transcript row resolving"></svg></div>
+      <ul class="ann">
+        <li>One object from live to archive. It scrolls in orange while keyed, then freezes at key-up, turns <code>line</code> and becomes the clip thumbnail in History.</li>
+        <li>While decoding: a dashed bar, 8&nbsp;px per second of audio, plus <code>DECODING</code>. No fake glyphs. On final text: a cosmetic word-by-word reveal capped at 400&nbsp;ms total. Seed row <code>tx-004</code>; the low-confidence word (<code>ink-3</code>) is SIM. Demo loop.</li>
+      </ul>
+    </article>
+
+    <article class="card w6 br"><i class="c1"></i><i class="c2"></i>
+      <div class="ch"><h3>Train data block · milepost · coordinates</h3><span class="id">M8 · M9 · M11</span></div>
+      <div class="fig"><svg id="block" viewBox="0 0 640 250" role="img" aria-label="Train glyph on track with leader line and data block, milepost tag and coordinate readout"></svg></div>
+      <ul class="ann">
+        <li>Seed row <code>tx-039</code>: MARC 410 calls "approach medium, Odenton, track 2" at 07:15:00, so the tag reads <code>NEC 113.6 · CH54</code>. NEC mileposts fall toward Baltimore (Amtrak's Philadelphia-based count). MARC 412 is SIM.</li>
+        <li>The leader repositions to 8 offsets (click or <code>[</code>/<code>]</code>; drag optional). The M9 tag is 32&nbsp;×&nbsp;48 with the railroad's prefix on top. Tail fades over about 600&nbsp;m. The train is orange only while its crew is talking.</li>
+      </ul>
+    </article>
+
+    <article class="card w8 br"><i class="c1"></i><i class="c2"></i>
+      <div class="ch"><h3>CTC track strip · lever row</h3><span class="id">M18 · M21</span></div>
+      <div class="fig"><svg id="ctc" viewBox="0 0 860 250" role="img" aria-label="CTC-style track diagram of the NEC and RF&amp;P through route and the CSX Capital Sub with occupied blocks"></svg></div>
+      <ul class="ann">
+        <li>One schematic row per route (brief §9.0.4). The NEC · RF&amp;P row runs Quantico → Washington → Perryville, with an MP-equation mark at the change of count. The Capital Sub ties in at Washington. The snapshot is 07:15:00: MARC 410 talking (seed <code>tx-039</code>), and the other occupancies are SIM.</li>
+        <li>Occupied blocks are 2&nbsp;px <code>line</code>; the talking block is orange. Detectors are open diamonds. Freight is never drawn, because it is not tracked. Red is never used for occupancy.</li>
+        <li>The lever row gives per-channel mute, solo and record, with a lit pip above each lever that is on. Visual 16&nbsp;px, 11&nbsp;px letters, hit area 24&nbsp;px.</li>
+      </ul>
+    </article>
+
+    <article class="card br"><i class="c1"></i><i class="c2"></i>
+      <div class="ch"><h3>Title block</h3><span class="id">M10</span></div>
+      <div class="fig"><svg id="tblock" viewBox="0 0 400 170" role="img" aria-label="Drafting title block"></svg></div>
+      <ul class="ann">
+        <li>Sits bottom-right on every screen, like a drawing's sheet number. Labels are <code>ink-3</code>, values mono <code>ink-2</code>. The clock follows the selected zone (EST/EDT or UTC). <code>SIM</code> while fixtures are in use. The Map adds a fifth cell: <code>© OpenStreetMap contributors</code>.</li>
+      </ul>
+    </article>
+
+    <article class="card w6 br"><i class="c1"></i><i class="c2"></i>
+      <div class="ch"><h3>Stringline · trains × time × radio</h3><span class="id">M19</span></div>
+      <div class="fig"><svg id="string" viewBox="0 0 640 340" role="img" aria-label="Time-distance stringline with transmission ticks"></svg></div>
+      <ul class="ann">
+        <li>Route <code>r-nec</code>, native NEC mileposts falling left to right (Washington 135.7 → Martin State 84.0). Y is time running down. Seed ticks: MARC 410 at Odenton (<code>tx-039</code>) and MARC 418 at Martin State (<code>tx-042</code>). Margin rail: CH20 <code>tx-038</code> and CH22 <code>tx-041</code>. Strings and the other ticks are SIM.</li>
+        <li>The selected train is white at 2&nbsp;px. The now-line is cyan, never red. This is the History signature.</li>
+      </ul>
+    </article>
+
+    <article class="card w6 br"><i class="c1"></i><i class="c2"></i>
+      <div class="ch"><h3>Ridgeline · 24 h airtime</h3><span class="id">M20</span></div>
+      <div class="fig"><svg id="ridge" viewBox="0 0 640 340" role="img" aria-label="Stacked hidden-line ridgeline of airtime per channel over 24 hours"></svg></div>
+      <ul class="ann">
+        <li>Craft's CP 1919 stacked-line plot, as inverted by Saville. One ridge per channel at 10-minute bins, each filled with <code>bg-void</code> (the plot surface) for hidden lines. Up to 16 ridges, then <code>OTHER</code>.</li>
+        <li>The morning and evening commuter rushes must rise visibly. This is the Stats hero. The shape and the total are SIM, illustrating the <code>data/sim/</code> density target.</li>
+      </ul>
+    </article>
+
+  </div>
+</section>
+
+<!-- 05 MOTION -->
+<section aria-labelledby="h-motion">
+  <div class="sh"><span class="num">05</span><h2 id="h-motion">Motion · the key-up choreography</h2><span class="note">The same sequence on every channel, on every screen. It is the "scan, track, connect, populate, animate" order rewritten for radio. Easing: <code class="mono">cubic-bezier(0.2, 0, 0, 1)</code>.</span></div>
+  <div class="spec br"><i class="c1"></i><i class="c2"></i>
+    <svg class="tl" id="timeline" viewBox="0 0 1376 260" role="img" aria-label="Timeline of key-up choreography from 0 to 600 milliseconds and release"></svg>
+  </div>
+  <div class="rules">
+    <div><b>Build-on on app start and screen change only.</b> Frame 0–200, grid 150–350, labels 300–450 and values 400–600&nbsp;ms. A 20&nbsp;ms tile stagger, capped at 600&nbsp;ms total. Never on data updates, bank switches or tab return.</div>
+    <div><b>One ambient motion per screen.</b> Live Ops: the 8&nbsp;s sweep over the spectrum only. History: the playhead while playing. Data motion (waterfall, trains, pings) moves at data rate. At idle only the sweep, the waterfall, the smoothed spectrum and the header clock move.</div>
+    <div><b>Fault.</b> Two pulses at 1&nbsp;Hz, then steady. No alternation, ever: the reason has its own slot. ACK fades the frame once, over 400&nbsp;ms. Under reduced motion, every state change is instant.</div>
+  </div>
+</section>
+
+<!-- 06 REFERENCES -->
+<section aria-labelledby="h-ref">
+  <div class="sh"><span class="num">06</span><h2 id="h-ref">References · links only</h2><span class="note">No film stills are embedded. Follow the links. GMUNK pages are self-reported studio framing.</span></div>
+  <div class="refs">
+    <div>
+      <h4>GMUNK · primary</h4>
+      <ul>
+        <li><a href="https://gmunk.com/OBLIVION-GFX">Oblivion GFX</a> <span>· Light Table, Bubbleship, HUD</span></li>
+        <li><a href="https://gmunk.com/TRON-Legacy">TRON: Legacy</a> <span>· holograms overview</span></li>
+        <li><a href="https://gmunk.com/TRON-Disc-Game">TRON: Disc Game</a> <span>· collapsing bracket, traveling linework</span></li>
+        <li><a href="https://gmunk.com/TRON-Throne-Room">TRON: Throne Room</a> <span>· chaos → concentric rings</span></li>
+        <li><a href="https://gmunk.com/TRON-Rectifier-Globe">TRON: Rectifier Globe</a> <span>· "simplified for a quick read"</span></li>
+        <li><a href="https://gmunk.com/TRON-Ares-Computer-Vision">Tron: Ares · Computer Vision</a> <span>· square-packing, one datum</span></li>
+        <li><a href="https://gmunk.com/TRON-Ares-Finding-Eve">Tron: Ares · Finding Eve</a></li>
+      </ul>
+      <h4>Reels</h4>
+      <ul>
+        <li><a href="https://vimeo.com/64377100">Oblivion GFX Montage</a> <span>· Vimeo</span></li>
+        <li><a href="https://vimeo.com/67778891">Oblivion FUI Process Reel</a> <span>· Vimeo</span></li>
+        <li><a href="https://www.artofvfx.com/tron-ares-gmunk-gfx-reel/">Tron: Ares GFX reel</a> <span>· Art of VFX</span></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Interviews · critique</h4>
+      <ul>
+        <li><a href="https://www.pushing-pixels.org/2011/06/01/visual-effects-of-tron-legacy-and-beyond-conversation-with-gmunk.html">GMUNK on Tron: Legacy</a> <span>· Pushing Pixels</span></li>
+        <li><a href="https://www.pushing-pixels.org/?p=9032">Joseph Chan</a> <span>· Light Table loops</span></li>
+        <li><a href="https://www.pushing-pixels.org/?p=7447">Jayse Hansen</a> <span>· negative space, real context</span></li>
+        <li><a href="https://www.darbyfui.com/tronares">Darby Faccinto · Tron: Ares</a> <span>· self-reported</span></li>
+        <li><a href="https://www.provideocoalition.com/hud-and-gui-graphics-in-oblivion/">Oblivion HUD &amp; GUI</a> <span>· ProVideo Coalition</span></li>
+        <li><a href="https://fuzzymath.com/blog/evaluating-interface-design-of-oblivion">Evaluating Oblivion's UI</a> <span>· Fuzzy Math</span></li>
+        <li><a href="https://motionographer.com/2011/06/06/tron-legacy-in-depth-with-david-lewandowski/">David Lewandowski</a> <span>· Motionographer</span></li>
+        <li><a href="https://www.core77.com/posts/18933/josh-nimoy-on-the-secrets-behind-the-special-effects-in-tron-legacy-18933">Josh Nimoy</a> <span>· Core77</span></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Instruments · railroad · standards</h4>
+      <ul>
+        <li><a href="https://en.wikipedia.org/wiki/Centralized_traffic_control">Centralized traffic control</a> <span>· CTC panels</span></li>
+        <li><a href="https://railroadsignals.us/signals/pl">Position-light signals</a> <span>· PRR</span></li>
+        <li><a href="https://railroads.dot.gov/sites/fra.dot.gov/files/fra_net/2009/rr0902.pdf">Stringline diagrams</a> <span>· FRA</span></li>
+        <li><a href="https://www.faa.gov/air_traffic/publications/atpubs/atc_html/chap5_section_14.html">ATC data blocks</a> <span>· FAA JO 7110.65</span></li>
+        <li><a href="https://www.faa.gov/sites/faa.gov/files/2022-11/25.1322.pdf">Flightcrew alerting colors</a> <span>· 14 CFR 25.1322</span></li>
+        <li><a href="https://en.wikipedia.org/wiki/Low_Frequency_Analyzer_and_Recorder">LOFAR</a> <span>· waterfall ancestor</span></li>
+        <li><a href="https://www.scientificamerican.com/article/the-pulsar-chart-that-became-a-pop-icon-turns-50-joy-division-rsquo-s-unknown-pleasures">CP 1919 pulsar plot</a> <span>· Scientific American</span></li>
+        <li><a href="https://www.qsl.net/n4jri/aar_ch.htm">AAR channel plan</a> <span>· N4JRI</span></li>
+        <li><a href="https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast.html">WCAG 2.2 non-text contrast</a></li>
+        <li><a href="https://www.w3.org/WAI/WCAG22/Understanding/three-flashes-or-below-threshold.html">WCAG 2.2 three flashes</a></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<footer class="tblock" aria-label="Title block">
+  <div><div class="label">Sheet</div><div class="v">WLT-1 · MB-01</div></div>
+  <div><div class="label">Title</div><div class="v">Mood / reference sheet</div></div>
+  <div><div class="label">Scope</div><div class="v">All screens</div></div>
+  <div><div class="label">Rev · Date</div><div class="v">2 · 2026-11-08</div></div>
+</footer>
+
+</div>
+
+<script>
+(() => {
+  const NS = 'http://www.w3.org/2000/svg';
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const C = {}; ['bg-void','bg-panel','bg-raised','grid','line-faint','line','ink','ink-2','ink-3','state-idle','state-idle-dim','state-tx','state-tx-hot','state-recent','state-recent-dim','state-stale','state-offline','state-fault','state-fault-dim','state-select'].forEach(k => C[k] = css('--'+k));
+  const $ = id => document.getElementById(id);
+  // deterministic PRNG so the sheet renders identically every time
+  const rng = (seed => () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; })(1919);
+  const reducedMQ = matchMedia('(prefers-reduced-motion: reduce)');
+  let reduced = reducedMQ.matches;
+  const btn = $('motionBtn');
+  const syncBtn = () => { btn.textContent = 'Motion: ' + (reduced ? 'Reduced' : 'Full'); btn.setAttribute('aria-pressed', String(reduced)); document.body.classList.toggle('reduced', reduced); };
+  btn.addEventListener('click', () => { reduced = !reduced; syncBtn(); });
+  syncBtn();
+
+  const AAR = ch => (160.110 + 0.015 * ch);
+  const fmt = (n, d=3) => n.toFixed(d);
+  const WASH_SURFACE = .06, WASH_PLOT = .12, WASH_FAULT = .06;
+
+  // ---------- helpers ----------
+  const brackets = (x, y, w, h, arm, col, sw=1, cls='') =>
+    `<path class="hair ${cls}" fill="none" stroke="${col}" stroke-width="${sw}" d="M${x} ${y+arm}V${y}H${x+arm} M${x+w-arm} ${y}H${x+w}V${y+arm} M${x+w} ${y+h-arm}V${y+h}H${x+w-arm} M${x+arm} ${y+h}H${x}V${y+h-arm}"/>`;
+
+  function glyph(state, x, y) {
+    const col = {idle:C['state-idle'], squelch:C['state-idle'], tx:C['state-tx'], recent:C['state-idle'], stale:C['state-stale'], offline:C['state-stale'], fault:C['state-fault'], select:C['state-idle'], pastfault:C['state-stale']}[state];
+    const p = 6, r = 2.5;
+    if (state === 'fault') return `<path d="M${x} ${y-6}L${x+7} ${y+6}H${x-7}Z" fill="${col}"/><path d="M${x} ${y-1.5}v3.5" stroke="${C['bg-void']}" stroke-width="1.5"/><circle cx="${x}" cy="${y+4}" r=".9" fill="${C['bg-void']}"/>`;
+    if (state === 'pastfault') return `<path d="M${x} ${y-5.5}L${x+6.5} ${y+5.5}H${x-6.5}Z" fill="none" stroke="${col}" stroke-width="1"/>`;
+    let pts;
+    if (state === 'tx') pts = [[0,-p],[0,0],[0,p]];
+    else if (state === 'squelch') pts = [[-p,p],[0,0],[p,-p]];
+    else pts = [[-p,0],[0,0],[p,0]];
+    let s = pts.map(([dx,dy]) => state === 'stale' || state === 'offline'
+      ? `<circle cx="${x+dx}" cy="${y+dy}" r="${r}" fill="none" stroke="${col}" stroke-width="1"/>`
+      : `<circle cx="${x+dx}" cy="${y+dy}" r="${r}" fill="${col}"/>`).join('');
+    if (state === 'offline') s += `<path d="M${x-9} ${y-5}L${x+9} ${y+5}M${x-9} ${y+5}L${x+9} ${y-5}" stroke="${C['state-stale']}" stroke-width="1"/>`;
+    return s;
+  }
+
+  function spark(x, y, w, h, seed) {
+    let s = '';
+    for (let i = 0; i < 60; i++) {
+      const v = Math.max(0, Math.sin(i * 0.37 + seed) * 0.5 + rng() * 0.7 - 0.35);
+      const bh = Math.round(v * h);
+      if (bh > 0) s += `<rect x="${x + i}" y="${y + h - bh}" width="1" height="${bh}" fill="${C['line-faint']}"/>`;
+    }
+    return s + `<path d="M${x} ${y+h+.5}H${x+w}" stroke="${C['grid']}" />`;
+  }
+
+  // level meter: level null = squelch closed (no bar, static floor tick only)
+  function meterBar(x, y, w, level, col, peak, opts = {}) {
+    let s = `<path d="M${x} ${y+.5}H${x+w}" stroke="${C['line-faint']}"/>`;
+    for (let i = 0; i <= 6; i++) { const tx = x + w * i / 6; s += `<path d="M${Math.round(tx)+.5} ${y-3}V${y+1}" stroke="${C['line-faint']}"/>`; }
+    if (level == null) {
+      const fx = Math.round(x + w * (opts.floor ?? .05)) + .5;
+      return s + `<path d="M${fx} ${y-2}V${y+2}" stroke="${C['state-idle-dim']}"/>`;
+    }
+    if (opts.outline) s += `<rect x="${x+.5}" y="${y-1.5}" width="${Math.max(0, w*level-1)}" height="3" fill="none" stroke="${col}"/>`;
+    else s += `<rect x="${x}" y="${y-1}" width="${Math.max(0, w*level)}" height="2" fill="${col}"/>`;
+    if (peak != null) s += `<rect x="${x + w*peak}" y="${y-4}" width="1" height="8" fill="${col}"/>`;
+    return s;
+  }
+
+  // M25 coverage pips
+  function pips(xr, y, n, ok) {
+    let s = '', x = xr;
+    s += `<text x="${x}" y="${y}" text-anchor="end" class="t-mono" style="fill:${C['ink-2']}">${ok}/${n} FEEDS</text>`;
+    x -= 66;
+    for (let i = n - 1; i >= 0; i--) {
+      const px = x - (n - 1 - i) * 6;
+      s += i < ok ? `<rect x="${px}" y="${y-8}" width="3" height="7" fill="${C['line']}"/>` : `<rect x="${px+.5}" y="${y-7.5}" width="2" height="6" fill="none" stroke="${C['state-stale']}"/>`;
+    }
+    return s;
+  }
+
+  // ---------- header ruler ----------
+  (function () {
+    const svg = $('hdrRuler'); let s = '';
+    const x0 = 0, x1 = 1000, chs = [];
+    for (let ch = 7; ch <= 97; ch++) chs.push(ch);
+    const X = ch => x0 + (ch - 7) / 90 * (x1 - x0);
+    const bank = {54:1,22:1,12:1,16:1,59:1,27:1,47:1,79:1,17:1};   // NEC Corridor bank (seed banks.json)
+    s += `<path class="hair" d="M0 30.5H1000" stroke="${C['line-faint']}"/>`;
+    chs.forEach(ch => {
+      const x = Math.round(X(ch)) + .5;
+      const major = ch % 10 === 0, m = bank[ch];
+      const len = m ? 12 : major ? 8 : 4;
+      const col = ch === 54 ? C['state-tx'] : m ? C['line'] : major ? C['line-faint'] : C['grid'];
+      s += `<path class="hair" d="M${x} ${30 - len}V30" stroke="${col}"/>`;
+    });
+    s += `<g class="sweep"><rect x="0" y="14" width="120" height="17" fill="url(#swg)"/></g>`;
+    s = `<defs><linearGradient id="swg"><stop offset="0" stop-color="${C['line']}" stop-opacity="0"/><stop offset="1" stop-color="${C['line']}" stop-opacity=".06"/></linearGradient></defs>` + s;
+    s += `<text x="0" y="42" class="t-mono3">160.215</text><text x="1000" y="42" class="t-mono3" text-anchor="end">161.565 MHz</text>`;
+    s += `<text x="${X(54)}" y="42" class="t-mono" text-anchor="middle" style="fill:${C['state-tx']}">CH54</text>`;
+    svg.innerHTML = s;
+  })();
+
+  // ---------- palette ----------
+  const base = [
+    ['bg-void','#04070A','—','Page background and every plot surface. Never pure #000.'],
+    ['bg-panel','#081015','—','Panel interior. Panels are drawn by line, not fill.'],
+    ['bg-raised','#0C171D','—','Inspector, popovers, menus.'],
+    ['grid','#12232B','1.25','Graticule, layout grid.', true],
+    ['line-faint','#2C4A55','2.13','Minor ticks, inactive frames, shorelines.', true],
+    ['line','#9CC9D6','11.29','The house hairline: brackets, rails, rulers.'],
+    ['ink','#E4F1F5','17.50','Primary text, the hero datum. Not pure white.'],
+    ['ink-2','#8FAFBA','8.66','Secondary text, units, headers. Minimum inside washes.'],
+    ['ink-3','#67868F','5.18','Tertiary text, tick numerals. Floor for text; never inside a wash.'],
+  ];
+  const states = [
+    ['state-idle','#4FCBE6','10.59','Idle / armed; also the squelch-open glyph and brackets.','idle'],
+    ['state-idle-dim','#2F7D91','4.29','Armed frame tone at rest. Strokes only, never text.','idle'],
+    ['state-tx','#FF8A2B','8.58','Transmitting (committed at 250 ms). Exclusive.','tx'],
+    ['state-tx-hot','#FFD3A6','14.54','120 ms commit flash; core of the TX glow.','tx'],
+    ['state-recent','#B9773F','5.55','Ember underline + LAST, under 2 min after release.','recent'],
+    ['state-recent-dim','#6E4A2C','2.58','Ember, 2–10 min after release. Underline only.','recent', true],
+    ['state-stale','#71838C','5.12','Stale, degraded chips, past faults. Dash 4 4.','stale'],
+    ['state-offline','#3A474E','2.11','Reconnecting / disabled. Always with a label.','offline', true],
+    ['state-fault','#FF4A3D','6.06','Present equipment fault. Act now. Nothing else is red.','fault'],
+    ['state-fault-dim','#7A2620','2.04','Unacked fault wash; faulted coverage hatch.','fault', true],
+    ['state-select','#F5FBFD','19.33','Selected (outer brackets) / focus ring (rounded).','select'],
+  ];
+  const swatch = ([tok, hex, ratio, what, g, deco]) => {
+    const isState = typeof g === 'string';
+    const decoFlag = isState ? deco : g;
+    return `<div class="sw"><div class="chip" style="background:${hex}">${isState ? `<svg width="36" height="24" viewBox="-18 -12 36 24" aria-hidden="true"><rect x="-18" y="-12" width="36" height="24" fill="${C['bg-void']}"/>${glyph(g,0,0)}</svg>` : ''}</div>
+      <div class="meta"><div class="tok">${tok}</div><div class="hex"><span>${hex}</span><span>${ratio === '—' ? '' : ratio + ':1'}</span></div>
+      <div class="what">${what}${decoFlag ? ' <span class="deco">· decorative</span>' : ''}</div></div></div>`;
+  };
+  $('palBase').innerHTML = base.map(swatch).join('');
+  $('palState').innerHTML = states.map(swatch).join('');
+  const washes = [
+    ['wash-tx-surface','state-tx · 6%',C['state-tx'],WASH_SURFACE,'Keyed tile and row. ink-2 7.70 · ink-3 4.60 (not allowed).'],
+    ['wash-tx-plot','state-tx · 12%',C['state-tx'],WASH_PLOT,'Keyed slot on spectrum and waterfall only. No text.'],
+    ['wash-fault','state-fault · 6%',C['state-fault'],WASH_FAULT,'Unacked faulted tile. Removed on ACK.'],
+  ];
+  $('palWash').innerHTML = washes.map(([t, v, col, a, w]) => `<div class="sw"><div class="chip" style="background:${C['bg-panel']}"><div style="position:absolute;inset:0;background:${col};opacity:${a}"></div><span class="mono" style="position:absolute;left:12px;top:22px;font-size:12px;color:${C['ink-2']}">ink-2 text</span></div>
+    <div class="meta"><div class="tok">${t}</div><div class="hex"><span>${v}</span><span></span></div><div class="what">${w}</div></div></div>`).join('');
+
+  // ---------- strokes ----------
+  (function () {
+    let s = '';
+    [[1,'stroke-hair','default'],[1.5,'stroke-emph','selection · focus · NEC · trace'],[2,'stroke-active','TX frame · occupied · ember'],[3,'stroke-hero','one hero arc only']].forEach(([w,t,u],i) => {
+      const y = 20 + i*34;
+      s += `<path d="M0 ${y+(w%2?.5:0)}H220" stroke="${C['line']}" stroke-width="${w}"/>`;
+      s += `<text x="236" y="${y+4}" class="t-mono-ink">${w} px</text><text x="290" y="${y+4}" class="t-mono3">${t}</text><text x="236" y="${y+18}" class="t-lab">${u}</text>`;
+    });
+    $('weights').innerHTML = s;
+    s = '';
+    [['none','solid','live, normal',C['line']],['4 4','dash-stale','stale · acked fault',C['state-stale']],['1 5','dash-offline','reconnecting · disabled',C['state-stale']],['2 3','dash-threshold','squelch · coverage',C['line']],['6 3','dash-measure','2nd series · decode bar',C['line']]].forEach(([d,t,u,col],i) => {
+      const y = 14 + i*28;
+      s += `<path d="M0 ${y+.5}H130" stroke="${col}" ${d==='none'?'':`stroke-dasharray="${d}"`}/>`;
+      s += `<text x="146" y="${y+4}" class="t-mono-ink" font-size="11">${t}</text><text x="146" y="${y+17}" class="t-lab">${d==='none'?'':d+' · '}${u}</text>`;
+    });
+    $('dashes').innerHTML = s;
+    s = '';
+    for (let x = 0; x <= 320; x += 8) s += `<path d="M${x+.5} 0V150" stroke="${C['grid']}"/>`;
+    for (let y = 0; y <= 150; y += 8) s += `<path d="M0 ${y+.5}H320" stroke="${C['grid']}"/>`;
+    s += brackets(16.5, 24.5, 112, 80, 8, C['state-idle-dim']);
+    s += brackets(184.5, 32.5, 112, 64, 8, C['state-idle-dim']);
+    s += brackets(180.5, 28.5, 120, 72, 14, C['state-select'], 1.5);
+    s += `<text x="16" y="124" class="t-lab">rest · 8 px arm</text><text x="176" y="124" class="t-lab">selected · outer 14 px · +4</text>`;
+    $('brackets').innerHTML = s;
+  })();
+
+  // ---------- tiles ----------
+  // st: idle squelch tx recent recentdim partial stale offline nofeeds fault faultack
+  // o: sel, muted, chfaultTx, ember, compact
+  function tile(ox, oy, st, o = {}) {
+    const W = 200, H = o.compact ? 56 : 112;
+    const lab = o.label || 'AMTK NEC', aar = o.aar || '5454', mhz = o.mhz || '160.920', use = o.use || 'Amtrak · road/dispatcher';
+    const isTx = st === 'tx' || o.chfaultTx;
+    const faultUn = st === 'fault' || (o.chfaultTx && !o.acked);
+    const faultAny = faultUn || st === 'faultack' || (o.chfaultTx && o.acked);
+    const dim = ['stale','offline','nofeeds'].includes(st);
+    const blank = st === 'offline' || st === 'nofeeds';
+    let s = `<g transform="translate(${ox},${oy})">`;
+    // washes
+    if (faultUn) s += `<rect x="0" y="0" width="${W}" height="${H}" fill="${C['state-fault']}" opacity="${WASH_FAULT}"/>`;
+    else if (isTx) s += `<rect x="0" y="0" width="${W}" height="${H}" fill="${C['state-tx']}" opacity="${WASH_SURFACE}"/>`;
+    // frame layer: unacked fault > tx > squelch > stale > offline > idle
+    if (faultUn) s += `<rect x=".5" y=".5" width="${W-1}" height="${H-1}" fill="none" stroke="${C['state-fault']}" class="hair"/>`;
+    else if (isTx) s += `<rect x="1" y="1" width="${W-2}" height="${H-2}" fill="none" stroke="${C['state-tx']}" stroke-width="2" class="hair"/>`;
+    else if (st === 'squelch') s += brackets(.5, .5, W-1, H-1, 8, C['state-idle']);
+    else if (st === 'stale' || st === 'faultack') s += `<rect x=".5" y=".5" width="${W-1}" height="${H-1}" fill="none" stroke="${C['state-stale']}" stroke-dasharray="4 4"/>`;
+    else if (blank) s += `<rect x=".5" y=".5" width="${W-1}" height="${H-1}" fill="none" stroke="${C['state-stale']}" stroke-dasharray="1 5"/>`;
+    else s += brackets(.5, .5, W-1, H-1, 8, C['state-idle-dim']);
+    // selection overlay: outer brackets, 4 px outside
+    if (o.sel) s += brackets(-4.5, -4.5, W+9, H+9, 14, C['state-select'], 1.5);
+    // glyph layer: fault > tx > squelch > offline > stale > idle
+    const g = faultAny ? 'fault' : isTx ? 'tx' : st === 'squelch' ? 'squelch' : blank ? 'offline' : st === 'stale' ? 'stale' : 'idle';
+    const gy = o.compact ? 16 : 20;
+    s += glyph(g, 18, gy);
+    const labCol = dim ? C['state-stale'] : C['ink'];
+    s += `<text x="34" y="${gy+4}" class="t-lab-ink" style="fill:${labCol}">${lab}</text>`;
+    // ember underline layer (independent)
+    const ember = st === 'recent' || st === 'recentdim' || o.ember;
+    if (ember) s += `<rect x="34" y="${gy+8}" width="${Math.round(lab.replace(/&amp;/g,'&').length*7.4)}" height="2" fill="${st === 'recentdim' ? C['state-recent-dim'] : C['state-recent']}"/>`;
+    // status readout layer
+    let status = '', sCol = C['ink-3'];
+    if (st === 'offline') { status = 'RECONNECTING'; sCol = C['state-stale']; }
+    else if (st === 'nofeeds') { status = 'NO FEEDS'; sCol = C['state-stale']; }
+    else if (st === 'stale') { status = 'AGE 1M 12S'; sCol = C['state-stale']; }
+    else if (st === 'recent' || o.ember) { status = 'LAST 48S'; sCol = C['state-recent']; }
+    else if (st === 'recentdim') { status = 'LAST 4M'; sCol = C['ink-3']; }
+    if (status && !isTx) s += `<text x="${W-12}" y="${gy+4}" text-anchor="end" class="t-mono" style="fill:${sCol}">${status}</text>`;
+    const inWash = isTx || faultUn;
+    const footCol = inWash ? C['ink-2'] : dim ? C['state-stale'] : C['ink-3'];
+    if (o.compact) {
+      if (isTx) {
+        s += `<text x="14" y="45" class="t-mono-ink" style="font-size:18px;font-weight:500">${aar}</text>`;
+        s += `<text x="${W-12}" y="47" text-anchor="end" class="t-mono" style="font-size:24px;font-weight:500;fill:${C['state-tx']}">00:07.4</text>`;
+      } else {
+        s += `<text x="14" y="45" class="t-mono-ink" style="font-size:18px;font-weight:500;fill:${dim?C['state-stale']:C['ink']}">${blank ? '— —' : aar}</text>`;
+        s += `<text x="66" y="45" class="t-mono" style="font-size:12px;fill:${dim?C['state-stale']:C['ink-2']}">${blank ? '— — —' : mhz}</text>`;
+        if (!blank) s += meterBar(124, 41, 62, st === 'squelch' ? .42 : null, C['state-idle'], null);
+      }
+      return s + `</g>`;
+    }
+    // standard body
+    if (isTx) {
+      s += `<text x="14" y="60" class="t-mono-ink" style="font-size:13px">${aar}</text>`;   // MHz + sparkline hide during TX (brief §9.1.3)
+      s += `<text x="${W-12}" y="72" text-anchor="end" class="t-big" style="fill:${C['state-tx']}">00:07.4</text>`;
+    } else {
+      s += `<text x="14" y="64" class="t-aar" style="fill:${dim ? C['state-stale'] : C['ink']}">${blank ? '— — —' : aar}</text>`;
+      s += `<text x="14" y="80" class="t-mono" style="fill:${dim ? C['state-stale'] : C['ink-2']}">${blank ? '— — —' : mhz}</text>`;
+      if (!blank) s += spark(124, 48, 64, 14, ox * .01);
+    }
+    if (!blank) {
+      const mcol = isTx ? C['state-tx'] : C['state-idle'];
+      const lv = isTx ? .72 : st === 'squelch' ? .44 : null;
+      s += meterBar(14, 90, 172, lv, mcol, isTx ? .81 : null, {outline: o.muted});
+    }
+    // footer
+    let foot = use, fCol = footCol;
+    if (isTx || st === 'recent') foot = 'VIA BWI-03';
+    if (o.muted) foot += ' · MUTED';
+    if (faultAny) { foot = 'FAULT · ' + (o.reason || 'SQ STUCK'); fCol = C['state-fault']; }   // fault reason owns the footer line
+    s += `<text x="14" y="${H-7}" class="t-lab" style="fill:${fCol}">${foot}</text>`;
+    if (st === 'partial') s += pips(W-12, H-7, 4, 3);
+    s += `</g>`;
+    return s;
+  }
+  (function () {
+    const cells = [
+      ['idle', 'Idle / armed', {}],
+      ['squelch', 'Squelch open · &lt; 250 ms', {}],
+      ['tx', 'Transmitting', {}],
+      ['recent', 'Recent · &lt; 2 min', {}],
+      ['recentdim', 'Recent-dim · 2–10 min', {}],
+      ['partial', 'Partial coverage', {use:'Amtrak · road'}],
+      ['stale', 'Stale · all feeds stale', {label:'NS BAYVIEW', aar:'6464', mhz:'161.070 · BAY-04', use:'Norfolk Southern · yard'}],
+      ['offline', 'Offline · reconnecting', {label:'CANTON', aar:'5858', mhz:'160.980', use:'Canton Railroad · road'}],
+      ['nofeeds', 'Offline · no feeds', {label:'TPR MOW', aar:'4949', mhz:'160.845', use:'Tradepoint Rail · MOW'}],
+      ['fault', 'Channel fault · unacked', {label:'CSX BE DISP', aar:'6666', mhz:'161.100', use:'CSX · dispatcher'}],
+      ['faultack', 'Channel fault · acked', {label:'CSX BE DISP', aar:'6666', mhz:'161.100', use:'CSX · dispatcher'}],
+      ['idle', 'Selected (overlay)', {sel:true, label:'CSX ROAD', aar:'0808', mhz:'160.230', use:'CSX · road'}],
+      ['tx', 'Selected + TX', {sel:true}],
+      ['idle', 'TX + channel fault', {chfaultTx:true, reason:'OVERDEV', label:'CSX ROAD', aar:'0808', mhz:'160.230'}],
+      ['stale', 'Recent + stale', {ember:true, label:'NS BAYVIEW', aar:'6464', mhz:'161.070 · BAY-04', use:'Norfolk Southern · yard'}],
+      ['tx', 'Muted + TX', {muted:true, label:'CSX RF&amp;P', aar:'9696', mhz:'161.550'}],
+    ];
+    let s = '';
+    cells.forEach(([st, name, o], i) => {
+      const col = i % 6, row = Math.floor(i / 6);
+      const x = col * 228 + 6, y = row * 156 + 22;
+      s += `<text x="${x}" y="${y-12}" class="t-lab">${String(i+1).padStart(2,'0')} · ${name}</text>`;
+      s += tile(x, y, st, o);
+    });
+    // compact variants in the last two slots
+    const cx = 4 * 228 + 6, cy = 2 * 156 + 22;
+    s += `<text x="${cx}" y="${cy-12}" class="t-lab">17 · Compact 200 × 56 · idle / TX</text>`;
+    s += tile(cx, cy, 'idle', {compact:true});
+    s += tile(cx, cy + 64, 'tx', {compact:true});
+    s += `<text x="${cx + 228}" y="${cy-12}" class="t-lab">18 · Compact · squelch / stale</text>`;
+    s += tile(cx + 228, cy, 'squelch', {compact:true, label:'CSX ROAD', aar:'0808', mhz:'160.230'});
+    s += tile(cx + 228, cy + 64, 'stale', {compact:true, label:'NS BAYVIEW', aar:'6464', mhz:'161.070'});
+    $('tiles').innerHTML = s;
+  })();
+
+  // ---------- live loop (demo) ----------
+  (function () {
+    const svg = $('liveSvg');
+    const S = 2.2, LX = 40, LY = 20;
+    svg.innerHTML = `
+      <g id="liveTile" class="live-tile" transform="translate(${LX},${LY}) scale(${S})">
+        <rect class="wash" x="0" y="0" width="200" height="112" fill="${C['state-tx']}" opacity="${WASH_SURFACE}" style="opacity:0"/>
+        <rect class="frame hair" x="1" y="1" width="198" height="110" fill="none" stroke-width="2"/>
+        <g id="liveBrk">${brackets(.5,.5,199,111,8,C['state-idle-dim'],1)}</g>
+        <g id="liveGlyph">${glyph('idle',18,20)}</g>
+        <text x="34" y="24" class="t-lab-ink">AMTK NEC</text>
+        <rect class="ember" id="liveEmber" x="34" y="28" width="59" height="2" fill="${C['state-recent']}"/>
+        <text id="liveLast" x="188" y="24" text-anchor="end" class="t-mono" style="fill:${C['ink-3']}"></text>
+        <g class="home"><text x="14" y="64" class="t-aar">5454</text><text x="14" y="80" class="t-mono">160.920</text></g>
+        <g class="promo"><text x="14" y="60" class="t-mono-ink" style="font-size:13px">5454</text><text id="liveTimer" x="188" y="72" text-anchor="end" class="t-big" style="fill:${C['state-tx']}">00:00.0</text></g>
+        <g id="liveMeter"></g>
+        <text id="liveFoot" x="14" y="105" class="t-lab">Amtrak · road/dispatcher</text>
+      </g>
+      <g id="livePhase" transform="translate(560,40)"></g>`;
+    const el = $('liveTile'), timer = $('liveTimer'), last = $('liveLast'), gEl = $('liveGlyph'), mEl = $('liveMeter'), brk = $('liveBrk'), foot = $('liveFoot'), ph = $('livePhase');
+    const wash = el.querySelector('.wash'), emberEl = $('liveEmber');
+    // phases (ms in cycle): idle → squelch(0..250) → tx → hold → recent → recentdim → idle
+    const CYCLE = 10000, SQ = 1200, COMMIT = SQ + 250, REL = 5200, HOLD = REL + 400, DIM = HOLD + 2200, COOL = DIM + 2000;
+    const phases = [['Squelch open','0 ms · diagonal · audio flows'],['Commit','250 ms · tx-hot flash → state-tx'],['Release hold','400 ms after squelch closes'],['Recent','ember · LAST · 2 min (compressed)'],['Recent-dim','to 10 min after release (compressed)'],['Idle','armed · nothing moves']];
+    let phase = '', cycle = -1, t0 = performance.now(), lvl = 0, peak = 0, peakT = 0;
+    function drawPhases(active) {
+      let s = '';
+      phases.forEach(([n, d], i) => {
+        const y = i * 38, on = n === active;
+        s += `<rect x="0" y="${y}" width="6" height="22" fill="${on ? (n==='Commit'||n==='Release hold' ? C['state-tx'] : n.startsWith('Recent') ? C['state-recent'] : C['state-idle']) : C['grid']}"/>`;
+        s += `<text x="18" y="${y+10}" class="t-lab-ink" style="fill:${on?C['ink']:C['ink-3']}">${n}</text><text x="18" y="${y+24}" class="t-mono" style="fill:${on?C['ink-2']:C['ink-3']}">${d}</text>`;
+      });
+      s += `<text x="0" y="${phases.length*38+14}" class="t-mono3">every 4th cycle: a 180 ms kerchunk that never commits</text>`;
+      ph.innerHTML = s;
+    }
+    function frame(now) {
+      const tt = now - t0, c = Math.floor(tt / CYCLE), t = tt % CYCLE;
+      const kerchunk = c % 4 === 3;
+      let want;
+      if (kerchunk) want = (t >= SQ && t < SQ + 180) || (t >= SQ + 180 && t < SQ + 2180) ? 'squelch' : 'idle';
+      else want = t < SQ ? 'idle' : t < COMMIT ? 'squelch' : t < HOLD ? 'tx' : t < DIM ? 'recent' : t < COOL ? 'recentdim' : 'idle';
+      if (want !== phase || c !== cycle) {
+        const prev = phase; phase = want; cycle = c;
+        el.classList.toggle('tx', phase === 'tx');
+        el.classList.toggle('recent', phase === 'recent' || phase === 'recentdim');
+        wash.style.opacity = phase === 'tx' ? 1 : 0;
+        emberEl.setAttribute('fill', phase === 'recentdim' ? C['state-recent-dim'] : C['state-recent']);
+        gEl.innerHTML = glyph(phase === 'tx' ? 'tx' : phase === 'squelch' ? 'squelch' : 'idle', 18, 20);
+        brk.innerHTML = brackets(.5,.5,199,111,8, phase === 'squelch' ? C['state-idle'] : C['state-idle-dim'], 1);
+        if (phase === 'tx' && prev !== 'tx' && !reduced) { el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 120); }
+        last.innerHTML = phase === 'recent' ? `<tspan style="fill:${C['state-recent']}">LAST 3S</tspan>` : phase === 'recentdim' ? 'LAST 4M' : '';
+        foot.textContent = (phase === 'tx' || phase === 'recent') ? 'VIA BWI-03' : 'Amtrak · road/dispatcher';
+        foot.style.fill = phase === 'tx' ? C['ink-2'] : C['ink-3'];
+        const map = {idle:'Idle', squelch:'Squelch open', tx: t < REL ? 'Commit' : 'Release hold', recent:'Recent', recentdim:'Recent-dim'};
+        drawPhases(map[phase]);
+      }
+      if (phase === 'tx' && t >= REL) drawPhases('Release hold');
+      const open = phase === 'squelch' && (!kerchunk || t < SQ + 180) || (phase === 'tx' && t < REL);
+      let target = 0;
+      if (open) { const k = (t - SQ) / 1000; target = .5 + .25 * Math.abs(Math.sin(k * 5.3) * Math.sin(k * 2.1 + 1)); }
+      lvl += (target - lvl) * (reduced ? 1 : 0.12);
+      if (lvl >= peak) { peak = lvl; peakT = now; } else if (now - peakT > 1500) peak = Math.max(lvl, peak - 0.0055);
+      const meterCol = phase === 'tx' ? C['state-tx'] : C['state-idle'];
+      mEl.innerHTML = (phase === 'idle' || phase.startsWith('recent')) ? meterBar(14, 90, 172, null) : meterBar(14, 90, 172, lvl, meterCol, phase === 'tx' ? peak : null);
+      if (phase === 'tx') timer.textContent = '00:' + ((Math.min(t, REL) - SQ) / 1000).toFixed(1).padStart(4, '0');
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  })();
+
+  // ---------- glyphs ----------
+  (function () {
+    const list = [['idle','Idle / armed','horizontal'],['squelch','Squelch open','diagonal'],['tx','Transmitting','vertical'],['recent','Recent','horiz. + ember'],['stale','Stale','hollow'],['offline','Offline','crossed'],['fault','Fault (now)','triangle'],['pastfault','Past fault','hollow triangle']];
+    let s = '';
+    list.forEach(([st, n, g], i) => {
+      const col = i % 4, row = Math.floor(i / 4);
+      const x = 46 + col * 100, y = 36 + row * 92;
+      s += `<rect x="${x-26}" y="${y-22}" width="52" height="44" fill="none" stroke="${C['grid']}"/>`;
+      s += glyph(st, x, y);
+      if (st === 'recent') s += `<rect x="${x-9}" y="${y+10}" width="18" height="2" fill="${C['state-recent']}"/>`;
+      s += `<text x="${x}" y="${y+38}" text-anchor="middle" class="t-lab2" style="font-size:11px">${n}</text><text x="${x}" y="${y+52}" text-anchor="middle" class="t-mono3">${g}</text>`;
+    });
+    $('glyphs').innerHTML = s;
+  })();
+
+  // ---------- meter ----------
+  (function () {
+    const svg = $('meter');
+    const scale = (x, y, w) => {
+      let s = `<path d="M${x} ${y+.5}H${x+w}" stroke="${C['line-faint']}"/>`;
+      for (let db = -60; db <= 0; db += 5) {
+        const tx = Math.round(x + w * (db + 60) / 60) + .5, major = db % 10 === 0;
+        s += `<path d="M${tx} ${y - (major ? 8 : 4)}V${y}" stroke="${major ? C['line'] : C['line-faint']}"/>`;
+        if (major) s += `<text x="${tx}" y="${y-12}" text-anchor="middle" class="t-mono3">${db === 0 ? '0' : '−' + (-db)}</text>`;
+      }
+      return s;
+    };
+    const floorX = Math.round(20 + 360 * (60 - 57.9) / 60) + .5;
+    svg.innerHTML = `
+      <text x="20" y="24" class="t-lab-ink">CH54 · AMTK NEC · demo</text><text x="380" y="24" text-anchor="end" class="t-mono" id="mRead" style="fill:${C['state-tx']}">−18.4 dBFS</text>
+      ${scale(20, 64, 360)}<g id="mA"></g>
+      <text x="20" y="114" class="t-lab-ink">CH08 · CSX ROAD · squelch closed</text><text x="380" y="114" text-anchor="end" class="t-mono3">floor −57.9 dBFS</text>
+      ${scale(20, 154, 360)}<path d="M${floorX} 157V161" stroke="${C['state-idle-dim']}"/>
+      <text x="20" y="182" class="t-lab">dBFS · VU 300 ms · peak hold 1.5 s · idle = static floor tick</text>`;
+    const A = $('mA'), R = $('mRead');
+    let l = .3, p = .3, pt = 0, t0 = performance.now();
+    function f(now) {
+      const k = (now - t0) / 1000;
+      const open = Math.sin(k * 0.9) > -0.3;
+      const env = open ? (.55 + .3 * Math.abs(Math.sin(k * 6.1) * Math.cos(k * 2.3))) : 0;
+      l += (env - l) * (reduced ? 1 : 0.09);
+      if (l >= p) { p = l; pt = now; } else if (now - pt > 1500) p = Math.max(l, p - 0.005);
+      if (open) {
+        A.innerHTML = `<rect x="20" y="63" width="${360*l}" height="2" fill="${C['state-tx']}"/><rect x="${20+360*p}" y="60" width="1" height="8" fill="${C['state-tx']}"/>`;
+        R.textContent = '−' + (60 - l * 60).toFixed(1) + ' dBFS'; R.style.fill = C['state-tx'];
+      } else {
+        A.innerHTML = `<path d="M${floorX} 67V71" stroke="${C['state-idle-dim']}"/>`;
+        R.textContent = 'SQ CLOSED'; R.style.fill = C['ink-3'];
+      }
+      requestAnimationFrame(f);
+    }
+    requestAnimationFrame(f);
+  })();
+
+  // ---------- range rings ----------
+  (function () {
+    const cx = 200, cy = 130, pxkm = 5.2;
+    let s = `<defs><pattern id="hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M0 0V8" stroke="${C['line-faint']}" stroke-width="1"/></pattern></defs>`;
+    s += `<circle cx="${cx}" cy="${cy}" r="${20*pxkm}" fill="url(#hatch)" opacity=".7"/>`;
+    s += `<path class="hair" d="M300 0 C 285 60, 330 100, 310 160 S 340 230, 330 260" fill="none" stroke="${C['line-faint']}"/>`;
+    s += `<path class="hair" d="M10 240 L 120 170 L 200 130 L 290 70 L 390 14" fill="none" stroke="${C['line']}" stroke-width="1.5"/>`;
+    s += `<text x="300" y="56" class="t-lab" transform="rotate(-33 300 56)">Northeast Corridor</text>`;
+    [5,10,15].forEach(k => s += `<circle cx="${cx}" cy="${cy}" r="${k*pxkm}" fill="none" stroke="${C['line-faint']}" class="hair"/>`);
+    s += `<circle cx="${cx}" cy="${cy}" r="${20*pxkm}" fill="none" stroke="${C['line']}" stroke-dasharray="2 3" class="hair"/>`;
+    [10,20].forEach(k => s += `<rect x="${cx-16}" y="${cy-k*pxkm-7}" width="32" height="13" fill="${C['bg-panel']}"/><text x="${cx}" y="${cy-k*pxkm+4}" text-anchor="middle" class="t-mono3">${k} KM</text>`);
+    s += `<circle class="ping" cx="${cx}" cy="${cy}" r="40" fill="none" stroke="${C['state-tx']}" stroke-width="1" vector-effect="non-scaling-stroke"/>`;
+    s += `<circle cx="${cx}" cy="${cy}" r="6" fill="${C['bg-panel']}" stroke="${C['line']}"/><path d="M${cx-10} ${cy+.5}H${cx+10}M${cx+.5} ${cy-10}V${cy+10}" stroke="${C['line']}"/>`;
+    s += `<path d="M${cx+7} ${cy+7}L${cx+30} ${cy+30}H${cx+36}" stroke="${C['line']}" class="hair" fill="none"/>`;
+    s += `<text x="${cx+40}" y="${cy+30}" class="t-mono-ink">LND-02 · SIM</text><text x="${cx+40}" y="${cy+45}" class="t-mono">20 KM · SNR 22</text>`;
+    s += `<g transform="translate(${cx+146},${cy+26})">${glyph('idle',0,0)}</g>`;
+    s += `<text x="12" y="252" class="t-mono3">38.9420 N · 76.8850 W · feed site (fictional)</text>`;
+    s += `<text x="388" y="252" text-anchor="end" class="t-lab">ping = demo loop</text>`;
+    $('rings').innerHTML = s;
+  })();
+
+  // ---------- spectrum ----------
+  (function () {
+    const X0 = 60, X1 = 840, Y0 = 30, Y1 = 250, W = X1 - X0, H = Y1 - Y0;
+    const fLo = 160.215, fHi = 161.565;
+    const fx = f => X0 + (f - fLo) / (fHi - fLo) * W;
+    const dby = db => Y0 + (-db - 20) / 80 * H; // -20 .. -100 dBFS
+    let s = '';
+    s += `<rect x="${X0}" y="${Y0}" width="${W}" height="${H}" fill="${C['bg-void']}" stroke="${C['line-faint']}"/>`;
+    for (let i = 1; i < 10; i++) s += `<path d="M${Math.round(X0 + W*i/10)+.5} ${Y0}V${Y1}" stroke="${C['grid']}"/>`;
+    for (let j = 1; j < 8; j++) s += `<path d="M${X0} ${Math.round(Y0 + H*j/8)+.5}H${X1}" stroke="${C['grid']}"/>`;
+    const cyA = Math.round(Y0 + H/2) + .5, cxA = Math.round(X0 + W/2) + .5;
+    for (let i = 0; i <= 50; i++) { const x = Math.round(X0 + W*i/50) + .5; s += `<path d="M${x} ${cyA-2}V${cyA+2}" stroke="${C['line-faint']}"/>`; }
+    for (let j = 0; j <= 40; j++) { const y = Math.round(Y0 + H*j/40) + .5; s += `<path d="M${cxA-2} ${y}H${cxA+2}" stroke="${C['line-faint']}"/>`; }
+    // channels LND-02 hears (seed places.json); levels SIM
+    const sig = [[160.230,-58],[160.290,-74],[160.320,-66],[160.350,-79],[160.440,-70],[160.515,-81],[160.800,-83],[160.920,-34],[160.995,-72],[161.070,-77],[161.340,-75],[161.490,-80]];
+    let d = '';
+    for (let i = 0; i <= 780; i++) {
+      const f = fLo + (fHi - fLo) * i / 780;
+      let p = -88 + (rng() - .5) * 3;
+      sig.forEach(([sf, a]) => { const bw = .0045; const g = Math.exp(-Math.pow((f - sf) / bw, 2)); p = Math.max(p, a + (rng()-.5)*2 - (1-g)*60 ); });
+      d += (i ? 'L' : 'M') + (X0 + i).toFixed(1) + ' ' + dby(p).toFixed(1);
+    }
+    const tx0 = fx(160.920 - .00625), tx1 = fx(160.920 + .00625);
+    s += `<rect x="${tx0-3}" y="${Y0}" width="${tx1-tx0+6}" height="${H}" fill="${C['state-tx']}" opacity="${WASH_PLOT}"/>`;
+    s += `<path d="${d}" fill="none" stroke="${C['line']}" stroke-width="1.5" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>`;
+    s += `<clipPath id="txclip"><rect x="${tx0-6}" y="${Y0}" width="${tx1-tx0+12}" height="${H}"/></clipPath>`;
+    s += `<g clip-path="url(#txclip)"><path d="${d}" fill="none" stroke="${C['state-tx']}" stroke-width="9" opacity=".06"/><path d="${d}" fill="none" stroke="${C['state-tx']}" stroke-width="4.5" opacity=".18"/><path d="${d}" fill="none" stroke="${C['state-tx-hot']}" stroke-width="1.5"/></g>`;
+    sig.forEach(([sf]) => {
+      const crossed = sf === 160.920;
+      const y = Math.round(dby(-60)) + .5;
+      s += `<path d="M${fx(sf)-8} ${y}H${fx(sf)+8}" stroke="${crossed ? C['state-tx'] : C['line']}" ${crossed ? '' : 'stroke-dasharray="2 3"'} />`;
+    });
+    s += `<text x="${fx(161.100)}" y="${dby(-60)-8}" class="t-lab">squelch −60</text>`;
+    const dy = Y0 + 16;
+    s += `<path d="M${tx0} ${dby(-34)-6}V${dy-4} M${tx1} ${dby(-34)-6}V${dy-4}" stroke="${C['line']}" stroke-dasharray="6 3" class="hair"/>`;
+    s += `<path d="M${tx0-30} ${dy+.5}H${tx0} M${tx1} ${dy+.5}H${tx1+30} M${tx0} ${dy-4}V${dy+5} M${tx1} ${dy-4}V${dy+5}" stroke="${C['line']}"/>`;
+    s += `<text x="${tx1+34}" y="${dy+4}" class="t-mono-ink" font-size="11">12.5 kHz</text>`;
+    for (let ch = 7; ch <= 97; ch++) {
+      const x = Math.round(fx(AAR(ch))) + .5, major = ch % 10 === 0;
+      s += `<path d="M${x} ${Y1}V${Y1 + (major ? 8 : 4)}" stroke="${major ? C['line'] : C['line-faint']}"/>`;
+      if (major) s += `<text x="${x}" y="${Y1+20}" text-anchor="middle" class="t-mono3">${fmt(AAR(ch))}</text>`;
+    }
+    // NEC bank channels heard by LND-02: labelled 12 px ticks; other heard channels: 8 px faint, unlabelled
+    const bankNEC = new Set([160.920, 160.440, 160.290, 160.350, 160.995, 160.515]);
+    sig.forEach(([sf]) => {
+      const ch = Math.round((sf - 160.110)/.015), x = Math.round(fx(sf)) + .5, inBank = bankNEC.has(sf), tx = sf === 160.920;
+      const col = tx ? C['state-tx'] : inBank ? C['line'] : C['line-faint'];
+      s += `<path d="M${x} ${Y1}V${Y1 + (inBank ? 12 : 8)}" stroke="${col}"/>`;
+      if (inBank) s += `<text x="${x}" y="${Y1+32}" text-anchor="middle" class="t-mono" style="fill:${tx ? C['state-tx'] : C['ink-2']}">${String(ch).padStart(2,'0')}</text>`;
+    });
+    for (let j = 0; j <= 8; j += 2) { const db = -20 - j*10; s += `<text x="${X0-8}" y="${Y0 + H*j/8 + 4}" text-anchor="end" class="t-mono3">${'−' + (-db)}</text>`; }
+    s += `<text x="${X1}" y="${Y0-10}" text-anchor="end" class="t-mono3">10 dB/div · 135 kHz/div · FEED LND-02 · NEC bank</text>`;
+    s += `<text x="${X0}" y="${Y0-10}" class="t-mono">160.9200 MHz · −34.2 dBFS</text>`;
+    s += `<circle cx="${X0}" cy="${Y0}" r="6" fill="none" stroke="${C['line']}"/><path d="M${X0-10} ${Y0+.5}H${X0+10}M${X0+.5} ${Y0-10}V${Y0+10}" stroke="${C['line']}"/>`;
+    $('spectrum').innerHTML = s;
+  })();
+
+  // ---------- waterfall ----------
+  (function () {
+    const stops = ['#04070A','#0A1F28','#124A5A','#2C8FA8','#7FD8EC','#E8FBFF'].map(h => [1,3,5].map(i => parseInt(h.slice(i,i+2),16)));
+    const ramp = v => { v = Math.max(0, Math.min(1, v)) * (stops.length - 1); const i = Math.min(stops.length - 2, Math.floor(v)), t = v - i; return 'rgb(' + stops[i].map((c,k) => Math.round(c + (stops[i+1][k] - c) * t)).join(',') + ')'; };
+    const cols = 91, rows = 46, X0 = 14, Y0 = 26, cw = 4, rh = 5;
+    const users = {8:[.55,.4],12:[.3,.15],14:[.35,.22],22:[.32,.25],54:[.85,.5],59:[.3,.18],64:[.3,.15],82:[.35,.2]};
+    let s = '';
+    const runs = {};
+    Object.keys(users).forEach(ch => { runs[ch] = []; let on = rng() < users[ch][1]; for (let r = 0; r < rows; r++) { if (rng() < .12) on = !on; runs[ch].push(on); } });
+    runs[54] = runs[54].map((v, r) => r < 9 ? true : v);
+    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+      const ch = c + 7; let v = .1 + rng() * .14;
+      if (users[ch] && runs[ch][r]) v = users[ch][0] + rng() * .15;
+      if (users[ch - 1] && runs[ch - 1][r]) v = Math.max(v, .2 + rng() * .1);
+      if (users[ch + 1] && runs[ch + 1][r]) v = Math.max(v, .2 + rng() * .1);
+      s += `<rect x="${X0 + c*cw}" y="${Y0 + r*rh}" width="${cw}" height="${rh}" fill="${ramp(v)}"/>`;
+    }
+    const txX = X0 + (54 - 7) * cw;
+    s += `<rect x="${txX - 2}" y="${Y0}" width="${cw + 4}" height="${9*rh}" fill="${C['state-tx']}" opacity="${WASH_PLOT}"/>`;
+    s += `<rect x="${txX - 1.5}" y="${Y0 + .5}" width="${cw + 3}" height="${9*rh - 1}" fill="none" stroke="${C['state-tx']}"/>`;
+    s += `<rect x="${X0}" y="${Y0}" width="${cols*cw}" height="${rows*rh}" fill="none" stroke="${C['line-faint']}"/>`;
+    s += `<text x="${X0}" y="16" class="t-mono3">160.215</text><text x="${X0 + cols*cw}" y="16" text-anchor="end" class="t-mono3">161.565</text>`;
+    s += `<text x="${txX + cw/2}" y="16" text-anchor="middle" class="t-mono" style="fill:${C['state-tx']}">54</text>`;
+    s += `<text x="${X0}" y="${Y0 + rows*rh + 18}" class="t-lab">time ↓ · 2 rows/s · floor clamped · LND-02 · SIM</text>`;
+    $('waterfall').innerHTML = s;
+  })();
+
+  // ---------- waveform + transcript (decode bar → reveal) ----------
+  (function () {
+    const svg = $('wave');
+    const W = 600, X0 = 20;
+    svg.innerHTML = `
+      <text x="${X0}" y="18" class="t-lab-ink" style="fill:${C['state-tx']}">Live · CH54 · keyed</text><text x="${X0+W}" y="18" text-anchor="end" class="t-mono" style="fill:${C['state-tx']}" id="wT">00:04.2</text>
+      <rect x="${X0}" y="26" width="${W}" height="56" fill="none" stroke="${C['line-faint']}"/>
+      <path d="M${X0} 54.5H${X0+W}" stroke="${C['grid']}"/>
+      <g id="wLive"></g>
+      <text x="${X0}" y="108" class="t-lab">Archived · tx-004 · 8.3 s</text><text x="${X0+W}" y="108" text-anchor="end" class="t-mono3">00:31:30 EST · LND-02</text>
+      <rect x="${X0}" y="116" width="${W}" height="36" fill="none" stroke="${C['grid']}"/>
+      <g id="wArc"></g>
+      <path d="M${X0} 186.5H${X0+W}" stroke="${C['grid']}"/>
+      <text x="${X0}" y="206" class="t-mono">00:31:30</text><text x="${X0+76}" y="206" class="t-mono-ink" id="wCh">CH14</text>
+      <text x="${X0+120}" y="206" class="t-mono">CRW</text><text x="${X0+156}" y="206" class="t-mono-ink">CSX I032</text><text x="${X0+236}" y="206" class="t-mono">LND-02</text>
+      <g id="wTxtG"></g>`;
+    const env = n => { const out = []; for (let i = 0; i < n; i++) { const k = i / n; const syll = Math.abs(Math.sin(k * 60)) * (.4 + .6 * Math.abs(Math.sin(k * 7))); out.push(Math.min(1, syll * (.3 + rng()*.7))); } return out; };
+    const arc = env(300);
+    let a = ''; arc.forEach((v, i) => { const x = X0 + i*2 + .5, h = v * 15; a += `M${x} ${134-h}V${134+h}`; });
+    $('wArc').innerHTML = `<path d="${a}" stroke="${C['line']}" stroke-width="1"/>`;
+    const live = env(300); let off = 0; const L = $('wLive'), T = $('wT'); const t0 = performance.now();
+    function f(now) {
+      if (!reduced) off = (off + 1) % live.length;
+      let d = ''; for (let i = 0; i < 300; i++) { const v = live[(i + off) % live.length], x = X0 + i*2 + .5, h = v * 24; d += `M${x} ${54-h}V${54+h}`; }
+      L.innerHTML = `<path d="${d}" stroke="${C['state-tx']}" stroke-width="1"/>`;
+      T.textContent = '00:' + (((now - t0) / 1000) % 60).toFixed(1).padStart(4, '0');
+      requestAnimationFrame(f);
+    }
+    requestAnimationFrame(f);
+    const words = 'Yeah BC, I032 is sitting at a stop signal at Hyattsville on number 2, just checking on our lineup.'.split(' ');
+    const lowConf = new Set([1]);
+    const G = $('wTxtG'), ch = $('wCh');
+    const barLen = Math.round(8.3 * 8);
+    const perWord = Math.min(30, 400 / words.length);
+    function showDecoding() {
+      ch.style.fill = C['state-tx'];
+      G.innerHTML = `<path d="M${X0} 226.5H${X0+barLen}" stroke="${C['ink-3']}" stroke-dasharray="6 3"/><text x="${X0+barLen+10}" y="230" class="t-lab">Decoding</text>`;
+    }
+    function showWords(n) {
+      ch.style.fill = n >= words.length ? C['ink'] : C['state-tx'];
+      const line = (a, b, y) => `<text x="${X0}" y="${y}" style="font-family:var(--f-read);font-size:15px;fill:${C['ink']}">` + words.slice(a, Math.min(b, n)).map((w, k) => `<tspan style="fill:${lowConf.has(a + k) ? C['ink-3'] : C['ink']}">${w}</tspan>`).join(' ') + `</text>`;
+      G.innerHTML = line(0, 10, 230) + (n > 10 ? line(10, words.length, 250) : '');
+    }
+    function loop() {
+      if (reduced) { showWords(words.length); setTimeout(loop, 1500); return; }
+      showDecoding();
+      setTimeout(() => {
+        let n = 0;
+        const step = () => { n++; showWords(n); if (n < words.length) setTimeout(step, perWord); else setTimeout(loop, 4000); };
+        step();
+      }, 1800);
+    }
+    loop();
+  })();
+
+  // ---------- train data block (canonical: tx-039) ----------
+  (function () {
+    let s = `<defs><linearGradient id="tail" x1="0" x2="1"><stop offset="0" stop-color="${C['state-tx']}" stop-opacity="0"/><stop offset="1" stop-color="${C['state-tx']}" stop-opacity=".9"/></linearGradient>
+      <linearGradient id="tailTx" x1="1" x2="0"><stop offset="0" stop-color="${C['state-tx']}" stop-opacity="0"/><stop offset="1" stop-color="${C['state-tx']}" stop-opacity=".9"/></linearGradient>
+      <linearGradient id="tail2" x1="1" x2="0"><stop offset="0" stop-color="${C['line']}" stop-opacity="0"/><stop offset="1" stop-color="${C['line']}" stop-opacity=".8"/></linearGradient></defs>`;
+    const y = 140, y1 = 152;
+    const mpx = mp => 40 + (116 - mp) * 110;       // NEC 116 (left, DC side) → 111 (right, Baltimore side)
+    s += `<path d="M20 ${y+.5}H620" stroke="${C['line']}" stroke-width="1.5"/>`;
+    s += `<path d="M20 ${y1+.5}H620" stroke="${C['line']}"/>`;
+    s += `<text x="20" y="${y-50}" class="t-lab">← Washington</text><text x="620" y="${y-50}" text-anchor="end" class="t-lab">Baltimore →</text>`;
+    for (let mp = 116; mp >= 111; mp--) { const x = Math.round(mpx(mp)) + .5; s += `<path d="M${x} ${y-4}V${y+5}" stroke="${C['line']}"/><text x="${x}" y="${y1+16}" text-anchor="middle" class="t-mono3">${mp}</text>`; }
+    s += `<text x="620" y="${y-36}" text-anchor="end" class="t-lab">NEC track 2 · track 1</text>`;
+    // M9 milepost tag at NEC 115.0
+    const mx = Math.round(mpx(115)), ty = y + 32;
+    s += `<rect x="${mx-15.5}" y="${ty+.5}" width="32" height="48" fill="${C['bg-panel']}" stroke="${C['line']}"/>`;
+    s += `<text x="${mx+.5}" y="${ty+14}" text-anchor="middle" class="t-lab" style="letter-spacing:.06em">NEC</text>`;
+    s += `<text x="${mx+.5}" y="${ty+28}" text-anchor="middle" class="t-mono-ink" style="font-size:11px">115</text>`;
+    s += `<text x="${mx+.5}" y="${ty+42}" text-anchor="middle" class="t-mono">.0</text>`;
+    s += `<path d="M${mx+.5} ${y1+20}V${ty}" stroke="${C['line-faint']}"/>`;
+    s += `<text x="${mx+24}" y="${ty+28}" class="t-lab">M9 · 32 × 48</text>`;
+    // station: Odenton NEC 113.6
+    const sx = Math.round(mpx(113.6)) + .5;
+    s += `<path d="M${sx} ${y-6}V${y1+6}" stroke="${C['line']}" stroke-width="1.5"/><text x="${sx}" y="${y1+32}" text-anchor="middle" class="t-lab2" style="font-size:11px">Odenton</text>`;
+    // talking train: MARC 410 at NEC 113.6 (track 2)
+    const tx = sx + 3;
+    s += `<rect x="${tx}" y="${y-1}" width="90" height="3" fill="url(#tailTx)"/>`;
+    s += `<rect x="${tx-10}" y="${y-1.5}" width="10" height="4" fill="${C['state-tx']}"/>`;
+    s += `<path d="M${tx-12} ${y-3}L${tx-46} ${y-37}H${tx-56}" stroke="${C['state-tx']}" fill="none"/>`;
+    s += `<text x="${tx-60}" y="${y-41}" text-anchor="end" class="t-mono-ink" style="fill:${C['state-tx']};font-size:13px">MARC 410</text>`;
+    s += `<text x="${tx-60}" y="${y-26}" text-anchor="end" class="t-mono">NEC 113.6 · CH54</text>`;
+    // quiet train: SIM, track 1
+    const qx = Math.round(mpx(111.8));
+    s += `<rect x="${qx}" y="${y1-1}" width="70" height="3" fill="url(#tail2)" opacity=".5"/>`;
+    s += `<rect x="${qx-10.5}" y="${y1-1.5}" width="10" height="4" fill="none" stroke="${C['line']}"/>`;
+    s += `<path d="M${qx-11} ${y1+3}L${qx-41} ${y1+33}H${qx-47}" stroke="${C['line']}" fill="none"/>`;
+    s += `<text x="${qx-51}" y="${y1+37}" text-anchor="end" class="t-mono-ink">MARC 412 · SIM</text><text x="${qx-51}" y="${y1+52}" text-anchor="end" class="t-mono3">NEC 111.8 · CH54</text>`;
+    s += `<path d="M20 ${236.5}H620" stroke="${C['grid']}"/>`;
+    s += `<text x="20" y="248" class="t-mono">39.0869 N · 76.7065 W · NEC 113.6</text><text x="620" y="248" text-anchor="end" class="t-mono3">cursor · M11 · 07:15:00 EST · seed tx-039</text>`;
+    s += `<text x="20" y="22" class="t-lab">Data block · 8 leader offsets · ATC-style</text>`;
+    $('block').innerHTML = s;
+  })();
+
+  // ---------- CTC strip (routes) ----------
+  (function () {
+    const X0 = 40, X1 = 820;
+    const r1 = {name:'NEC · RF&amp;P  (r-nec)', y:62, sta:['QUANTICO','ALEXANDRIA','WASHINGTON','NEW CARR.','BOWIE ST','ODENTON','BWI','BALT PENN','PERRYVILLE']};
+    const xs1 = r1.sta.map((_, i) => X0 + (X1 - X0) * i / (r1.sta.length - 1));
+    const r2 = {name:'CSX CAPITAL SUB  (r-capital)', y:142, sta:['WASHINGTON','COLLEGE PK','GREENBELT','LAUREL','JESSUP','DORSEY','ST DENIS','CAMDEN']};
+    const xs2 = r2.sta.map((_, i) => xs1[2] + (X1 - xs1[2]) * i / (r2.sta.length - 1));
+    let s = '';
+    const row = (L, xs, occ) => {
+      s += `<text x="${xs[0]}" y="${L.y-30}" class="t-lab">${L.name}</text>`;
+      s += `<path d="M${xs[0]} ${L.y+.5}H${xs[xs.length-1]}" stroke="${C['line']}"/>`;
+      occ.forEach(([a, b, st, tag]) => {
+        const col = st === 'tx' ? C['state-tx'] : C['line'];
+        s += `<path d="M${xs[a]+6} ${L.y+.5}H${xs[b]-6}" stroke="${col}" stroke-width="2"/>`;
+        const mx = (xs[a] + xs[b]) / 2;
+        s += `<text x="${mx}" y="${L.y-10}" text-anchor="middle" class="t-mono-ink" style="font-size:11px;fill:${st==='tx'?C['state-tx']:C['ink']}">${tag}</text>`;
+      });
+      xs.forEach((x, i) => {
+        s += `<rect x="${Math.round(x)-3.5}" y="${L.y-3.5}" width="7" height="7" fill="${C['bg-panel']}" stroke="${C['line']}"/>`;
+        s += `<text x="${x}" y="${L.y+20}" text-anchor="middle" class="t-lab">${L.sta[i]}</text>`;
+      });
+    };
+    row(r1, xs1, [[0,1,'q','VRE 304 · SIM'],[4,5,'tx','MARC 410'],[6,7,'q','MARC 412 · SIM']]);
+    row(r2, xs2, [[3,4,'q','MARC 843 · SIM']]);
+    // MP equation at Washington on r-nec
+    s += `<text x="${xs1[2]}" y="${r1.y-30}" text-anchor="middle" class="t-mono3">CFP≈ | NEC 135.7</text>`;
+    // junction tie Washington r-nec ↔ r-capital
+    s += `<path d="M${Math.round(xs1[2])+.5} ${r1.y+24}V${r2.y-4}" stroke="${C['line-faint']}" stroke-dasharray="1 3"/>`;
+    // talking glyph + detector diamond at Laurel (BAA 21.7)
+    s += `<g transform="translate(${(xs1[4]+xs1[5])/2 + 40},${r1.y-14})">${glyph('tx',0,0)}</g>`;
+    const dxL = (xs2[3] + xs2[4]) / 2 - 22;
+    s += `<path d="M${dxL} ${r2.y-6}L${dxL+5} ${r2.y+.5}L${dxL} ${r2.y+7}L${dxL-5} ${r2.y+.5}Z" fill="${C['bg-panel']}" stroke="${C['line']}"/>`;
+    s += `<text x="${dxL}" y="${r2.y+34}" text-anchor="middle" class="t-mono3">DET BAA 21.7</text>`;
+    s += `<text x="${X1}" y="${r1.y-30}" text-anchor="end" class="t-mono3">07:15:00 EST</text>`;
+    // lever row
+    const ly = 222, chans = [['54',1,0,1],['22',0,0,1],['12',0,1,0],['16',0,0,0],['59',0,0,1],['27',1,0,0]];
+    s += `<text x="${X0}" y="${ly+12}" class="t-lab">Levers · M / S / R</text>`;
+    chans.forEach(([ch, m, so, r], i) => {
+      const bx = 180 + i * 108;
+      s += `<text x="${bx}" y="${ly+12}" class="t-mono" style="fill:${ch==='54'?C['state-tx']:C['ink-2']}">CH${ch}</text>`;
+      [m, so, r].forEach((on, k) => {
+        const x = bx + 36 + k * 22;
+        s += `<circle cx="${x+8}" cy="${ly-8}" r="2" fill="${on ? C['ink'] : 'none'}" stroke="${on ? C['ink'] : C['line-faint']}"/>`;
+        s += `<rect x="${x+.5}" y="${ly-1.5}" width="16" height="16" fill="none" stroke="${on ? C['line'] : C['line-faint']}"/>`;
+        s += `<text x="${x+8.5}" y="${ly+10.5}" text-anchor="middle" class="t-lab" style="letter-spacing:0;fill:${on?C['ink']:C['ink-3']}">${'MSR'[k]}</text>`;
+      });
+    });
+    $('ctc').innerHTML = s;
+  })();
+
+  // ---------- title block ----------
+  (function () {
+    const cells = [['Sheet','WLT-1 · LIVE'],['Screen','Live Ops'],['Scope','Bank · NEC Corridor'],['Clock','14:07:33 EST'],['Data','seed + SIM'],['Build','a3f9c1e · rev 2']];
+    let s = `<rect x=".5" y="20.5" width="380" height="120" fill="none" stroke="${C['line-faint']}"/>`;
+    s += `<path d="M190.5 20V140M0 60.5H380M0 100.5H380" stroke="${C['line-faint']}"/>`;
+    cells.forEach(([k, v], i) => {
+      const x = (i % 2) * 190 + 10, y = 20 + Math.floor(i / 2) * 40;
+      s += `<text x="${x}" y="${y+15}" class="t-lab">${k}</text><text x="${x}" y="${y+32}" class="t-mono">${v}</text>`;
+    });
+    s += `<text x="0" y="160" class="t-lab">bottom-right · Map adds © OpenStreetMap contributors</text>`;
+    $('tblock').innerHTML = s;
+  })();
+
+  // ---------- stringline (route r-nec, native NEC mileposts) ----------
+  (function () {
+    const X0 = 80, X1 = 620, Y0 = 40, Y1 = 300;
+    const MPL = 135.7, MPR = 84.0;
+    const mpx = mp => X0 + (MPL - mp) / (MPL - MPR) * (X1 - X0);  // NEC falls left → right
+    const T0 = 0, T1 = 70;                                         // minutes after 07:00
+    const ty = m => Y0 + (m - T0) / (T1 - T0) * (Y1 - Y0);
+    let s = `<clipPath id="slclip"><rect x="${X0}" y="${Y0}" width="${X1-X0}" height="${Y1-Y0}"/></clipPath>`;
+    s += `<path d="M${X0} ${Y0+.5}H${X1}" stroke="${C['line-faint']}"/>`;
+    for (let mp = 134; mp >= 84; mp -= 2) { const x = Math.round(mpx(mp)) + .5, maj = mp % 10 === 0; s += `<path d="M${x} ${Y0 - (maj?8:4)}V${Y0}" stroke="${maj?C['line']:C['line-faint']}"/>`; if (maj) s += `<text x="${x}" y="${Y0-12}" text-anchor="middle" class="t-mono3">NEC ${mp}</text>`; }
+    [[135.7,'WASHINGTON'],[113.6,'ODENTON'],[95.7,'BALT PENN'],[84.0,'MARTIN ST']].forEach(([mp, n], i) => {
+      const x = Math.round(mpx(mp)) + .5;
+      s += `<path d="M${x} ${Y1}V${Y1+5}" stroke="${C['line']}"/><text x="${x}" y="${Y1+18}" text-anchor="${i===0?'start':i===3?'end':'middle'}" class="t-lab">${n}</text>`;
+    });
+    for (let m = 0; m <= 70; m += 10) { const y = Math.round(ty(m)) + .5; const hh = 7 + Math.floor(m/60), mm = m % 60; s += `<path d="M${X0-6} ${y}H${X0}" stroke="${C['line']}"/><path d="M${X0} ${y}H${X1}" stroke="${C['grid']}"/><text x="${X0-10}" y="${y+4}" text-anchor="end" class="t-mono3">${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}</text>`; }
+    // margin rail: seed tx-038 (CH20, 07:09:55) and tx-041 (CH22, 07:40:12)
+    const rx = X0 - 52.5;
+    s += `<path d="M${rx} ${Y0}V${Y1}" stroke="${C['line-faint']}"/><text x="${rx}" y="${Y0-12}" text-anchor="middle" class="t-lab">rail</text>`;
+    [[9.92,'20'],[40.2,'22']].forEach(([m, ch]) => { const y = Math.round(ty(m)) + .5; s += `<path d="M${rx-4} ${y}H${rx+4}" stroke="${C['ink-2']}" stroke-width="2"/><text x="${rx-7}" y="${y+4}" text-anchor="end" class="t-mono3">${ch}</text>`; });
+    const trains = [
+      {id:'MARC 410', a:[95.7,-9.17], b:[135.7,44.83], sel:true, tx:[[15,'seed']]},
+      {id:'MARC 418', a:[84.0,58.67], b:[95.7,72], sel:false, tx:[[58.67,'seed']]},
+      {id:'MARC 413 · SIM', a:[135.7,5], b:[95.7,57], sel:false, tx:[[31,'sim']]},
+      {id:'AMTK 2108 · SIM', a:[95.7,22], b:[135.7,50], sel:false, tx:[[38,'sim']]},
+    ];
+    let g = '';
+    trains.forEach(T => {
+      const col = T.sel ? C['state-select'] : C['line'];
+      const x1 = mpx(T.a[0]), y1 = ty(T.a[1]), x2 = mpx(T.b[0]), y2 = ty(T.b[1]);
+      g += `<path d="M${x1} ${y1}L${x2} ${y2}" stroke="${col}" stroke-width="${T.sel ? 2 : 1}" opacity="${T.sel ? 1 : .7}"/>`;
+      const dx = x2 - x1, dy = y2 - y1, len = Math.hypot(dx, dy), nx = -dy / len * 3, ny = dx / len * 3;
+      T.tx.forEach(([m]) => { const k = (m - T.a[1]) / (T.b[1] - T.a[1]); const x = x1 + dx * k, y = y1 + dy * k; g += `<path d="M${x-nx} ${y-ny}L${x+nx} ${y+ny}" stroke="${T.sel ? C['state-select'] : C['ink-2']}" stroke-width="2"/>`; });
+    });
+    s += `<g clip-path="url(#slclip)">${g}</g>`;
+    // labels
+    s += `<text x="${mpx(113.6)+8}" y="${ty(15)+4}" class="t-mono-ink">MARC 410 · NEC 113.6 · 07:15:00</text>`;
+    s += `<text x="${mpx(84.0)-6}" y="${ty(58.67)-6}" text-anchor="end" class="t-mono">MARC 418</text>`;
+    s += `<text x="${mpx(130)+6}" y="${ty(12)}" class="t-mono3">MARC 413 · SIM</text>`;
+    s += `<text x="${mpx(100)+4}" y="${ty(24)+12}" class="t-mono3">AMTK 2108 · SIM</text>`;
+    const now = Math.round(ty(64)) + .5;
+    s += `<path d="M${X0} ${now}H${X1}" stroke="${C['state-idle']}"/><text x="${X1}" y="${now-5}" text-anchor="end" class="t-mono" style="fill:${C['state-idle']}">NOW 08:04 EST</text>`;
+    $('string').innerHTML = s;
+  })();
+
+  // ---------- ridgeline ----------
+  (function () {
+    const X0 = 116, X1 = 620, top = 40, step = 19;
+    const chans = ['CH54 AMTK NEC','CH08 CSX ROAD','CH14 CSX BC','CH66 CSX BE','CH96 CSX RF&amp;P','CH20 CSX BD','CH56 NS ROAD','CH09 NS HAG','CH28 CSX BAYVW','CH24 LOCUST PT','CH70 CURTIS BAY','CH92 JESSUP','CH22 WASH TERM','CH59 IVY CITY'];
+    const commuter = [1,1,1,0,1,1,1,1,0,0,0,0,1,1];
+    const N = 144;
+    let s = `<rect x="${X0-4}" y="${top-6}" width="${X1-X0+8}" height="${13*step+60}" fill="${C['bg-void']}"/>`;
+    chans.forEach((c, i) => {
+      const base = top + i * step + 40;
+      let d = `M${X0} ${base}`;
+      const pts = [];
+      for (let b = 0; b <= N; b++) {
+        const h = b / 6;
+        let v = .05 + rng() * .08;
+        if (commuter[i]) v += 1.0 * Math.exp(-Math.pow((h - 7) / 1.1, 2)) + .9 * Math.exp(-Math.pow((h - 16.8) / 1.2, 2)) + .12;
+        else v += .25 + .2 * Math.sin(h / 3 + i);
+        v *= (.7 + rng() * .6);
+        pts.push([X0 + (X1 - X0) * b / N, base - Math.min(1.6, v) * 26]);
+      }
+      d += pts.map(([x, y]) => `L${x.toFixed(1)} ${y.toFixed(1)}`).join('') + `L${X1} ${base}`;
+      s += `<path d="${d}Z" fill="${C['bg-void']}" stroke="none"/>`;
+      s += `<path d="${d}" fill="none" stroke="${i === 0 ? C['ink'] : C['line']}" stroke-width="1" opacity="${i === 0 ? 1 : .85}" stroke-linejoin="round"/>`;
+      s += `<text x="${X0-10}" y="${base}" text-anchor="end" class="t-mono3">${c}</text>`;
+    });
+    const yA = top + 13 * step + 52;
+    for (let h = 0; h <= 24; h += 3) { const x = Math.round(X0 + (X1 - X0) * h / 24) + .5; s += `<path d="M${x} ${yA}V${yA+(h%6?4:8)}" stroke="${h%6?C['line-faint']:C['line']}"/>`; if (h % 6 === 0) s += `<text x="${x}" y="${yA+20}" text-anchor="middle" class="t-mono3">${String(h).padStart(2,'0')}:00</text>`; }
+    s += `<text x="${X0}" y="16" class="t-mono-ink" style="font-size:13px">AIRTIME TODAY 01:52:40</text><text x="${X1}" y="16" text-anchor="end" class="t-mono3">10-min bins · SIM · format example</text>`;
+    $('ridge').innerHTML = s;
+  })();
+
+  // ---------- timeline ----------
+  (function () {
+    const X0 = 200, X1 = 1340, ms = t => X0 + t / 1000 * (X1 - X0);
+    const rows = [
+      ['1 · Detect', 0, 10, 'squelch crossed · diagonal glyph · brackets brighten · audio opens', C['state-idle']],
+      ['2 · Commit', 250, 370, 'still open at 250 ms → tx-hot flash → state-tx · frame draws', C['state-tx-hot']],
+      ['3 · Lock', 250, 490, 'AAR steps to 13 px · timer promoted right at 32 px', C['state-tx']],
+      ['4 · Connect', 250, 650, 'CTC block · map pings · spectrum/waterfall slot · hero slot', C['state-tx']],
+      ['5 · Populate', 490, 1000, 'waveform runs · log row with decode bar →', C['state-tx']],
+      ['6 · Release hold', 600, 1000, 'on squelch close: hold 400 ms, then settle to ember (shown from 600)', C['line']],
+    ];
+    let s = '';
+    for (let t = 0; t <= 1000; t += 50) { const x = Math.round(ms(t)) + .5, maj = t % 100 === 0; s += `<path d="M${x} 24V${maj?36:30}" stroke="${maj?C['line']:C['line-faint']}"/>`; if (maj) s += `<text x="${x}" y="16" text-anchor="middle" class="t-mono3">${t}</text>`; if (maj) s += `<path d="M${x} 40V240" stroke="${C['grid']}"/>`; }
+    const cx = Math.round(ms(250)) + .5;
+    s += `<path d="M${cx} 40V240" stroke="${C['line']}" stroke-dasharray="2 3"/><text x="${cx+6}" y="50" class="t-mono3">t-commit 250</text>`;
+    s += `<text x="${X1}" y="252" text-anchor="end" class="t-lab">ms after squelch crossing</text>`;
+    rows.forEach(([n, a, b, d, col], i) => {
+      const y = 70 + i * 28;
+      s += `<text x="0" y="${y+4}" class="t-lab-ink" style="font-size:11px">${n}</text>`;
+      s += `<rect x="${ms(a)}" y="${y-3}" width="${Math.max(3, ms(b) - ms(a))}" height="6" fill="${col}" opacity="${i===5?.5:.9}"/>`;
+      const tx = Math.min(ms(b) + 10, X1 - 4), anchor = ms(b) + 10 > X1 - 300 ? 'end' : 'start';
+      s += `<text x="${anchor === 'end' ? ms(a) - 10 : tx}" y="${y+4}" text-anchor="${anchor}" class="t-mono" style="font-size:11px">${d}</text>`;
+    });
+    s += `<text x="0" y="252" class="t-mono3">ease-instrument 0.2,0,0,1 · step() for digits · linear for time</text>`;
+    $('timeline').innerHTML = s;
+  })();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+# Python
+backend/.venv/
+backend/venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+
+# Node
+node_modules/
+frontend/dist/
+
+# Generated at runtime
+data/audio/
+data/db/
+
+# Working files: review screenshots and design screens (the index set stays)
+build-screens/
+design/screens/*
+!design/screens/index/
+
+.DS_Store

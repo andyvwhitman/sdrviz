@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en" data-default-state="listening">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WLT-1 History</title>
+<meta name="description" content="sdrviz History and playback mockup (brief §9.2): stringline by route, rolling 24 h scrubber, transcript table and clip player. States: ?state=listening|keyed|fault.">
+<link rel="stylesheet" href="_shared/hud.css">
+<link rel="stylesheet" href="history.css">
+</head>
+<body>
+<div id="stage"></div>
+<!-- Seed place coordinates (data/seed/places.json, id -> [lat, lon]); used only to send off-route
+     places to the margin rail of the nearest route (brief §9.0.4). Regenerate if the seed changes. -->
+<script type="application/json" id="hi-places">{"wash-union":[38.89731,-77.00626],"lenfant":[38.88477,-77.02196],"crystal-city":[38.8594,-77.0483],"alexandria":[38.8063,-77.0621],"franconia-spfld":[38.766,-77.1686],"lorton":[38.7151,-77.2145],"woodbridge":[38.6591,-77.2482],"rippon":[38.6123,-77.2539],"quantico":[38.5217,-77.2931],"backlick":[38.797,-77.184],"burke-centre":[38.7975,-77.2983],"manassas":[38.7501,-77.4728],"new-carrollton":[38.948,-76.8719],"seabrook":[38.9732,-76.8432],"bowie-state":[39.0178,-76.7647],"odenton":[39.0869,-76.7065],"bwi":[39.1924,-76.6946],"halethorpe":[39.2385,-76.6911],"west-baltimore":[39.2934,-76.6532],"baltimore-penn":[39.3074,-76.6156],"martin-state":[39.3383,-76.4196],"edgewood":[39.416,-76.2927],"aberdeen":[39.5084,-76.1632],"perryville":[39.5583,-76.0717],"college-park":[38.9784,-76.9282],"greenbelt":[39.01139,-76.91167],"muirkirk":[39.0629,-76.8841],"laurel":[39.1025,-76.8417],"savage":[39.1229,-76.7963],"jessup":[39.1515,-76.7763],"dorsey":[39.181,-76.7457],"st-denis":[39.2243,-76.7038],"camden":[39.2835,-76.6196],"silver-spring":[38.9938,-77.0313],"kensington":[39.0268,-77.0718],"rockville":[39.0842,-77.1461],"gaithersburg":[39.1415,-77.1931],"ivy-city":[38.91521,-76.99013],"benning-yd":[38.89032,-76.95651],"potomac-yard":[38.83176,-77.04851],"long-bridge":[38.87477,-77.03847],"va-ave-tunnel":[38.8774,-76.9911],"landover-int":[38.934,-76.89],"b-p-tunnel":[39.303,-76.6352],"union-tunnel":[39.3058,-76.6088],"howard-st-tunnel":[39.304722,-76.620833],"mt-clare":[39.2855,-76.6334],"locust-point":[39.26777,-76.60588],"curtis-bay":[39.23637,-76.59076],"sparrows-point":[39.2192,-76.4761],"gunpowder-br":[39.38016,-76.34155],"lorton-auto-train":[38.7084,-77.2207],"bayview-yd":[39.2973,-76.54055],"jessup-yd":[39.13228,-76.78535],"det-newington":[38.739283,-77.18553],"det-neabsco":[38.598094,-77.257448],"det-hyattsville":[38.946844,-76.944491],"det-laurel":[39.096686,-76.846762],"det-st-denis":[39.224441,-76.70319],"det-alexandria-ext-hotbox":[38.945726,-76.937688],"det-landover":[38.909965,-76.933211],"det-kensington":[39.031228,-77.081508],"det-gaithersburg":[39.144997,-77.212606],"det-ilchester":[39.250876,-76.764461],"det-waverly":[39.317814,-76.597383],"det-white-marsh":[39.382612,-76.428411],"det-belcamp":[39.468867,-76.240115],"feed-alx":[38.815,-77.07],"feed-lnd":[38.942,-76.885],"feed-bwi":[39.215,-76.715],"feed-bay":[39.295,-76.56]}</script>
+<script src="_shared/hud.js"></script>
+<script src="history.js"></script>
+</body>
+</html>

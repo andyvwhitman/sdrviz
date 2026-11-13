@@ -1,0 +1,58 @@
+/* sdrviz styles: 13-14  Motion and reduced motion.
+   Ported verbatim from design/mockups/_shared/hud.css (lines 799-853). Colours come from tokens.css only. */
+
+/* --------------------------------------------------------------------------
+   13 MOTION (brief §7). Keyframes + build-on. Classes are opt-in.
+   -------------------------------------------------------------------------- */
+@keyframes hud-fault-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+@keyframes hud-tx-flash {
+  0%   { box-shadow: inset 0 0 0 2px var(--state-tx-hot), inset 0 0 0 4px var(--glow-tx-1), 0 0 0 2px var(--glow-tx-1), inset 0 0 0 7px var(--glow-tx-2), 0 0 0 5px var(--glow-tx-2); }
+  100% { box-shadow: inset 0 0 0 2px var(--state-tx),     inset 0 0 0 4px var(--glow-tx-1), 0 0 0 2px var(--glow-tx-1), inset 0 0 0 7px var(--glow-tx-2), 0 0 0 5px var(--glow-tx-2); }
+}
+@keyframes hud-ping { from { r: 6px; stroke-opacity: 0.6; } to { r: 40px; stroke-opacity: 0; } }
+.hud .ping.is-firing { animation: hud-ping var(--t-ping) var(--ease-instrument) 1 forwards; }
+@keyframes hud-sweep { from { transform: translateX(-120px); } to { transform: translateX(var(--sweep-w, 1656px)); } }
+.sweep {
+  position: absolute; top: 0; bottom: 0; left: 0; width: 120px; pointer-events: none;
+  background: linear-gradient(90deg, transparent, var(--sweep-line)); /* line @ 6 % peak, 120 px tail */
+  box-shadow: 1px 0 0 var(--sweep-line);
+  animation: hud-sweep var(--t-sweep) linear infinite;
+}
+.sweep.is-paused { animation-play-state: paused; opacity: 0; }
+
+/* Build-on (brief §7.4): frame 0-200, grid/rulers 150-350, labels 300-450, values 400-600.
+   hud.js adds .is-building to <html> on load/route change and removes it after t-build. */
+@keyframes hud-arm   { from { --arm: 0px; } }
+@keyframes hud-fade  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes hud-value { 0% { opacity: 0; } 100% { opacity: 1; } }
+.is-building .frame, .is-building .br::before, .is-building .bezel {
+  animation: hud-arm 200ms var(--ease-instrument) both, hud-fade 200ms var(--ease-instrument) both;
+  animation-delay: calc(min(var(--i, 0), 20) * 20ms);
+}
+.is-building .b-grid, .is-building .ruler, .is-building .graticule { animation: hud-fade 200ms var(--ease-instrument) 150ms both; }
+.is-building .label, .is-building .t-micro, .is-building .t-label, .is-building .t-tile, .is-building .t-panel,
+.is-building .tile__label, .is-building .tile__foot, .is-building .b-label {
+  animation: hud-fade 150ms linear both; animation-delay: calc(300ms + min(var(--i, 0), 7) * 20ms);
+}
+.is-building .mono, .is-building .tile__aar, .is-building .tile__mhz, .is-building .tile__status, .is-building .tile__timer,
+.is-building .tile__meter, .is-building .tile__spark, .is-building .hero__big, .is-building .b-value {
+  animation: hud-value 200ms steps(4, end) 400ms both;
+}
+/* shutdown / offline (300 ms reverse): values blank, labels to ink-3, frame dotted */
+.is-shutdown .mono, .is-shutdown .tile__aar, .is-shutdown .tile__mhz { opacity: 0; transition: opacity 100ms linear; }
+.is-shutdown .label, .is-shutdown .tile__label { color: var(--ink-3); transition: color 100ms linear 100ms; }
+
+/* --------------------------------------------------------------------------
+   14 REDUCED MOTION (brief §7.7): media query and the in-app setting
+   -------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-motion="full"]) *, :root:not([data-motion="full"]) *::before, :root:not([data-motion="full"]) *::after {
+    animation: none !important; transition: none !important;
+  }
+  :root:not([data-motion="full"]) .sweep { display: none; }
+}
+:root[data-motion="reduced"] *, :root[data-motion="reduced"] *::before, :root[data-motion="reduced"] *::after {
+  animation: none !important; transition: none !important;
+}
+:root[data-motion="reduced"] .sweep { display: none; }
+

@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en" data-default-state="listening">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WLT-1 Map</title>
+<meta name="description" content="sdrviz Map screen mockup (brief §9.5): the DC–Baltimore corridor in pure SVG line work, feed sites and coverage, SIM train data blocks, schematic mode and the map ping. States: ?state=listening|keyed|fault|fault-acked, &mode=schematic, &motion=1 (map ping; &t=ms freezes it), &select=MARC%20433, &size=1440.">
+<link rel="stylesheet" href="_shared/hud.css">
+<link rel="stylesheet" href="map.css">
+</head>
+<body>
+<div id="stage"></div>
+<script src="_shared/hud.js"></script>
+<!-- file:// twins: seed places + sim routes (tools/build_map_fixtures.py), OSM geometry (tools/fetch_geo.py) -->
+<script src="map-fixtures.js"></script>
+<script src="../../data/geo/rail.geojson.js"></script>
+<script src="../../data/geo/water.geojson.js"></script>
+<script src="map.js"></script>
+</body>
+</html>

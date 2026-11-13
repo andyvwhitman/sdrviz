@@ -1,0 +1,44 @@
+/* sdrviz styles: 11  Inspector, hero strip, panels, empty, alarm.
+   Ported verbatim from design/mockups/_shared/hud.css (lines 725-765). Colours come from tokens.css only. */
+
+/* --------------------------------------------------------------------------
+   11 INSPECTOR, HERO STRIP, PANELS, EMPTY, ALARM
+   -------------------------------------------------------------------------- */
+.inspector {
+  position: absolute; top: 0; bottom: 0; right: 0; width: var(--inspector-w); z-index: 20;
+  background: var(--bg-raised); padding: 16px 20px; display: flex; flex-direction: column; gap: 16px;
+}
+.inspector::before { --c: var(--line); }
+.inspector__head { display: flex; align-items: center; gap: 8px; min-height: 24px; }
+.inspector__head .t-panel { flex: 1; }
+.inspector__kind { font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink-3); text-transform: uppercase; }
+.inspector__sec { display: grid; gap: 0; }
+.inspector__sec > h4 { margin: 0 0 4px; font: 600 var(--fs-11)/1 var(--font-label); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-2); padding-bottom: 6px; border-bottom: 1px solid var(--line-faint); }
+.inspector .kv { padding: 5px 0; }
+.inspector .t-micro, .inspector .kv > .k { color: var(--ink-3); } /* 4.66:1 on bg-raised */
+
+.hero { position: relative; height: var(--hero-h); display: flex; align-items: center; gap: 16px; }
+.hero__big   { font: 500 var(--fs-48)/1 var(--font-data); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; color: var(--ink); white-space: nowrap; }
+.hero__big.is-tx { color: var(--state-tx); }
+.hero__big.is-2  { color: var(--ink-2); }
+.hero__big.is-sm { font-size: var(--fs-32); } /* secondary hero figures: one 48 px hero per row (P4) */
+.hero__stack { display: grid; gap: 4px; }
+.hero__stack .a { font: 600 var(--fs-13)/1 var(--font-label); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink); white-space: nowrap; }
+.hero__stack .b { font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--ink-2); white-space: nowrap; }
+.hero__list  { font: 500 var(--fs-24)/1 var(--font-data); color: var(--state-tx); white-space: nowrap; }
+.hero__aside { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+.hero__text  { font: 600 var(--fs-13)/1 var(--font-label); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink); white-space: nowrap; }
+
+.panel { position: relative; padding: 12px 16px 16px; }
+.panel__head { display: flex; align-items: baseline; gap: 12px; height: 16px; margin-bottom: 12px; }
+.panel__head .t-panel { flex: none; }
+.panel__head .t-micro { margin-left: auto; }
+
+.empty { position: relative; display: grid; place-content: center; justify-items: center; gap: 8px; padding: 32px; text-align: center; }
+.empty .t-panel { color: var(--ink-2); }
+.empty .t-body  { color: var(--ink-3); }
+
+.is-down > :not(.alarm) { opacity: 0.2; }
+.alarm { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 16px; z-index: 30; padding-bottom: 6%; }
+.alarm .t-body { color: var(--ink); }
+

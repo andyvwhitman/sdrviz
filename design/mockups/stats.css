@@ -1,0 +1,113 @@
+/* ==========================================================================
+   sdrviz · WLT-1 · Stats / analytics (brief §9.3) · page-local styles
+   Owner: history-stats screen designer. Builds on _shared/hud.css; never edits it.
+   Every class is prefixed .st- (spec §8.1).
+   Boxes at 1920 (content coords, origin = content box top-left x 32 y 56):
+     hero        y   0– 64
+     ridgeline   x    0–1229 · y  80–544   (cols 1–8, the hero chart)
+     heatmap     x 1253–1856 · y  80–544   (cols 9–12)
+     talkers     x    0– 603 · y 560–984   (cols 1–4)
+     detectors   x  627–1229 · y 560–984   (cols 5–8)
+     decoder+up  x 1253–1856 · y 560–984   (cols 9–12)
+   ========================================================================== */
+
+.st-box { position: absolute; }
+.st-hero    { left: 0; right: 0; top: 0; height: 64px; }
+.st-ridge   { left: 0; width: 1229px; top: 80px; height: 464px; }
+.st-heat    { left: 1253px; right: 0; top: 80px; height: 464px; }
+.st-talk    { left: 0; width: 603px; top: 560px; height: 424px; }
+.st-det     { left: 627px; width: 602px; top: 560px; height: 424px; }
+.st-dec     { left: 1253px; right: 0; top: 560px; height: 424px; }
+
+.st-hero .hi-rule, .st-hero .st-rule { width: 1px; align-self: stretch; margin: 12px 8px; background: var(--line-faint); }
+.st-hero .hero__aside { gap: 16px; }
+.st-hero .hero__aside .tabs { height: 32px; }
+.st-hero .hero__big.is-sm { font-size: var(--fs-32); }
+
+.st-box .panel__head { margin-bottom: 12px; }
+.st-box .panel__head .t-micro b { font: 400 var(--fs-11)/1 var(--font-data); color: var(--ink-2); letter-spacing: 0; }
+.st-box svg.hud { display: block; }
+
+/* svg text helpers */
+.hud .st-lab    { font: 500 11px var(--font-label); letter-spacing: 0.08em; text-transform: uppercase; fill: var(--ink-2); }
+.hud .st-ch     { font: 500 11px var(--font-data); fill: var(--ink); }
+.hud .st-val    { font: 400 11px var(--font-data); fill: var(--ink-2); }
+.hud .st-dim    { font: 400 11px var(--font-data); fill: var(--ink-3); }
+.hud .st-now    { font: 500 11px var(--font-data); fill: var(--state-idle); }
+.hud .st-fault-t { font: 500 11px var(--font-data); fill: var(--state-fault); }
+.hud .st-stale-t { font: 400 11px var(--font-data); fill: var(--state-stale); }
+/* every label on the ridgeline is knocked out of the lines it sits on */
+.st-ridge svg text { paint-order: stroke; stroke: var(--bg-void); stroke-width: 4px; stroke-linejoin: round; }
+.hud .st-ridge  { fill: var(--bg-void); stroke: var(--line); stroke-width: 1px; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
+.hud .st-ridge.is-other { stroke: var(--ink-2); stroke-dasharray: 6 3; }
+.hud .st-ridge.is-all { stroke: var(--ink); }
+.hud .st-livetick { stroke: var(--state-tx); stroke-width: 2px; }
+.hud .st-bar    { fill: rgb(156 201 214 / 0.08); stroke: var(--line); stroke-width: 1px; vector-effect: non-scaling-stroke; }
+.hud .st-up     { stroke: var(--line); stroke-width: 2px; }
+.hud .st-up-stale { stroke: var(--state-stale); stroke-width: 2px; stroke-dasharray: 4 4; }
+.hud .st-up-off { stroke: var(--state-stale); stroke-width: 2px; stroke-dasharray: 1 5; }
+.hud .st-up-fault { stroke: var(--state-fault); stroke-width: 2px; }
+.hud .st-gap    { stroke: var(--bg-void); stroke-width: 4px; }
+
+/* top talkers (HTML rows) */
+.st-cols { display: grid; grid-template-columns: 1fr 1fr; column-gap: 24px; }
+.st-colh { display: flex; justify-content: space-between; height: 16px; border-bottom: 1px solid var(--line-faint); margin-bottom: 6px; }
+.st-trow { display: grid; grid-template-columns: 1fr auto; row-gap: 3px; height: 31px; align-content: start; }
+.st-trow .n { font: 400 var(--fs-12)/14px var(--font-data); color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.st-trow .n .l { font: 500 var(--fs-11)/14px var(--font-label); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-2); margin-left: 6px; }
+.st-trow .v { font: 400 var(--fs-12)/14px var(--font-data); color: var(--ink-2); text-align: right; }
+.st-trow .b { grid-column: 1 / -1; height: 6px; position: relative; }
+.st-trow .b i { position: absolute; left: 0; top: 0; bottom: 0; box-shadow: inset 0 0 0 1px var(--line); background: rgb(156 201 214 / 0.08); }
+.st-trow .b::before { content: ""; position: absolute; left: 0; right: 0; top: 5px; height: 1px; background: var(--grid); }
+
+/* detector board */
+.st-dgrid { display: grid; grid-template-columns: 1fr 1fr; column-gap: 24px; row-gap: 4px; }
+.st-dcell { display: grid; grid-template-columns: 32px 1fr; column-gap: 12px; height: 48px; align-items: start; }
+.st-dcell .nm { font: 600 var(--fs-12)/14px var(--font-label); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.st-dcell .ln { font: 400 var(--fs-11)/16px var(--font-data); color: var(--ink-2); white-space: nowrap; }
+.st-dcell .ln .k { font: 500 var(--fs-11)/16px var(--font-label); letter-spacing: var(--track-label); color: var(--ink-3); margin-right: 4px; }
+.st-dcell .ln .z { color: var(--ink-3); }
+.st-dcell .tag-defect { margin-right: 4px; vertical-align: 0; }
+.st-dcell[data-defect] .nm { font-weight: 600; }
+
+/* decoder quality */
+.st-dec .st-split { display: grid; grid-template-columns: 1fr 168px; column-gap: 24px; height: 142px; }
+.st-dec .st-lat { display: grid; align-content: start; gap: 6px; padding-top: 4px; }
+.st-dec .st-lat .big { font: 500 var(--fs-32)/1 var(--font-data); color: var(--ink); }
+.st-dec .st-lat .big small { font-size: var(--fs-13); color: var(--ink-2); margin-left: 4px; }
+.st-dec .st-up-head { margin-top: 18px; }
+
+
+/* ------------------------------------------------------------------ 1440 x 900
+   Content 1376 x 804. Columns (content x): 1-8 = 0-909, 9-12 = 933-1376; 1-4 = 0-443, 5-8 = 467-909.
+   Ridge + heat y 80-424, bottom row y 440-804. Hero drops CHANNELS HEARD (it moves to the ridge head). */
+:root[data-size="1440"] .st-ridge { width: 909px; height: 344px; }
+:root[data-size="1440"] .st-heat  { left: 933px; height: 344px; }
+:root[data-size="1440"] .st-talk  { width: 443px; top: 440px; height: 364px; }
+:root[data-size="1440"] .st-det   { left: 467px; width: 442px; top: 440px; height: 364px; }
+:root[data-size="1440"] .st-dec   { left: 933px; top: 440px; height: 364px; }
+:root[data-size="1440"] .st-hero .is-1920 { display: none; }
+:root[data-size="1440"] .st-hero .hero__big { font-size: var(--fs-48); }
+:root[data-size="1440"] .st-hero .hero__big.is-sm { font-size: var(--fs-32); }
+:root[data-size="1440"] .st-hero .hero__aside { gap: 8px; }
+:root[data-size="1440"] .st-trow { height: 27px; }
+:root[data-size="1440"] .st-dgrid { column-gap: 12px; row-gap: 2px; }
+:root[data-size="1440"] .st-dcell { height: 39px; grid-template-columns: 26px 1fr; column-gap: 8px; }
+:root[data-size="1440"] .st-dcell .mp-tag { transform: scale(0.8); transform-origin: 0 0; }
+:root[data-size="1440"] .st-dcell .nm { line-height: 13px; }
+:root[data-size="1440"] .st-dcell .ln, :root[data-size="1440"] .st-dcell .ln .k { line-height: 13px; }
+:root[data-size="1440"] .st-dec .st-split { grid-template-columns: 1fr 132px; height: 132px; }
+:root[data-size="1440"] .st-dec .st-lat { gap: 4px; padding-top: 0; }
+:root[data-size="1440"] .st-dec .st-lat .big { font-size: var(--fs-24); }
+:root[data-size="1440"] .st-dec .st-up-head { margin-top: 10px; }
+
+:root[data-gray] { filter: grayscale(1); }
+
+/* r3: ALL CHANNELS ridge mass (12 % line wash, flat, over the void fill) and its 2 px ink trace */
+.hud .st-all-wash { fill: var(--line); fill-opacity: 0.12; stroke: none; }
+.hud .st-ridge.is-all { stroke-width: var(--stroke-active); }
+/* r3: capped (off-scale) flats on channel ridges */
+.hud .st-cap-ko { stroke: var(--bg-void); stroke-width: 3px; }
+.hud .st-cap { stroke: var(--ink); }
+/* r3: uptime and histogram labels are knocked out of the grid hairlines they cross (P5) */
+.st-dec svg text { paint-order: stroke; stroke: var(--bg-void); stroke-width: 4px; stroke-linejoin: round; }

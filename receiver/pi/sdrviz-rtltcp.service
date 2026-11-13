@@ -1,0 +1,24 @@
+[Unit]
+Description=sdrviz rtl_tcp IQ server
+Documentation=file:///opt/sdrviz/README.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=sdrviz
+Group=plugdev
+EnvironmentFile=/etc/sdrviz/rtltcp.env
+ExecStart=/usr/local/bin/sdrviz-rtltcp-run
+Restart=always
+RestartSec=3
+# rtl_tcp exits when the dongle is unplugged; Restart=always brings it back when it returns.
+
+# Basic hardening; rtl_tcp needs only USB and the network.
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target

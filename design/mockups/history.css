@@ -1,0 +1,148 @@
+/* ==========================================================================
+   sdrviz · WLT-1 · History & playback (brief §9.2) · page-local styles
+   Owner: history-stats screen designer. Builds on _shared/hud.css; never edits it.
+   Every class is prefixed .hi- (spec §8.1).
+   Boxes at 1920 (content coords, origin = content box top-left x 32 y 56):
+     hero        y   0– 64
+     routes      y  80–112  (tabs left, route overview right)
+     stringline  y 128–520  (margin rail · time axis · plot)
+     scrubber    y 536–632  (24 h airtime strip · hour ruler · REC rail · FEEDS lane)
+     table       x 0–1229 · y 648–984      player x 1253–1856 · y 648–984
+   ========================================================================== */
+
+.hi-box { position: absolute; }
+.hi-hero    { left: 0; right: 0; top: 0; height: 64px; }
+.hi-routes  { left: 0; right: 0; top: 80px; height: 32px; display: flex; align-items: flex-end; gap: 24px; }
+.hi-string  { left: 0; right: 0; top: 128px; height: 392px; }
+.hi-scrub   { left: 0; right: 0; top: 536px; height: 96px; }
+.hi-table   { left: 0; width: 1229px; top: 648px; height: 336px; }
+.hi-player  { left: 1253px; right: 0; top: 648px; height: 336px; }
+
+/* hero: range datum + totals, with the non-drag range controls (brief §10.9) on the right */
+.hi-hero .hero__big .z { font-size: var(--fs-24); color: var(--ink-2); margin-left: 8px; letter-spacing: 0; }
+.hi-hero .hi-rule { width: 1px; align-self: stretch; margin: 12px 8px; background: var(--line-faint); }
+.hi-hero .hero__aside .chip { height: 24px; }
+.hi-hero .hi-step { display: flex; gap: 4px; }
+
+/* route overview (full route, viewport bracketed) */
+.hi-routes .tabs { flex: none; }
+.hi-over { position: relative; flex: 1; height: 32px; min-width: 0; }
+.hi-over svg { position: absolute; inset: 0; }
+
+/* svg text helpers (svg.hud already sets families via .tx-*) */
+.hud .hi-stn   { font: 500 11px var(--font-label); letter-spacing: 0.1em; text-transform: uppercase; fill: var(--ink-2); }
+.hud .hi-stn.is-dim { fill: var(--ink-3); }
+.hud .hi-train { font: 500 11px var(--font-data); fill: var(--ink-2); }
+.hud .hi-train.is-sel { fill: var(--state-select); }
+.hud .hi-now   { font: 500 11px var(--font-data); fill: var(--state-idle); }
+.hud .hi-fault-t { font: 500 11px var(--font-data); fill: var(--state-fault); }
+.hud .hi-stale-t { font: 400 11px var(--font-data); fill: var(--state-stale); }
+.hud .hi-wash-sel { fill: none; }
+.hud .hi-tick  { stroke: var(--ink); stroke-width: 2px; vector-effect: non-scaling-stroke; fill: none; }
+/* the tick's 2 px bg-void gap: cuts the string either side so the tick reads as a mark on it (M19) */
+.hud .hi-tick-gap { stroke: var(--bg-void); stroke-width: 6px; fill: none; }
+/* every label in the stringline is knocked out of the lines by a 2 px bg-void stroke (P5) */
+.hud .hi-plate { fill: var(--bg-void); }
+.hi-string svg text, .hi-over svg text { paint-order: stroke; stroke: var(--bg-void); stroke-width: 4px; stroke-linejoin: round; }
+.hud .hi-tick.is-sel { stroke: var(--state-select); stroke-width: 2px; }
+.hud .hi-diamond { stroke: var(--ink); stroke-width: 1px; fill: var(--bg-void); vector-effect: non-scaling-stroke; }
+.hud .hi-chev  { stroke: var(--ink-3); stroke-width: 1px; fill: none; }
+.hud .hi-playhead { stroke: var(--ink); stroke-width: 2px; }
+.hud .hi-cap   { fill: var(--ink); }
+.hud .hi-lane  { stroke: var(--grid); stroke-width: 1px; }
+.hud .hi-rec   { stroke: var(--line-faint); stroke-width: 2px; }
+.hud .hi-rec.is-fault { stroke: var(--state-fault); }
+.hud .hi-bar-fault { stroke: var(--state-fault); stroke-width: 2px; }
+
+/* scrubber canvas sits under its svg overlay */
+.hi-scrub canvas, .hi-player canvas { position: absolute; display: block; }
+.hi-scrub svg, .hi-string svg { position: absolute; inset: 0; }
+
+/* ------------------------------------------------------------------ table */
+.hi-filters { display: flex; align-items: center; gap: 8px; height: 24px; }
+.hi-filters .chip { height: 24px; }
+.hi-filters .chip .v { font: 400 var(--fs-11)/1 var(--font-data); letter-spacing: 0; margin-left: 6px; }
+.hi-search { display: flex; align-items: center; gap: 8px; margin-left: 8px; width: 248px; height: 24px; border-bottom: 1px solid var(--line-faint);
+  font: 400 var(--fs-13)/1 var(--font-read); color: var(--ink-3); }
+.hi-search .k { font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink-3); }
+.hi-filters .hi-count { margin-left: auto; }
+
+.hi-grid { --cols: 64px 40px 88px 72px 32px 120px 56px minmax(0, 1fr); }
+.hi-thead { display: grid; grid-template-columns: var(--cols); column-gap: 12px; padding: 0 8px; height: 24px; align-items: end;
+  margin-top: 8px; border-bottom: 1px solid var(--line-faint); padding-bottom: 5px; }
+.hi-thead span { font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--ink-3); }
+.hi-thead .r, .hi-table .txrow .r { text-align: right; }
+
+.hi-rows { position: relative; }
+.hi-table .txrow { grid-template-columns: var(--cols); padding: 6px 8px 5px; }
+.hi-table .txrow .c-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hi-table .txrow .c-aar { font: 500 var(--fs-12)/20px var(--font-data); color: var(--ink); }
+.hi-table .txrow .c-chan { font: 500 var(--fs-12)/20px var(--font-label); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); white-space: nowrap; overflow: hidden; }
+.hi-table .txrow .c-dur { font: 400 var(--fs-12)/20px var(--font-data); color: var(--ink-2); text-align: right; }
+.hi-table .txrow[data-offbank] .c-aar { color: var(--ink-2); }
+.hi-table .txrow .c-who .tag-sim { margin-left: 6px; }
+.hi-table .txrow.is-selected { background: none; }
+.hi-table .txrow.is-selected .c-time { color: var(--ink); }
+/* group rule: the selected string's ticks list first (brief §9.2) */
+.hi-group { display: flex; align-items: center; gap: 10px; height: 22px; padding: 0 8px; border-bottom: 1px solid var(--grid); }
+.hi-group .label { font-size: var(--fs-11); color: var(--ink-2); }
+.hi-group .mono { font-size: var(--fs-11); color: var(--ink-3); }
+.hi-group .grow { flex: 1; height: 1px; }
+.hi-more { padding: 6px 8px; font: 400 var(--fs-11)/1 var(--font-data); color: var(--ink-3); }
+
+/* ------------------------------------------------------------------ clip player */
+.hi-player.br { padding: 12px 16px 14px; }
+.hi-phead { display: flex; align-items: baseline; gap: 12px; height: 16px; }
+.hi-phead .t-panel { flex: none; }
+.hi-phead .mono { font-size: var(--fs-13); color: var(--ink); }
+.hi-phead .aside { margin-left: auto; display: flex; gap: 8px; align-items: baseline; }
+.hi-pmeta { display: flex; gap: 16px; margin-top: 10px; height: 14px; align-items: baseline; font: 400 var(--fs-11)/1 var(--font-data); color: var(--ink-2); white-space: nowrap; }
+.hi-pmeta .k { font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink-3); margin-right: 6px; }
+.hi-pmeta .pri { color: var(--ink); }
+.hi-pviz { position: relative; margin-top: 10px; height: 152px; }
+.hi-pviz .bezel { position: absolute; left: 0; right: 0; }
+.hi-pviz .hi-wave { top: 0; height: 56px; }
+.hi-pviz .hi-spec { top: 60px; height: 64px; }
+.hi-pviz svg.hi-pover { position: absolute; inset: 0; overflow: visible; }
+.hi-ptext { margin-top: 2px; height: 42px; overflow: hidden; font: 400 var(--fs-15)/20px var(--font-read); color: var(--ink);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.hi-ptext .lo { color: var(--ink-3); }
+.hi-ptext .meta { font: 400 var(--fs-12)/20px var(--font-data); color: var(--ink-3); }
+.hi-pctl { display: flex; align-items: center; gap: 8px; margin-top: 12px; height: 32px; }
+.hi-pctl .btn { min-width: 40px; }
+.hi-pctl .hi-speed { display: flex; gap: 4px; margin-left: 8px; }
+.hi-pctl .hi-pos { margin-left: auto; font: 400 var(--fs-13)/1 var(--font-data); color: var(--ink); }
+.hi-pctl .hi-pos .of { color: var(--ink-3); }
+.hi-pctl a { font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); text-transform: uppercase; margin-left: 16px; padding-bottom: 2px; }
+.hi-duck { font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--ink-2); }
+
+/* ?gray=1 runs the brief §10.4 grayscale test on the live frame */
+
+/* ------------------------------------------------------------------ 1440 x 900
+   Content 1376 x 804. Stringline 392 -> 280 tall (plot 296 -> 184); table cols 1-8 (0-909),
+   player cols 9-12 (933-1376, 443 px, never under 400). The TEXT column takes the slack. */
+:root[data-size="1440"] .hi-string { height: 280px; }
+:root[data-size="1440"] .hi-scrub  { top: 424px; }
+:root[data-size="1440"] .hi-table  { width: 909px; top: 536px; height: 268px; }
+:root[data-size="1440"] .hi-player { left: 933px; min-width: 400px; top: 536px; height: 268px; }
+:root[data-size="1440"] .hi-routes { gap: 16px; }
+:root[data-size="1440"] .hi-search { display: none; }
+:root[data-size="1440"] .hi-filters { gap: 6px; }
+:root[data-size="1440"] .hi-player.br { padding: 10px 16px 10px; }
+:root[data-size="1440"] .hi-phead { gap: 8px; }
+:root[data-size="1440"] .hi-phead .t-label { display: none; }
+:root[data-size="1440"] .hi-pmeta { gap: 12px; margin-top: 8px; overflow: hidden; }
+:root[data-size="1440"] .hi-pviz { margin-top: 8px; height: 124px; }
+:root[data-size="1440"] .hi-pviz .hi-wave { height: 44px; }
+:root[data-size="1440"] .hi-pviz .hi-spec { top: 48px; height: 48px; }
+:root[data-size="1440"] .hi-ptext { height: 20px; -webkit-line-clamp: 1; margin-top: 0; }
+:root[data-size="1440"] .hi-pctl { margin-top: 8px; }
+:root[data-size="1440"] .hi-pctl a { margin-left: 12px; white-space: nowrap; }
+:root[data-size="1440"] .hi-pctl .hi-speed, :root[data-size="1440"] .hi-prole { display: none; }
+:root[data-size="1440"] .hi-pctl .hi-pos { white-space: nowrap; }
+:root[data-size="1440"] .hi-pctl .btn { white-space: nowrap; }
+
+:root[data-gray] { filter: grayscale(1); }
+
+/* r3: the MP-ruler caret under a selected rail tick's place (no string to put it on) */
+.hud .hi-caret { fill: var(--state-select); }

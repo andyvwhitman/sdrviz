@@ -287,8 +287,8 @@ class TransitService:
         now = now or datetime.now(UTC)
         found = []
         for provider in self.providers.values():
-            if agency and provider.source.agency.lower() != agency.lower():
-                continue
+            if provider.warming or (agency and provider.source.agency.lower() != agency.lower()):
+                continue  # a warming source has no complete picture yet: no vehicles rather than some
             found += provider.vehicles(now)
         if bbox:
             west, south, east, north = bbox

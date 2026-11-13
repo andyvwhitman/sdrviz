@@ -33,7 +33,7 @@ TransitSource {
   stale_after_s: number           // a position older than this is stale; amtrak 360, marc/vre 120,
                                   // others default max(120, 2 * rt_poll_s) when omitted
   status: {                       // read-only
-    state: "ok" | "stale" | "error" | "disabled" | "loading"
+    state: "ok" | "stale" | "error" | "disabled" | "loading" | "warming"   // warming: v1.4, see below
     error: string | null
     static_loaded_at: string | null
     static_version: string | null  // feed_info / ETag / Last-Modified
@@ -248,3 +248,11 @@ station board and `Vehicle.next_stop`:
 - `BoardRow.origin` and `BoardRow.destination: string | null`: names of the station where the trip begins and ends,
   on every row (departures and arrivals both). `headsign` keeps its meaning (departures: destination; arrivals:
   origin).
+
+### Source state "warming" (BE-3)
+
+`TransitSource.status.state` gains `"warming"`: the source's schedule is loaded but its first realtime poll has not
+finished (after a backend restart this lasts a few seconds to a minute). While a source is warming it contributes no
+vehicles to `GET /transit/vehicles` (none, not a partial list); boards, trips and the map layers still answer from
+the schedule. The first poll ending, well or not, ends the warming: a failed first poll shows `stale` / `error` as
+before. Order of states on a restart: `loading` (schedule downloading) -> `warming` -> `ok`.

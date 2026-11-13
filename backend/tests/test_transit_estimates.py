@@ -82,6 +82,7 @@ def amtrak(tmp_path) -> AmtrakerProvider:
     p.static = GtfsStatic.from_zip(make_zip(LAYOVER_FILES), route_types=[2])
     p.index = LineIndex.build(p.static)
     p.on_static_loaded()
+    p.state.realtime_polled = True
     return p
 
 

@@ -47,6 +47,7 @@ class ProviderState:
     realtime_error: str | None = None
     static_loaded: datetime | None = None
     realtime_updated: datetime | None = None
+    realtime_polled: bool = False  # the first realtime poll has finished (well or not)
     version: str | None = None
     static_load_s: float | None = None
     rt_fetch_ms: float | None = None
@@ -151,6 +152,13 @@ class Provider:
             else:
                 await self._load_static(client, force)
         await self._load_realtime(client)
+        self.state.realtime_polled = True
+
+    @property
+    def warming(self) -> bool:
+        """The schedule is loaded but the first realtime poll has not finished: any realtime answer would be partial."""
+        ready = self.static is not None or not self.source.static_url
+        return self.has_realtime and ready and not self.state.realtime_polled
 
     async def _load_realtime(self, client: httpx.AsyncClient) -> None:
         """Sources with live data override this."""
@@ -237,6 +245,8 @@ class Provider:
         loaded = st.static_loaded or st.realtime_updated
         if error:
             state = "stale" if loaded else "error"
+        elif self.warming:
+            state = "warming"
         else:
             state = "ok" if (loaded or not self.source.static_url) else "loading"
         return SourceStatus(

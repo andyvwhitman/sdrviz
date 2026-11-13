@@ -23,7 +23,7 @@ class SourceTimings(BaseModel):
 
 
 class SourceStatus(BaseModel):
-    state: Literal["ok", "stale", "error", "disabled", "loading"] = "loading"
+    state: Literal["ok", "stale", "error", "disabled", "loading", "warming"] = "loading"
     error: str | None = None
     static_loaded_at: datetime | None = None
     static_version: str | None = None

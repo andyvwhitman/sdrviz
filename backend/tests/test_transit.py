@@ -329,6 +329,7 @@ def amtrak(tmp_path) -> AmtrakerProvider:
         "NPN": {"name": "Newport News", "lat": 37.0, "lon": -76.4},
     }
     p.trains = [amtrak_train()]
+    p.state.realtime_polled = True
     p.set_places(PLACES)
     return p
 
@@ -426,3 +427,43 @@ def test_amtraker_keeps_only_amtrak_trains(amtrak):
 
     asyncio.run(load())
     assert [t["trainID"] for t in amtrak.trains] == ["171-12"]
+
+
+# --- warming ----------------------------------------------------------------------
+
+
+def test_source_is_warming_until_its_first_realtime_poll(tmp_path):
+    asyncio.run(_test_source_is_warming_until_its_first_realtime_poll(tmp_path))
+
+
+async def _test_source_is_warming_until_its_first_realtime_poll(tmp_path):
+    p = GtfsProvider(SOURCE, tmp_path)
+    p.static = GtfsStatic.from_zip(make_zip())  # the schedule is in...
+    p.positions = parse_vehicle_positions(make_positions(datetime.now(NY)))  # ...and some realtime has arrived
+    service = TransitService([], tmp_path, PLACES)
+    service.providers, service.configs = {"t": p}, {"t": SOURCE}
+    assert p.api_status().state == "warming" and service.sources()[0].status.state == "warming"
+    assert service.vehicles() == []  # no partial list while warming
+    routes = {
+        "http://t/tu": httpx.Response(200, content=make_trip_updates()),
+        "http://t/vp": httpx.Response(200, content=make_positions(datetime.now(NY))),
+    }
+    p._static_at = 1e12  # the schedule is fresh: only realtime is fetched
+    async with httpx.AsyncClient(transport=transport(routes)) as client:
+        await p.update(client)
+    assert p.api_status().state == "ok"
+    assert [v.train for v in service.vehicles()] == ["100"]
+
+
+def test_a_failed_first_poll_ends_warming_with_the_error_shown(tmp_path):
+    asyncio.run(_test_a_failed_first_poll_ends_warming(tmp_path))
+
+
+async def _test_a_failed_first_poll_ends_warming(tmp_path):
+    p = GtfsProvider(SOURCE, tmp_path)
+    p.static = GtfsStatic.from_zip(make_zip())
+    p._static_at = 1e12
+    routes = {"http://t/tu": httpx.ConnectError("down"), "http://t/vp": httpx.Response(204)}
+    async with httpx.AsyncClient(transport=transport(routes)) as client:
+        await p.update(client)
+    assert not p.warming and p.api_status().state == "error"

@@ -369,6 +369,7 @@ def amtrak_gtfs(tmp_path) -> AmtrakerProvider:
     p.index = LineIndex.build(p.static)
     p.on_static_loaded()
     p.trains = [live_train()]
+    p.state.realtime_polled = True
     p.match_trips(NOW)
     return p
 

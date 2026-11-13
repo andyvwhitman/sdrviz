@@ -4,19 +4,19 @@
 .mp-frame  { position: absolute; inset: 0; }
 .mp-canvas { position: absolute; inset: 0; overflow: hidden; touch-action: none; }
 .mp-canvas.is-panning { cursor: grabbing; }
-.mp-svg    { position: absolute; left: 0; top: 0; display: block; }
+.mp-svg    { position: absolute; left: 0; top: 0; display: block; touch-action: none; -webkit-user-select: none; user-select: none; }
 .mp-origin { position: absolute; left: -10.5px; top: -10.5px; width: 21px; height: 21px; overflow: visible; pointer-events: none; z-index: 2; }
 
 /* SVG text roles (spec 2.3) */
-.hud .mp-stn     { font: 500 11px var(--font-label); letter-spacing: 0.1em; text-transform: uppercase; fill: var(--ink-2); }
-.hud .mp-term    { font: 600 13px var(--font-display); letter-spacing: 0.12em; text-transform: uppercase; fill: var(--ink); }
-.hud .mp-linelab { font: 500 11px var(--font-label); letter-spacing: 0.16em; text-transform: uppercase; fill: var(--ink-3); }
-.hud .mp-coord   { font: 400 11px var(--font-data); fill: var(--ink-3); }
-.hud .mp-mp      { font: 400 11px var(--font-data); fill: var(--ink-3); }
+.hud .mp-stn     { font: 500 var(--fs-11) var(--font-label); letter-spacing: 0.1em; text-transform: uppercase; fill: var(--ink-2); }
+.hud .mp-term    { font: 600 var(--fs-13) var(--font-display); letter-spacing: 0.12em; text-transform: uppercase; fill: var(--ink); }
+.hud .mp-linelab { font: 500 var(--fs-11) var(--font-label); letter-spacing: 0.16em; text-transform: uppercase; fill: var(--ink-3); }
+.hud .mp-coord   { font: 400 var(--fs-11) var(--font-data); fill: var(--ink-3); }
+.hud .mp-mp      { font: 400 var(--fs-11) var(--font-data); fill: var(--ink-3); }
 .hud .mp-l2-fault { fill: var(--state-fault); }
 .hud .mp-l2-stale { fill: var(--state-stale); }
-.hud .mp-tx-lab  { font: 400 11px var(--font-data); fill: var(--state-tx); }
-.hud .mp-feedlab { font: 500 12px var(--font-data); fill: var(--ink); }
+.hud .mp-tx-lab  { font: 400 var(--fs-11) var(--font-data); fill: var(--state-tx); }
+.hud .mp-feedlab { font: 500 var(--fs-12) var(--font-data); fill: var(--ink); }
 .hud .mp-feedlab.mp-fault { fill: var(--state-fault); }
 .hud .mp-feedlab.mp-stale { fill: var(--state-stale); }
 
@@ -37,7 +37,9 @@
 .mp-readout__row { display: flex; align-items: center; gap: 16px; }
 .mp-readout .hero__stack .b { color: var(--ink-2); }
 
-.mp-onair { display: grid; gap: 2px; }
+.mp-onair { position: absolute; left: 24px; bottom: 36px; display: grid; gap: 2px; z-index: 3; pointer-events: none; }
+.mp-readout { max-width: calc(100% - 520px - var(--pn-w, 0px)); }
+.mp-readout .tl { pointer-events: auto; }
 .mp-onair__head { font: 500 var(--fs-11)/16px var(--font-label); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--ink-3); }
 .mp-onair__row {
   display: grid; grid-template-columns: 18px 44px 112px 104px auto; align-items: center; column-gap: 8px;
@@ -48,7 +50,7 @@
 .mp-onair__row .who { overflow: hidden; text-overflow: ellipsis; }
 .mp-onair__row .ch  { font-weight: 500; }
 
-.mp-ctl { position: absolute; right: 24px; top: 16px; display: flex; align-items: center; gap: 8px; z-index: 3; }
+.mp-ctl { position: absolute; right: calc(24px + var(--pn-w, 0px)); top: 16px; display: flex; align-items: center; gap: 8px; z-index: 3; }
 .mp-ctl .mp-zoom { font: 400 var(--fs-12)/1 var(--font-data); color: var(--ink-2); padding: 0 0 0 8px; }
 .mp-ctl .mp-zoom .k { font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink-3); margin-right: 6px; }
 
@@ -56,7 +58,7 @@
 .mp-attrib a { color: var(--ink-3); text-decoration: none; border: 0; }
 .mp-attrib a:hover { color: var(--ink-2); }
 
-.mp-cursor { position: absolute; right: 24px; bottom: 12px; font: 400 var(--fs-11)/1 var(--font-data); color: var(--ink-2); z-index: 3; white-space: nowrap; }
+.mp-cursor { position: absolute; right: calc(24px + var(--pn-w, 0px)); bottom: 12px; font: 400 var(--fs-11)/1 var(--font-data); color: var(--ink-2); z-index: 3; white-space: nowrap; }
 .mp-cursor .k { font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink-3); margin-right: 8px; }
 
 .mp-demo { position: absolute; left: 50%; bottom: 40px; transform: translateX(-50%); display: flex; gap: 12px; align-items: center;
@@ -71,8 +73,8 @@
 .mp-insp-hero { line-height: 48px; }
 .mp-insp-hero.mp-hero-fault { color: var(--state-fault); }
 .mp-insp-hero.mp-hero-stale { color: var(--state-stale); }
-.mp-insp-sub { display: flex; align-items: baseline; gap: 8px; font: 400 13px/1 var(--font-data); color: var(--ink-2); white-space: nowrap; }
-.mp-insp-sub .tag-sim { font-size: 13px; }
+.mp-insp-sub { display: flex; align-items: baseline; gap: 8px; font: 400 var(--fs-13)/1 var(--font-data); color: var(--ink-2); white-space: nowrap; }
+.mp-insp-sub .tag-sim { font-size: var(--fs-13); }
 .mp-insp-mp { display: flex; gap: 16px; align-items: flex-start; }
 .mp-insp-mp > div { flex: 1; }
 
@@ -80,4 +82,29 @@
 .hud.mp-svg text { paint-order: stroke fill; stroke: var(--bg-void); stroke-width: 3px; stroke-linejoin: round; }
 
 /* overlays carry the data-block knockout: a bg-void plate 4 px past their content (box-shadow, so nothing moves) */
-.mp-readout, .mp-ctl, .mp-attrib, .mp-cursor { background: var(--bg-void); box-shadow: 0 0 0 4px var(--bg-void); }
+.mp-readout, .mp-ctl, .mp-attrib, .mp-cursor, .mp-onair:not(:empty) { background: var(--bg-void); box-shadow: 0 0 0 4px var(--bg-void); }
+
+/* terminal buttons: right edge, under the mode buttons; one per terminal with track detail in view */
+.mp-terms { position: absolute; right: calc(24px + var(--pn-w, 0px)); top: 56px; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; z-index: 3; }
+.mp-terms__head { font: 500 var(--fs-11)/16px var(--font-label); letter-spacing: var(--track-label); color: var(--ink-3); }
+
+/* track-level detail */
+.hud .mp-trackref { font: 500 var(--fs-11) var(--font-data); fill: var(--ink); paint-order: stroke; stroke: var(--bg-void); stroke-width: 3px; }
+.hud .mp-trackref.is-end { font-weight: 600; }
+.hud .mp-platform { stroke-dasharray: 2 2; }
+
+/* station schematic */
+.mp-station { position: absolute; inset: 0; }
+.hud .mp-snum { font: 500 var(--fs-11) var(--font-data); fill: var(--ink); }
+.hud .mp-plat { stroke-dasharray: 3 3; }
+
+/* delay tones for the train list and windows: on time reads as plain ink, late warms, early cools */
+.mp-tone-ok      { color: var(--ink); }
+.mp-tone-late    { color: var(--state-recent); }
+.mp-tone-early   { color: var(--state-idle); }
+.mp-tone-unknown { color: var(--ink-3); }
+
+/* transit layers: stops take a generous click target; the train marker's ring and labels */
+.hud .mp-stop-hit { fill: transparent; stroke: none; }
+.hud .mp-vlabel      { font: 500 var(--fs-12) var(--font-data); letter-spacing: 0.04em; fill: var(--ink); }
+.hud .mp-vlabel.late { fill: var(--state-recent); }

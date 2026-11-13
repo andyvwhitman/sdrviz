@@ -1,5 +1,6 @@
 /** Shapes of the map's static data: GET /api/geo/{rail,water,places,routes}. */
 
+import type { DetailCollection } from "./detail";
 import type { LonLat } from "./project";
 
 export interface GeoFeatureCollection {
@@ -50,6 +51,8 @@ export interface RoutesDoc {
 
 export interface MapData {
   rail: GeoFeatureCollection;
+  /** track-level detail at the terminals; null if the file is missing */
+  detail: DetailCollection | null;
   water: GeoFeatureCollection;
   places: Places;
   routes: RoutesDoc;

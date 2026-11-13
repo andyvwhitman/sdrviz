@@ -8,10 +8,13 @@ const PENN: LonLat = [-76.6153, 39.3071];
 describe("projection", () => {
   const base = defaultBase(1856, 984, UNION, PENN);
 
-  it("levels the Union Station to Penn Station chord, left to right", () => {
+  it("keeps north up: Penn Station (north-east of Union Station) is up and to the right", () => {
     const [u, p] = [base.project(UNION), base.project(PENN)];
     expect(p[0]).toBeGreaterThan(u[0]);
-    expect(Math.abs(p[1] - u[1])).toBeLessThanOrEqual(0.02 * 984);
+    expect(p[1]).toBeLessThan(u[1]);
+    const north = new Projection(base, { k: 1, tx: 0, ty: 0 }).northDirection();
+    expect(north[0]).toBeCloseTo(0, 1);
+    expect(north[1]).toBeCloseTo(-1, 2);
   });
 
   it("fits both 20 mi circles inside the canvas", () => {

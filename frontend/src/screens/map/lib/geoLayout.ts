@@ -12,6 +12,7 @@ import {
 } from "./labelPlacer";
 import type { Measure } from "./measure";
 import { destination, type LonLat } from "./project";
+import { niceStep, viewBbox } from "./transitView";
 import { nearestOn, parseMp, type RailLine, routeLonLat, segmentsInView, slice } from "./rail";
 import type { MapData, Place } from "./types";
 
@@ -211,17 +212,22 @@ export function linkSpecs(input: Pick<GeoInput, "project" | "feeds" | "active" |
   return out;
 }
 
-function graticule(project: (p: LonLat) => Pt): GraticuleLine[] {
+/** Graticule lines for what the canvas shows: a step of 1, 2 or 5 degrees (down to 0.1) that gives about two dozen lines. */
+function graticule(project: (p: LonLat) => Pt, invert: (p: Pt) => LonLat, width: number, height: number): GraticuleLine[] {
+  const [w, s, e, n] = viewBbox(invert, width, height, 0.05);
+  const step = Math.max(0.1, niceStep(Math.max(e - w, n - s) / 24));
+  const decimals = step < 1 ? 1 : 0;
   const out: GraticuleLine[] = [];
-  for (let lat = 38.3; lat <= 39.81; lat += 0.1) {
-    const pts: Pt[] = [];
-    for (let lon = -78.0; lon <= -75.7; lon += 0.02) pts.push(project([lon, lat]));
-    out.push({ pts, label: `${lat.toFixed(1)} N` });
+  const at = (i: number): number => Math.round(i * step * 1e6) / 1e6;
+  const along = (from: number, to: number): number[] => {
+    const count = 48;
+    return Array.from({ length: count + 1 }, (_, i) => from + ((to - from) * i) / count);
+  };
+  for (let i = Math.ceil(s / step); at(i) <= n; i++) {
+    out.push({ pts: along(w, e).map((lon) => project([lon, at(i)])), label: `${at(i).toFixed(decimals)} N` });
   }
-  for (let lon = -78.0; lon <= -75.69; lon += 0.1) {
-    const pts: Pt[] = [];
-    for (let lat = 38.3; lat <= 39.8; lat += 0.02) pts.push(project([lon, lat]));
-    out.push({ pts, label: `${Math.abs(lon).toFixed(1)} W` });
+  for (let i = Math.ceil(w / step); at(i) <= e; i++) {
+    out.push({ pts: along(s, n).map((lat) => project([at(i), lat])), label: `${Math.abs(at(i)).toFixed(decimals)} ${at(i) < 0 ? "W" : "E"}` });
   }
   return out;
 }
@@ -330,7 +336,7 @@ export function layoutGeo(input: GeoInput): GeoLayout {
   boxes.add(input.northBox);
 
   // 3. graticule numerals
-  const grid = graticule(project);
+  const grid = graticule(project, input.invert, width, height);
   const labelsAtEdges = edgeLabels(grid, lines, boxes, width, measure, height);
 
   // 4. trains, feeds and station marks claim their space (they are the data)

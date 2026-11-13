@@ -23,6 +23,7 @@
   import { shortName } from "./lib/labelPlacer";
   import type { Selection } from "./lib/selection";
   import type { MapData, Place, Route } from "./lib/types";
+  import StationBoard from "./StationBoard.svelte";
 
   interface Props {
     selection: Selection;
@@ -165,6 +166,7 @@
       <h4>SERVED BY · {p.lines?.length ?? 0}</h4>
       {#each p.lines ?? [] as line, i (line)}<KeyValue label={String(i + 1).padStart(2, "0")} value={line} />{:else}<KeyValue label="LINES" value={fmt.BLANK} />{/each}
     </section>
+    {#if p.kind === "station"}<StationBoard placeId={p.id} />{/if}
     <section class="inspector__sec">
       <h4>TRAINS AT OR NEXT TO · {here.length}</h4>
       {#each here as t (t.train_id)}

@@ -11,15 +11,22 @@
   import * as fmt from "$lib/hud/fmt";
   import type { GlyphState } from "$lib/hud/tile";
   import { live } from "$lib/stores/live.svelte";
+  import { transit } from "$lib/stores/transit.svelte";
   import { ui } from "$lib/stores/ui.svelte";
   import CoverageDisc from "./CoverageDisc.svelte";
   import CoverageStrip from "./CoverageStrip.svelte";
   import FeedSite from "./FeedSite.svelte";
   import PingRing from "./PingRing.svelte";
   import ScaleBar from "./ScaleBar.svelte";
+  import TransitLines from "./TransitLines.svelte";
+  import TransitStops from "./TransitStops.svelte";
   import SchematicMap from "./SchematicMap.svelte";
   import SchematicText from "./SchematicText.svelte";
+  import LiveTrains from "./LiveTrains.svelte";
   import TrainMark from "./TrainMark.svelte";
+  import UserMark from "./UserMark.svelte";
+  import { userLocation } from "./userLocation.svelte";
+  import { accuracyRadiusPx, LOCATE_ZOOM, viewCentredAt } from "./lib/userLocation";
   import { easeInOut, easeInstrument } from "./lib/ease";
   import { dist, lerp, type Pt, type Rect } from "./lib/geom";
   import { measuredBlock } from "./lib/blockPlacer";
@@ -28,11 +35,15 @@
   import { linkLabelAngle, linkLabelCentre, TERMINALS } from "./lib/labelPlacer";
   import type { Measure } from "./lib/measure";
   import { dPath } from "./lib/path";
-  import { BaseProjection, defaultBase, DEFAULT_VIEW, Projection, clampZoom, type LonLat, type View } from "./lib/project";
+  import { BaseProjection, CONTINENTAL_US, defaultBase, DEFAULT_VIEW, Projection, clampZoom, type LonLat, type View } from "./lib/project";
+  import { areaRect, areasOf, DETAIL_ZOOM, MAX_ZOOM, TRACK_LABEL_ZOOM, trackLabels, viewCentredOn, visibleAreas, type DetailArea } from "./lib/detail";
   import { railLines } from "./lib/rail";
+  import { scaleSpec } from "./lib/scale";
   import { layoutSchematic, schematicTrainPosition } from "./lib/schematicLayout";
+  import { nearestStop, viewBbox } from "./lib/transitView";
   import type { Selection } from "./lib/selection";
   import type { MapData, Place } from "./lib/types";
+  import type { Vehicle } from "$lib/types/transit";
 
   interface Ping {
     key: number;
@@ -58,19 +69,43 @@
     onselect: (key: string) => void;
     onpointer: (lonLat: LonLat | null) => void;
     onview: (zoom: number, moved: boolean) => void;
+    /** the terminals with track detail inside the current view (for the terminal buttons) */
+    onareas: (areas: DetailArea[]) => void;
+    /** a terminal button was pressed: centre it at the detail zoom (`n` changes on every press) */
+    focus: { id: string; n: number } | null;
+    /** the LOCATE chip was pressed: centre on the user's fix (`n` changes on every press) */
+    locate?: { n: number } | null;
+    onstation?: (placeId: string) => void;
     onpingdone: (key: number) => void;
+    /** the highlighted train and stop (the ones whose windows are open) */
+    vehicleId?: string | null;
+    stopId?: string | null;
+    onvehicle: (id: string) => void;
+    onstop: (stopId: string) => void;
+    /** the trains drawn in the window, for the list */
+    onwindow: (vehicles: Vehicle[]) => void;
+    /** the NATIONAL chip was pressed: show the whole continental US (`n` changes on every press) */
+    national?: { n: number } | null;
+    /** a train was picked in the list: centre it (`n` changes on every pick) */
+    centre?: { lon: number; lat: number; n: number } | null;
+    /** a panel opened on something at this place: pan only if the panel would hide it (`n` changes on every request) */
+    reveal?: { lon: number; lat: number; n: number } | null;
+    /** width of the side panel docked on the right while one is open, else 0 */
+    panelWidth?: number;
   }
-  let { data, measure, mode, width, height, selection, inspectorWidth, overlays, pings, demoMs, onselect, onpointer, onview, onpingdone }: Props = $props();
+  let { data, measure, mode, width, height, selection, inspectorWidth, overlays, pings, demoMs, onselect, onpointer, onview, onareas, focus, locate = null, onstation, onpingdone, vehicleId = null, stopId = null, onvehicle, onstop, onwindow, centre = null, reveal = null, panelWidth = 0, national = null }: Props = $props();
 
   const snap = $derived(live.state!);
+  /** the canvas the side panel leaves uncovered */
+  const free = $derived(width - panelWidth);
   const stations = $derived(data.places.stations);
   const lonLatOf = (id: string): LonLat => {
     const s = stations.find((p) => p.id === id)!;
     return [s.lon, s.lat];
   };
   const base: BaseProjection = $derived(defaultBase(width, height, lonLatOf("wash-union"), lonLatOf("baltimore-penn")));
-  // the whole data extent (Quantico to Perryville) bounds zooming out
-  const MIN_ZOOM = $derived(base.zoomToFit([[-77.5, 38.5], [-77.5, 39.6], [-76.05, 38.5], [-76.05, 39.6]]));
+  // zooming out stops at the whole continental US (the base is a local fit, so this is far below 1)
+  const MIN_ZOOM = $derived(base.zoomToFit(CONTINENTAL_US));
 
   // ---- view: committed (drives the placers) and pending (a CSS transform while a gesture runs)
   const panned = (v: View, sel: Selection | null): View => {
@@ -100,6 +135,16 @@
   const pxPerKm = $derived(projection.pxPerKm());
   const isDefaultView = $derived(view.k === 1 && view.tx === 0 && view.ty === 0);
   $effect(() => onview(view.k, !isDefaultView));
+  // the regional detail (rail, stations, names, coverage) fades out between these zooms, leaving the national lines
+  const REGIONAL_FADE = [0.25, 0.6];
+  const regional = $derived(Math.max(0, Math.min(1, (view.k - REGIONAL_FADE[0]) / (REGIONAL_FADE[1] - REGIONAL_FADE[0]))));
+  const regionalStyle = $derived(`opacity:${regional.toFixed(2)};${regional === 0 ? "display:none" : ""}`);
+
+  // the route lines and stops for what the canvas shows (the schematic always shows the corridor)
+  $effect(() => {
+    const v = mode === "schematic" ? DEFAULT_VIEW : view;
+    transit.requestLayers(viewBbox(new Projection(base, v).invert, width, height), v.k);
+  });
 
   function commit(): void {
     clearTimeout(commitTimer);
@@ -118,47 +163,105 @@
     return [((e.clientX - r.left) * width) / r.width, ((e.clientY - r.top) * height) / r.height];
   };
 
-  function onwheel(e: WheelEvent): void {
-    if (mode !== "geo") return;
-    e.preventDefault();
-    const [x, y] = local(e);
-    const factor = Math.exp(-e.deltaY * 0.0015);
-    const total = view.k * pending.s;
-    const s = clampZoom(total * factor, MIN_ZOOM) / view.k;
+  /** Scale the pending view by `factor` about the canvas point (x, y), within the zoom limits. */
+  function zoomAt([x, y]: Pt, factor: number): void {
+    const s = clampZoom(view.k * pending.s * factor, MIN_ZOOM, MAX_ZOOM) / view.k;
     const f = s / pending.s;
     pending = { s, tx: x - (x - pending.tx) * f, ty: y - (y - pending.ty) * f };
     scheduleCommit();
   }
+
+  function onwheel(e: WheelEvent): void {
+    if (mode !== "geo") return;
+    e.preventDefault();
+    zoomAt(local(e), Math.exp(-e.deltaY * 0.0015));
+  }
+  // Safari's own pinch (gesture events) would zoom the whole page; the pointer handlers below do the map zoom
+  const noGesture = (e: Event): void => e.preventDefault();
   $effect(() => {
-    svgEl?.addEventListener("wheel", onwheel, { passive: false });
-    return () => svgEl?.removeEventListener("wheel", onwheel);
+    const el = svgEl;
+    if (!el) return;
+    el.addEventListener("wheel", onwheel, { passive: false });
+    const gestures = ["gesturestart", "gesturechange", "gestureend"];
+    gestures.forEach((g) => el.addEventListener(g, noGesture));
+    return () => {
+      el.removeEventListener("wheel", onwheel);
+      gestures.forEach((g) => el.removeEventListener(g, noGesture));
+    };
   });
 
+  // ---- pointers: one pans, two pinch (zoom about their midpoint while it pans), a double tap zooms in
+  const DOUBLE_TAP_MS = 300;
+  const pointers = new Map<number, Pt>();
   let drag: { from: Pt; moved: boolean } | null = null;
+  let lastTap: { at: Pt; t: number } | null = null;
+  const pinchOf = (pts: Pt[]): { mid: Pt; gap: number } => ({
+    mid: [(pts[0][0] + pts[1][0]) / 2, (pts[0][1] + pts[1][1]) / 2],
+    gap: Math.hypot(pts[0][0] - pts[1][0], pts[0][1] - pts[1][1]),
+  });
+
   function pointerdown(e: PointerEvent): void {
-    if (mode !== "geo" || e.button !== 0) return;
-    drag = { from: local(e), moved: false };
-    svgEl!.setPointerCapture(e.pointerId);
+    if (mode !== "geo" || (e.pointerType === "mouse" && e.button !== 0)) return;
+    pointers.set(e.pointerId, local(e));
+    // a second finger turns the pan into a pinch
+    drag = pointers.size === 1 ? { from: local(e), moved: false } : null;
   }
   function pointermove(e: PointerEvent): void {
     const at = local(e);
+    const before = pointers.get(e.pointerId);
+    if (before && pointers.size === 2) {
+      const old = pinchOf([...pointers.values()]);
+      pointers.set(e.pointerId, at);
+      const now = pinchOf([...pointers.values()]);
+      panning = true;
+      svgEl!.setPointerCapture(e.pointerId);
+      pending = { ...pending, tx: pending.tx + now.mid[0] - old.mid[0], ty: pending.ty + now.mid[1] - old.mid[1] };
+      if (old.gap > 0) zoomAt(now.mid, now.gap / old.gap);
+      scheduleCommit();
+      return;
+    }
+    if (before) pointers.set(e.pointerId, at);
     if (drag) {
       const [dx, dy] = [at[0] - drag.from[0], at[1] - drag.from[1]];
       if (!drag.moved && Math.hypot(dx, dy) < 4) return;
       drag.moved = true;
       panning = true;
+      // capture only once it is a drag: a captured press would send its click to the map instead of the mark under it
+      svgEl!.setPointerCapture(e.pointerId);
       pending = { ...pending, tx: pending.tx + dx, ty: pending.ty + dy };
       drag.from = at;
       scheduleCommit();
     }
     if (mode === "geo") onpointer(projection.invert([(at[0] - pending.tx) / pending.s, (at[1] - pending.ty) / pending.s]));
   }
-  function pointerup(): void {
-    drag = null;
-    panning = false;
+  function pointerup(e: PointerEvent): void {
+    const tapped = e.pointerType === "touch" && pointers.size === 1 && drag !== null && !drag.moved;
+    pointers.delete(e.pointerId);
+    // the finger left behind carries on as a pan
+    const [rest] = pointers.values();
+    drag = rest ? { from: rest, moved: true } : null;
+    if (!rest) panning = false;
+    if (!tapped) {
+      lastTap = null;
+      return;
+    }
+    const at = local(e);
+    if (lastTap && e.timeStamp - lastTap.t < DOUBLE_TAP_MS && dist(lastTap.at, at) < 30) {
+      zoomAt(at, 2);
+      lastTap = null;
+    } else {
+      lastTap = { at, t: e.timeStamp };
+    }
   }
   function pointerleave(): void {
     onpointer(null);
+  }
+  // a station of the regional map opens the window of the GTFS stop at the same place, else its own inspector
+  function onplace(id: string): void {
+    const place = stations.find((p) => p.id === id);
+    const stop = place && nearestStop(transit.stops, place.lon, place.lat);
+    if (stop) onstop(stop.id);
+    else onselect(id);
   }
   // a click on empty map clears the selection; objects stop the event
   const background = (): void => {
@@ -210,6 +313,95 @@
 
   const lines = $derived(railLines(data.rail, project));
 
+  // ---- terminal detail: from DETAIL_ZOOM each terminal swaps the regional lines for its own tracks
+  const areas = $derived(data.detail ? areasOf(data.detail) : []);
+  const inView = $derived(mode === "geo" ? visibleAreas(areas, project, width, height) : []);
+  $effect(() => onareas(inView));
+  const showDetail = $derived(view.k >= DETAIL_ZOOM && inView.length > 0);
+  const detailRects = $derived(inView.map((a) => ({ area: a, r: areaRect(a, project) })));
+  const detail = $derived.by(() => {
+    if (!showDetail || !data.detail) return { tracks: [], platforms: [], points: [], labels: [] };
+    const ids = new Set(inView.map((a) => a.id));
+    const tracks: { d: string; cls: string }[] = [];
+    const platforms: string[] = [];
+    const points: { kind: string; at: Pt }[] = [];
+    const numbered: { ref: string; pts: Pt[] }[] = [];
+    for (const f of data.detail.features) {
+      const p = f.properties;
+      if (!ids.has(p.area)) continue;
+      if (f.geometry.type === "Point") {
+        points.push({ kind: p.kind, at: project(f.geometry.coordinates) });
+        continue;
+      }
+      const pts = f.geometry.coordinates.map(project);
+      if (p.kind === "platform") {
+        platforms.push(dPath(pts));
+        continue;
+      }
+      tracks.push({ d: dPath(pts), cls: p.service === "main" || p.service === "crossover" ? "s-hair k-line" : "s-hair k-faint" });
+      if (p.ref) numbered.push({ ref: p.ref, pts });
+    }
+    const stops = points.filter((q) => q.kind === "buffer_stop").map((q) => q.at);
+    const labels = view.k >= TRACK_LABEL_ZOOM ? trackLabels(numbered, stops, width - inspectorWidth, height) : [];
+    return { tracks, platforms, points, labels };
+  });
+
+  // a terminal button centres its terminal at the zoom where the detail first shows
+  let lastFocus = untrack(() => focus?.n);
+  $effect(() => {
+    if (!focus || focus.n === lastFocus) return;
+    lastFocus = focus.n;
+    const area = areas.find((a) => a.id === focus.id);
+    if (area) untrack(() => ((view = viewCentredOn(base, area, DETAIL_ZOOM, width - inspectorWidth, height)), (pending = { s: 1, tx: 0, ty: 0 })));
+  });
+
+  // the LOCATE chip centres the map on the user's fix (keeping the zoom unless it is further out than LOCATE_ZOOM)
+  let lastLocate = untrack(() => locate?.n);
+  $effect(() => {
+    if (!locate || locate.n === lastLocate) return;
+    lastLocate = locate.n;
+    const fix = userLocation.fix;
+    if (fix) untrack(() => ((view = viewCentredAt(base, [fix.lon, fix.lat], Math.max(view.k * pending.s, LOCATE_ZOOM), width - inspectorWidth, height)), (pending = { s: 1, tx: 0, ty: 0 })));
+  });
+
+  // the NATIONAL chip fits the continental US to the canvas
+  let lastNational = untrack(() => national?.n);
+  $effect(() => {
+    if (!national || national.n === lastNational) return;
+    lastNational = national.n;
+    untrack(() => {
+      const pts = CONTINENTAL_US.map((p) => base.project(p));
+      const [xs, ys] = [pts.map((p) => p[0]), pts.map((p) => p[1])];
+      const [mx, my] = [(Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...ys) + Math.max(...ys)) / 2];
+      view = { k: MIN_ZOOM, tx: width / 2 - mx * MIN_ZOOM, ty: height / 2 - my * MIN_ZOOM };
+      pending = { s: 1, tx: 0, ty: 0 };
+    });
+  });
+
+  // picking a train in the list centres it (the zoom is kept unless the map is zoomed far out)
+  const CENTRE_ZOOM = 2;
+  let lastCentre = untrack(() => centre?.n);
+  $effect(() => {
+    if (!centre || centre.n === lastCentre) return;
+    lastCentre = centre.n;
+    if (mode === "geo") untrack(() => ((view = viewCentredAt(base, [centre.lon, centre.lat], Math.max(view.k * pending.s, CENTRE_ZOOM), free, height)), (pending = { s: 1, tx: 0, ty: 0 })));
+  });
+
+  // a panel that opens on something under it pans it into the free part of the canvas
+  const REVEAL_PAD = 60;
+  let lastReveal = untrack(() => reveal?.n);
+  $effect(() => {
+    if (!reveal || reveal.n === lastReveal) return;
+    lastReveal = reveal.n;
+    const target: LonLat = [reveal.lon, reveal.lat];
+    if (mode !== "geo") return;
+    untrack(() => {
+      const [x, y] = projection.project(target);
+      if (x >= REVEAL_PAD && x <= free - REVEAL_PAD && y >= REVEAL_PAD && y <= height - REVEAL_PAD) return;
+      view = { ...view, tx: view.tx + Math.round(free / 2 - x), ty: view.ty + Math.round(height / 2 - y) };
+    });
+  });
+
   // ---- morph between the two views
   let u = $state(untrack(() => (mode === "schematic" ? 1 : 0)));
   $effect(() => {
@@ -230,14 +422,15 @@
   });
 
   // ---- geo layout (lazy: only while geo is on screen or morphing)
-  const scaleAt = $derived<Pt>([24, height - 70]);
+  // the scale bar hangs in the bottom-right corner; its length follows the zoom
+  const SCALE_RIGHT = 24;
+  const scaleY = $derived(height - 70);
   // each layout is solved only while its view is on screen (the schematic search is the expensive one)
   const wantGeo = $derived(mode === "geo" || u < 1);
   const wantSch = $derived(mode === "schematic" || u > 0);
   const geoLayout = $derived.by(() => {
     if (!wantGeo) return null;
-    const kmW = Math.round(20 * pxPerKm);
-    const miW = Math.round(10 * 1.609344 * pxPerKm);
+    const { kmW, miW } = scaleSpec(pxPerKm);
     const input: GeoInput = {
       width, height, project, invert: projection.invert, data, lines,
       feeds: JSON.parse(feedsKey),
@@ -245,8 +438,8 @@
       active: JSON.parse(activeKey),
       overlays,
       inspectorWidth,
-      scaleBox: { x0: scaleAt[0] - 8, y0: scaleAt[1] - 26, x1: scaleAt[0] + Math.max(kmW, miW) + 36, y1: scaleAt[1] + 26 },
-      northBox: { x0: width - 48 - 30, y0: 92 - 34, x1: width - 48 + 34, y1: 92 + 6 },
+      scaleBox: { x0: free - SCALE_RIGHT - Math.max(kmW, miW) - 44, y0: scaleY - 26, x1: free - SCALE_RIGHT + 8, y1: scaleY + 26 },
+      northBox: { x0: free - 48 - 30, y0: 92 - 34, x1: free - 48 + 34, y1: 92 + 6 },
       measure,
       snrText: fmt.snr,
     };
@@ -331,11 +524,11 @@
     const b = geoLayout?.trainBlocks[t.id];
     return b ? measuredBlock(measure, { ...common, dir: b.dir, len: b.len }) : null;
   };
-  const showBlocks = $derived(u === 0 || u === 1);
+  const showBlocks = $derived((u === 0 && regional > 0.5) || u === 1);
 
   // ---- links: feed to talking train, from live positions; label slots come from the layout
   const links = $derived.by(() => {
-    if (u !== 0) return [];
+    if (u !== 0 || regional < 0.5) return [];
     return linkSpecs({ project, feeds: JSON.parse(feedsKey), active: JSON.parse(activeKey), snrText: fmt.snr }, trainGeos.map((g, i) => ({ ...g, id: liveTrains[i].id }))).map(({ spec, trainId }) => {
       const slot = geoLayout?.links.find((l) => l.spec.key === spec.key)?.label ?? null;
       const demo = demoTx && fmt.trainId(demoTx.train_id) === trainId;
@@ -387,7 +580,7 @@
     const b = geoLayout?.feedBlocks[f.id];
     const look = looks[f.id];
     const [x, y] = project([f.lon, f.lat]);
-    return u === 0 && b
+    return u === 0 && b && regional > 0.5
       ? measuredBlock(measure, { x, y, dir: b.dir, len: b.len, from: 10, l1: f.short, sim: f.sim, l2: look.l2, l2Class: look.l2Class, glyph: "tx" })
       : null;
   };
@@ -402,10 +595,11 @@
   {height}
   viewBox="0 0 {width} {height}"
   role="img"
-  aria-label="Map of the DC–Baltimore corridor"
+  aria-label="Map of US passenger rail around the DC–Baltimore corridor"
   onpointerdown={pointerdown}
   onpointermove={pointermove}
   onpointerup={pointerup}
+  onpointercancel={pointerup}
   onpointerleave={pointerleave}
   onclick={background}
 >
@@ -416,28 +610,62 @@
       <g class="graticule">
         {#each geoLayout.graticule as g (g.label)}<path class="s-hair k-grid" d={dPath(g.pts)} />{/each}
       </g>
+      <TransitLines lines={transit.lines} {base} {view} />
+      <g class="mp-regional" style={regionalStyle}>
       <g class="mp-water">
         {#each data.water.features as f, i (i)}<path class="s-hair k-faint" d={dPath(f.geometry.coordinates.map((c) => project(c)))} />{/each}
       </g>
       {#each feeds as f, i (f.id)}
         <CoverageDisc index={i} centre={[f.lon, f.lat]} radiusKm={f.coverage_radius_km} look={looks[f.id]} labels={geoLayout.ringLabels[f.id] ?? []} {project} {width} {height} />
       {/each}
-      <g class="mp-rail">
+      {#if showDetail}
+        <!-- the regional lines are hidden inside each terminal that draws its own tracks -->
+        <mask id="mp-detail-mask" maskUnits="userSpaceOnUse" x={-width} y={-height} width={width * 3} height={height * 3}>
+          <rect x={-width} y={-height} width={width * 3} height={height * 3} fill="white" />
+          {#each detailRects as { r } (r)}<rect x={r.x0} y={r.y0} width={r.x1 - r.x0} height={r.y1 - r.y0} fill="black" />{/each}
+        </mask>
+      {/if}
+      <g class="mp-rail" mask={showDetail ? "url(#mp-detail-mask)" : undefined}>
         {#each ["freight", "passenger", "nec"] as cls (cls)}
           {#each lines.filter((l) => l.cls === cls) as l, i (i)}
             <path class={cls === "nec" ? "s-emph k-line" : cls === "freight" ? "s-hair k-line d-measure" : "s-hair k-line"} d={dPath(l.pts)} />
           {/each}
         {/each}
       </g>
+      {#if showDetail}
+        <g class="mp-detail">
+          {#each detail.platforms as d, i (i)}<path class="s-hair k-faint mp-platform" {d} />{/each}
+          {#each detail.tracks as t, i (i)}<path class={t.cls} d={t.d} />{/each}
+          {#each detail.points as p, i (i)}
+            {#if p.kind === "switch"}
+              <path class="s-hair k-line" d="M{p.at[0].toFixed(1)} {(p.at[1] - 2.5).toFixed(1)}l2.5 2.5l-2.5 2.5l-2.5 -2.5z" />
+            {:else if p.kind === "signal"}
+              <circle class="f-ink" cx={p.at[0].toFixed(1)} cy={p.at[1].toFixed(1)} r="1.2" />
+            {:else if p.kind === "buffer_stop"}
+              <rect class="s-hair k-faint" x={(p.at[0] - 2).toFixed(1)} y={(p.at[1] - 2).toFixed(1)} width="4" height="4" />
+            {/if}
+          {/each}
+          {#each detail.labels as l, i (i)}
+            <text class="mp-trackref" class:is-end={l.end} x={l.at[0].toFixed(1)} y={(l.at[1] + 3.5).toFixed(1)} text-anchor="middle">{l.text}</text>
+          {/each}
+        </g>
+      {:else}
+        <!-- where track detail is waiting, zoom in to see it -->
+        <g class="mp-detail-hint">
+          {#each detailRects as { r } (r)}<rect class="s-hair k-faint d-measure" x={r.x0.toFixed(1)} y={r.y0.toFixed(1)} width={(r.x1 - r.x0).toFixed(1)} height={(r.y1 - r.y0).toFixed(1)} />{/each}
+        </g>
+      {/if}
       <g class="mp-ticks">
         {#each geoLayout.mpTicks as [a, b], i (i)}<path class="s-hair k-line" d="M{a[0].toFixed(1)} {a[1].toFixed(1)}L{b[0].toFixed(1)} {b[1].toFixed(1)}" />{/each}
       </g>
+      </g>
       <g class="graticule">
-        {#each geoLayout.edgeLabels as l (l.text + l.x)}
+        {#each geoLayout.edgeLabels as l (`${l.text}@${l.x},${l.y}`)}
           <rect class="mp-f-void" x={l.box.x0.toFixed(1)} y={l.box.y0.toFixed(1)} width={(l.box.x1 - l.box.x0).toFixed(1)} height={(l.box.y1 - l.box.y0).toFixed(1)} />
           <text class="mp-coord" x={l.x.toFixed(1)} y={l.y}>{l.text}</text>
         {/each}
       </g>
+      <g class="mp-regional" style={regionalStyle}>
       <g class="mp-linelabs">
         {#each geoLayout.lineLabels as l (l.text)}
           <text class="mp-linelab" text-anchor="middle" dy="4" transform="translate({l.x.toFixed(1)} {l.y.toFixed(1)}) rotate({(l.rotate ?? 0).toFixed(1)})">{l.text}</text>
@@ -454,7 +682,7 @@
           {@const sp = geoLayout.stationPos[s.id]}
           {@const h = TERMINALS.has(s.id) ? 6 : 3}
           {@const [nx, ny] = [-sp.dir[1], sp.dir[0]]}
-          <g class="mp-hit" role="button" tabindex="-1" onclick={(e) => { e.stopPropagation(); onselect(s.id); }} onkeydown={(e) => e.key === "Enter" && onselect(s.id)}>
+          <g class="mp-hit" role="button" tabindex="-1" onclick={(e) => { e.stopPropagation(); onplace(s.id); }} onkeydown={(e) => e.key === "Enter" && onplace(s.id)}>
             <path class="s-emph k-ink" d="M{(sp.pt[0] - nx * h).toFixed(1)} {(sp.pt[1] - ny * h).toFixed(1)}L{(sp.pt[0] + nx * h).toFixed(1)} {(sp.pt[1] + ny * h).toFixed(1)}" />
             {#if TERMINALS.has(s.id)}
               <rect class="s-hair k-ink" x={(sp.pt[0] - 4.5).toFixed(1)} y={(sp.pt[1] - 4.5).toFixed(1)} width="9" height="9" transform="rotate({((Math.atan2(sp.dir[1], sp.dir[0]) * 180) / Math.PI).toFixed(1)} {sp.pt[0].toFixed(1)} {sp.pt[1].toFixed(1)})" />
@@ -472,17 +700,22 @@
           {/each}
         {/each}
       </g>
-      <ScaleBar x={scaleAt[0]} y={scaleAt[1]} {pxPerKm} />
+      </g>
+      <TransitStops
+        stops={transit.stops} {project} {width} {height} k={view.k} selectedId={stopId} onselect={onstop}
+        avoid={regional > 0.5 ? Object.values(geoLayout.stationPos).map((p) => p.pt) : []}
+      />
+      <ScaleBar right={free - SCALE_RIGHT} y={scaleY} {pxPerKm} />
       <g class="mp-north">
-        <circle class="s-hair k-faint" cx={width - 48} cy="92" r="2" />
-        <path class="s-hair k-line" d="M{width - 48} 92l{(north[0] * 22).toFixed(1)} {(north[1] * 22).toFixed(1)}" />
-        <text class="tx-lab" x={(width - 48 + north[0] * 32).toFixed(1)} y={(92 + north[1] * 32 + 4).toFixed(1)} text-anchor="middle">N</text>
+        <circle class="s-hair k-faint" cx={free - 48} cy="92" r="2" />
+        <path class="s-hair k-line" d="M{free - 48} 92l{(north[0] * 22).toFixed(1)} {(north[1] * 22).toFixed(1)}" />
+        <text class="tx-lab" x={(free - 48 + north[0] * 32).toFixed(1)} y={(92 + north[1] * 32 + 4).toFixed(1)} text-anchor="middle">N</text>
       </g>
     </g>
     {/if}
 
     <!-- schematic layers -->
-    {#if schLayout}<SchematicMap layout={schLayout} {geoOf} {u} onselect={(id) => onselect(id)} />{/if}
+    {#if schLayout}<SchematicMap layout={schLayout} {geoOf} {u} onselect={onplace} {onstation} />{/if}
 
     <!-- links: feed to the talking train -->
     {#each links as { spec, slot, op } (spec.key)}
@@ -497,6 +730,11 @@
     {#each drawn as t (t.id)}
       <TrainMark id={t.id} pos={t.pos} angle={t.angle} talking={t.talking} selected={selectedTrain === t.id} tail={t.tail} edge={t.edge} onselect={() => onselect(t.id)} />
     {/each}
+    <!-- real trains (GTFS-Realtime, Amtraker) -->
+    <LiveTrains
+      vehicles={transit.vehicles} routes={data.routes.routes} {project} {schLayout} {u} {width} {height}
+      k={view.k} fetchedAt={transit.fetchedAt} selectedId={vehicleId} onselect={onvehicle} ondrawn={onwindow}
+    />
     <!-- blocks after every glyph, so text halos knock out any leader beneath -->
     {#if showBlocks}
       {#each drawn as t (t.id)}
@@ -505,7 +743,7 @@
       {/each}
     {/if}
 
-    {#if schLayout}<CoverageStrip strip={schLayout.strip} {looks} {heard} labels={stripLabels} right={width - 24} opacity={Math.min(1, u * 1.6)} />{/if}
+    {#if schLayout}<CoverageStrip strip={schLayout.strip} {looks} {heard} labels={stripLabels} right={free - 24} opacity={Math.min(1, u * 1.6)} />{/if}
 
     <!-- feed sites (geo) -->
     <g style:opacity={(1 - Math.min(1, u * 1.6)).toFixed(2)} style:display={u >= 0.625 ? "none" : ""}>
@@ -514,6 +752,13 @@
         <FeedSite {x} {y} look={looks[f.id]} selected={selectedFeed === f.id} block={feedBlock(f)} onselect={() => onselect(f.short)} />
       {/each}
     </g>
+
+    <!-- the viewer (geo) -->
+    {#if userLocation.fix && u < 0.625}
+      {@const fix = userLocation.fix}
+      {@const [ux, uy] = project([fix.lon, fix.lat])}
+      <g style:opacity={(1 - Math.min(1, u * 1.6)).toFixed(2)}><UserMark x={ux} y={uy} accuracy={accuracyRadiusPx(fix.accuracyM, pxPerKm)} /></g>
+    {/if}
 
     <!-- pings -->
     <g>

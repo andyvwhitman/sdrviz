@@ -1,4 +1,4 @@
-/** What `?select=` names: a tracked train, a feed site or a place. */
+/** What `?select=` names: a simulated tracked train, a feed site or a place. */
 
 import type { Feed, LiveState, TrainPosition } from "$lib/types/live";
 import type { MapData, Place } from "./types";

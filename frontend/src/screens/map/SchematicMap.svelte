@@ -17,8 +17,10 @@
     geoOf: Record<string, Pt>;
     u: number;
     onselect: (placeId: string) => void;
+    /** a terminal square was clicked */
+    onstation?: (placeId: string) => void;
   }
-  let { layout, geoOf, u, onselect }: Props = $props();
+  let { layout, geoOf, u, onselect, onstation }: Props = $props();
 
   const e = $derived(easeInOut(u));
   const opacity = $derived(Math.min(1, u * 1.6).toFixed(2));
@@ -44,7 +46,15 @@
     {#if it.p.kind === "detector"}
       <path class="s-hair k-line mp-f-void" style:opacity={opacity} d="M{f1(x)} {f1(y - 4.5)}l4.5 4.5l-4.5 4.5l-4.5 -4.5Z" />
     {:else if TERMINALS.has(id) && it.rid === "r-nec"}
-      <rect class="s-emph k-ink mp-f-void" style:opacity={opacity} x={f1(x - 7)} y={f1(y - 7)} width="14" height="14" />
+      <rect
+        class="s-emph k-ink mp-f-void mp-hit"
+        style:opacity={opacity}
+        role="button"
+        tabindex="-1"
+        x={f1(x - 7)} y={f1(y - 7)} width="14" height="14"
+        onclick={(ev) => (ev.stopPropagation(), onstation?.(id))}
+        onkeydown={(ev) => ev.key === "Enter" && onstation?.(id)}
+      />
     {:else if !TERMINALS.has(id)}
       <path
         class="s-emph k-ink mp-hit"

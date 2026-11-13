@@ -11,11 +11,11 @@ export interface Measure {
 
 /** Font shorthand and letter-spacing in em, as in map.css. */
 export const FONTS: Record<Font, { css: string; tracking: number; px: number }> = {
-  mono12: { css: '400 12px "JetBrains Mono"', tracking: 0, px: 12 },
-  mono11: { css: '400 11px "JetBrains Mono"', tracking: 0, px: 11 },
-  lab11: { css: '500 11px "Barlow Semi Condensed"', tracking: 0.1, px: 11 },
-  line11: { css: '500 11px "Barlow Semi Condensed"', tracking: 0.16, px: 11 },
-  term13: { css: '600 13px "Rajdhani"', tracking: 0.12, px: 13 },
+  mono12: { css: '400 15px "JetBrains Mono"', tracking: 0, px: 15 },
+  mono11: { css: '400 14px "JetBrains Mono"', tracking: 0, px: 14 },
+  lab11: { css: '500 14px "Barlow Semi Condensed"', tracking: 0.1, px: 14 },
+  line11: { css: '500 14px "Barlow Semi Condensed"', tracking: 0.16, px: 14 },
+  term13: { css: '600 16px "Rajdhani"', tracking: 0.12, px: 16 },
 };
 
 /** Measure with a canvas 2D context (fonts must be loaded). */

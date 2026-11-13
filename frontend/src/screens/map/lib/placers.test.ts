@@ -27,6 +27,7 @@ const data: MapData = {
   water: json("geo/water.geojson"),
   places: json("seed/places.json"),
   routes: json("sim/routes.json"),
+  detail: json("geo/rail_detail.geojson"),
 };
 const SIZES = { 1920: [1856, 984], 1440: [1376, 804] } as const;
 const SCENARIOS = ["listening", "keyed", "fault", "fault-acked"] as const;

@@ -61,6 +61,7 @@ function conicInvert([x, y]: Pt): LonLat {
 }
 
 export class BaseProjection {
+  /** 0 keeps north up. (The map used to turn so the Union Station to Penn Station chord ran level.) */
   private angle = 0;
   private k = 1;
   private tx = 0;
@@ -69,27 +70,19 @@ export class BaseProjection {
   constructor(
     readonly width: number,
     readonly height: number,
-    chord: [LonLat, LonLat],
     fitTo: LonLat[],
   ) {
-    this.fit(chord, fitTo);
+    this.fit(fitTo);
   }
 
-  /** Turn so `chord` is level and left-to-right, then fit `fitTo` to the canvas. */
-  private fit([from, to]: [LonLat, LonLat], fitTo: LonLat[]): void {
-    const [a, b] = [conicXY(from), conicXY(to)];
-    this.angle = -Math.atan2(b[1] - a[1], b[0] - a[0]);
-    for (let turn = 0; turn < 2; turn++) {
-      const pts = fitTo.map((p) => this.rotate(conicXY(p)));
-      const [xs, ys] = [pts.map((p) => p[0]), pts.map((p) => p[1])];
-      const [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
-      this.k = Math.min(this.width / (x1 - x0), this.height / (y1 - y0));
-      this.tx = this.width / 2 - (this.k * (x0 + x1)) / 2;
-      this.ty = this.height / 2 - (this.k * (y0 + y1)) / 2;
-      const [u, v] = [this.project(from), this.project(to)];
-      if (v[0] > u[0] && Math.abs(v[1] - u[1]) <= 0.02 * this.height) return;
-      this.angle += Math.PI;
-    }
+  /** Scale and centre so `fitTo` fills the canvas, north up. */
+  private fit(fitTo: LonLat[]): void {
+    const pts = fitTo.map((p) => this.rotate(conicXY(p)));
+    const [xs, ys] = [pts.map((p) => p[0]), pts.map((p) => p[1])];
+    const [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
+    this.k = Math.min(this.width / (x1 - x0), this.height / (y1 - y0));
+    this.tx = this.width / 2 - (this.k * (x0 + x1)) / 2;
+    this.ty = this.height / 2 - (this.k * (y0 + y1)) / 2;
   }
 
   private rotate([x, y]: Pt): Pt {
@@ -147,8 +140,17 @@ export class Projection {
 
 /** The default base for a canvas: two 20 mi circles around Union Station and Baltimore Penn. */
 export function defaultBase(width: number, height: number, union: LonLat, penn: LonLat): BaseProjection {
-  return new BaseProjection(width, height, [union, penn], [...circle(union, R20_KM, 2), ...circle(penn, R20_KM, 2)]);
+  return new BaseProjection(width, height, [...circle(union, R20_KM, 2), ...circle(penn, R20_KM, 2)]);
 }
+
+/** The edge of a box around the continental US, for the national zoom-out limit (the conic bends its edges). */
+export const CONTINENTAL_US: LonLat[] = (() => {
+  const [w, s, e, n] = [-125, 24, -66.5, 50];
+  const out: LonLat[] = [];
+  for (let lon = w; lon <= e; lon += 2.5) out.push([lon, s], [lon, n]);
+  for (let lat = s; lat <= n; lat += 2.5) out.push([w, lat], [e, lat]);
+  return out;
+})();
 
 /** Keep the view inside sensible zoom limits. */
 export const clampZoom = (k: number, min: number, max = 8): number => Math.max(min, Math.min(max, k));

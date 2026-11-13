@@ -146,7 +146,7 @@ export class GeoLabeler {
     const { width, height, measure } = this.ctx;
     const name = shortName(s);
     const w = measure.tracked(name, "lab11");
-    const cap = 8;
+    const cap = 10;
     const [nx, ny] = [-dir[1], dir[0]];
     const ext = (Math.abs(nx) * w) / 2 + (Math.abs(ny) * cap) / 2;
     const cands: [number, number, Anchor][] = [];
@@ -212,8 +212,8 @@ export class GeoLabeler {
     }
     const [a, b] = TERMINAL_LINES[s.id];
     const [wa, wb] = [measure.tracked(a, "term13"), measure.tracked(b, "term13")];
-    const cap = 9;
-    const lineHeight = 17;
+    const cap = 12;
+    const lineHeight = 21;
     const cands: [number, number, Anchor][] = [
       [12, -24, "start"], [-12, -24, "end"], [12, 18, "start"], [-12, 18, "end"], [0, -36, "middle"], [0, 28, "middle"],
       [20, -40, "start"], [-20, -40, "end"], [20, 34, "start"], [-20, 34, "end"], [0, -52, "middle"], [0, 44, "middle"],

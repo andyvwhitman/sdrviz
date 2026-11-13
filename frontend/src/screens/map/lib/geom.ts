@@ -64,14 +64,14 @@ export function segDistance(p: Pt, a: Pt, c: Pt): number {
 
 export type Anchor = "start" | "middle" | "end";
 
-/** A rotated text run (origin at the baseline start; cap height 9 above, 3 below), `pad` px clear of the ink. */
+/** A rotated text run (origin at the baseline start; cap height 13 above, 5 below), `pad` px clear of the ink. */
 export function textPoly(ox: number, oy: number, angle: number, w: number, anchor: Anchor = "start", pad = 2): Pt[] {
   const [ux, uy] = [Math.cos(angle), Math.sin(angle)];
   const [vx, vy] = [-uy, ux];
   const s0 = anchor === "end" ? -w : anchor === "middle" ? -w / 2 : 0;
   const s1 = s0 + w;
   const at = (s: number, t: number): Pt => [ox + ux * s + vx * t, oy + uy * s + vy * t];
-  return [at(s0 - pad, -10 - pad), at(s1 + pad, -10 - pad), at(s1 + pad, 4 + pad), at(s0 - pad, 4 + pad)];
+  return [at(s0 - pad, -13 - pad), at(s1 + pad, -13 - pad), at(s1 + pad, 5 + pad), at(s0 - pad, 5 + pad)];
 }
 
 /** The ink box of an 11 px uppercase run, 1 px clear: for name-to-name tests. */
@@ -89,7 +89,7 @@ export function namePoly(c: Pt, angle: number, w: number, pad: number): Pt[] {
   const [ux, uy] = [Math.cos(angle), Math.sin(angle)];
   const [vx, vy] = [-uy, ux];
   const at = (s: number, t: number): Pt => [c[0] + ux * s + vx * t, c[1] + uy * s + vy * t];
-  return [at(-w / 2 - pad, -4 - pad), at(w / 2 + pad, -4 - pad), at(w / 2 + pad, 4 + pad), at(-w / 2 - pad, 4 + pad)];
+  return [at(-w / 2 - pad, -4 - pad), at(w / 2 + pad, -4 - pad), at(w / 2 + pad, 5 + pad), at(-w / 2 - pad, 5 + pad)];
 }
 
 export function bboxOf(poly: Pt[]): Rect {

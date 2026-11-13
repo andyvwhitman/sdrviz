@@ -64,26 +64,6 @@ const post = <T = Json>(path: string, body?: unknown, query?: Query) => request<
 const put = <T = Json>(path: string, body: unknown) => request<T>("PUT", path, body);
 const del = <T = void>(path: string, query?: Query) => request<T>("DELETE", path, undefined, query);
 
-/** Filters shared by GET /transmissions and /transmissions/summary. */
-export interface TransmissionQuery extends Query {
-  start?: string;
-  end?: string;
-  frequency_id?: string;
-  aar?: string;
-  feed_id?: string;
-  role?: string;
-  train_id?: string;
-  place_id?: string;
-  bank_id?: string;
-  state?: string;
-  min_duration?: number;
-  defect?: boolean;
-  q?: string;
-  order?: "asc" | "desc";
-  limit?: number;
-  cursor?: string;
-}
-
 export const api = {
   auth: {
     login: (password: string) => post<void>("/auth/login", { password }),
@@ -145,14 +125,6 @@ export const api = {
     settings: () => get<Json>("/radio/settings"),
     saveSettings: (settings: Json) => put<Json>("/radio/settings", settings),
   },
-  transmissions: {
-    list: (query: TransmissionQuery = {}) => get("/transmissions", query),
-    summary: (query: TransmissionQuery = {}) => get("/transmissions/summary", query),
-    get: (id: string) => get(`/transmissions/${id}`),
-    audioUrl: (id: string) => `/api/transmissions/${encodeURIComponent(id)}/audio`,
-    waveform: (id: string, bins = 240) => get<{ duration_s: number; peaks: number[] }>(`/transmissions/${id}/waveform`, { bins }),
-  },
-  stats: (range: "today" | "yesterday" | "rolling_24h" = "today") => get("/stats", { range }),
   trains: {
     list: (query: { start?: string; end?: string; route?: string; q?: string } = {}) => get("/trains", query),
     live: () => get<Json[]>("/trains/live"),

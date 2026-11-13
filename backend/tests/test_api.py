@@ -5,7 +5,7 @@ from .conftest import PASSWORD
 
 class TestAuth:
     def test_everything_but_login_and_session_needs_a_cookie(self, anonymous):
-        for path in ("/api/system", "/api/live/state", "/api/prefs", "/api/frequencies", "/api/transmissions"):
+        for path in ("/api/system", "/api/live/state", "/api/prefs", "/api/frequencies", "/api/trains"):
             assert anonymous.get(path).status_code == 401
         assert anonymous.get("/api/auth/session").json() == {"authenticated": False, "sim": True}
 
@@ -214,17 +214,6 @@ class TestFeeds:
 
 
 class TestOther:
-    def test_stats_ranges(self, client):
-        today = client.get("/api/stats?range=today").json()
-        yesterday = client.get("/api/stats?range=yesterday").json()
-        rolling = client.get("/api/stats?range=rolling_24h").json()
-        assert yesterday["totals"]["count"] == 1265
-        assert (
-            today["totals"]["count"] < yesterday["totals"]["count"]
-            and rolling["totals"]["count"] == yesterday["totals"]["count"]
-        )
-        assert client.get("/api/stats?range=bogus").status_code == 422
-
     def test_trains(self, client):
         items = client.get("/api/trains").json()["items"]
         assert len(items) == 136 and items[0]["stops"]
@@ -260,7 +249,6 @@ class TestOther:
     def test_openapi_lists_the_contract(self, client):
         paths = client.get("/openapi.json").json()["paths"]
         for path in (
-            "/api/transmissions/{tx_id}/audio",
             "/api/feeds/{feed_id}/ack",
             "/api/banks/{bank_id}/activate",
             "/api/sim/jump",

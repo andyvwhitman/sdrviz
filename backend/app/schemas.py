@@ -1,10 +1,9 @@
 """Request and response bodies that are not table models."""
 
 import re
-from typing import Any, Literal
+from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator, model_validator
-from sqlmodel import SQLModel
 
 from .sim.scenarios import SCENARIOS
 
@@ -52,44 +51,6 @@ class PrefsModel(BaseModel):
     solo: list[str] = []
     record: list[str] = []
     volume: dict[str, float] = {}
-
-
-class TransmissionOut(SQLModel):
-    """A transmission row. `t_offset_s` and `started_at` are shifted into the queried window."""
-
-    id: str
-    t_offset_s: float
-    started_at: str
-    clock: str
-    frequency_id: str
-    aar_channel: int
-    freq_mhz: float | None
-    feed_id: str
-    speaker_role: str | None
-    speaker: str | None
-    duration_s: float
-    train_id: str | None
-    place_id: str | None
-    transcript: str
-    transcript_state: str
-    confidence: float | None
-    decode_latency_s: float
-    words: list[dict[str, Any]]
-    receptions: list[dict[str, Any]]
-    detector: dict[str, Any] | None
-    source: str
-    sim: bool
-
-
-class TransmissionPage(BaseModel):
-    items: list[TransmissionOut]
-    total: int
-    next_cursor: str | None
-
-
-class Waveform(BaseModel):
-    duration_s: float
-    peaks: list[float]
 
 
 IF_RATE = 48_000  # every channel is decimated from the sample rate to this baseband rate (radio/dsp.py)

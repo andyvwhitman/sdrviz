@@ -7,7 +7,6 @@ import re
 import pytest
 
 from app.config import Settings
-from app.services.stats import stats_for
 from app.sim import live_state
 from app.sim.scenarios import SCENARIOS
 
@@ -67,18 +66,3 @@ def test_live_state_matches_scenario(client, name):
     for key in CONSUMED:
         assert_same(state[key], expected[key], key)
     assert state["transcript"]["rows"] == expected["transcript"]["rows"]
-
-
-def test_today_stats_match_scenario(client):
-    rt = client.app.state.rt
-    expected = json.loads((SCENARIO_DIR / "keyed.json").read_text(encoding="utf-8"))["stats"]
-    for range_name, key in (("today", "today"), ("rolling_24h", "rolling_24h")):
-        actual = stats_for(rt.world, rt.data.day, rt.data.kerchunks, rt.health, range_name, SCENARIOS["keyed"].t)
-        assert_same(json.loads(json.dumps(actual)), expected[key], key)
-
-
-def test_yesterday_stats_match_recorded_day(client):
-    rt = client.app.state.rt
-    expected = json.loads((Settings().sim_dir / "stats.json").read_text(encoding="utf-8"))["day"]
-    actual = stats_for(rt.world, rt.data.day, rt.data.kerchunks, rt.health, "yesterday", 0.0)
-    assert_same(json.loads(json.dumps(actual)), expected, "day")

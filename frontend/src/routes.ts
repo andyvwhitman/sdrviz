@@ -1,12 +1,12 @@
 /**
- * Route table: five screens in nav order, plus /login (no shell). Each route lazily imports
+ * Route table: the screens, plus /login (no shell). Each route lazily imports
  * `screens/<dir>/Screen.svelte`; until a package delivers it the route shows a stub.
  */
 
 import type { Component } from "svelte";
 import StubScreen from "$lib/components/StubScreen.svelte";
 
-export type ScreenId = "live-ops" | "history" | "stats" | "feeds" | "map" | "settings" | "login" | "kit";
+export type ScreenId = "live-ops" | "feeds" | "map" | "settings" | "login" | "kit";
 
 export interface Route {
   id: ScreenId;
@@ -21,8 +21,6 @@ export interface Route {
 
 export const ROUTES: Route[] = [
   { id: "live-ops", path: "/live", name: "LIVE OPS", dir: "live-ops", shell: true },
-  { id: "history", path: "/history", name: "HISTORY", dir: "history", shell: true },
-  { id: "stats", path: "/stats", name: "STATS", dir: "stats", shell: true },
   { id: "feeds", path: "/feeds", name: "FEEDS & BANKS", dir: "feeds", shell: true },
   { id: "map", path: "/map", name: "MAP", dir: "map", shell: true },
   { id: "settings", path: "/settings", name: "SETTINGS", dir: "settings", shell: true },

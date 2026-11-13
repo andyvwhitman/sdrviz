@@ -5,6 +5,7 @@
    * with a chip per agency to filter it. Maximized, it has room for both the scheduled and the expected time.
    */
   import { untrack } from "svelte";
+  import { cleanName } from "$lib/displayName";
   import { api } from "$lib/api/client";
   import Chip from "$lib/components/Chip.svelte";
   import { BLANK } from "$lib/hud/fmt";
@@ -65,6 +66,8 @@
   });
 
   const agencies = $derived(board ? [...new Set([...board.departures, ...board.arrivals].map((r) => r.agency))].sort() : []);
+  /** every name on the board, so a " STATION" is only dropped where the rest stay distinct */
+  const names = $derived(board ? [...board.departures, ...board.arrivals].map((r) => endpoint(r, tab)) : []);
   const rows = $derived((board?.[tab] ?? []).filter((r) => !agency || r.agency === agency));
   const passed = $derived(rows.filter((r) => r.state === "passed"));
   const ahead = $derived(rows.filter((r) => r.state !== "passed"));
@@ -92,7 +95,7 @@
     <span class="sw-t">{#if t.scheduled}<s>{t.scheduled}</s> {/if}{t.time}</span>
     <span class="sw-n">{r.agency} {r.train ?? ""}</span>
     {#if controls.full}<span class="sw-d sw-r">{r.route_name ?? BLANK}</span>{/if}
-    <span class="sw-d">{endpoint(r, tab)}</span>
+    <span class="sw-d" title={endpoint(r, tab)}>{cleanName(endpoint(r, tab), names)}</span>
     <span class="sw-k sw-trk">{#if trackCell(r, board?.stop.code)}TRK {trackCell(r, board?.stop.code)}{/if}</span>
     <span class="sw-k sw-g">{#if r.state === "cancelled"}CANCELLED{:else}<Delay {...tag} />{/if}</span>
     <span class="sw-k sw-s">{word}</span>

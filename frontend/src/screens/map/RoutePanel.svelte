@@ -5,6 +5,7 @@
    */
   import { api } from "$lib/api/client";
   import Chip from "$lib/components/Chip.svelte";
+  import { cleanName } from "$lib/displayName";
   import type { RouteTimetable } from "$lib/types/transit";
   import Panel, { type PanelControls } from "./Panel.svelte";
   import { hhmm } from "./lib/transitView";
@@ -65,7 +66,7 @@
               <tbody>
                 {#each d.stops as s, i (`${s.stop_id}-${i}`)}
                   <tr>
-                    <th class="rp-stop"><button class="rp-name" title="Open this station" onclick={() => onstop(s.stop_id)}>{s.name}</button></th>
+                    <th class="rp-stop"><button class="rp-name" title="{s.name}: open this station" onclick={() => onstop(s.stop_id)}>{cleanName(s.name, d.stops.map((x) => x.name))}</button></th>
                     {#each d.trips as t (t.trip_id)}<td class:rp-none={!t.times[i]}>{t.times[i] ? hhmm(t.times[i]) : "·"}</td>{/each}
                   </tr>
                 {/each}

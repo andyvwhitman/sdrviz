@@ -6,6 +6,7 @@
    * running, its live vehicle is shown, and a train that stops being reported keeps its last known state.
    */
   import { onMount } from "svelte";
+  import { cleanName } from "$lib/displayName";
   import { api } from "$lib/api/client";
   import KeyValue from "$lib/components/KeyValue.svelte";
   import { BLANK } from "$lib/hud/fmt";
@@ -79,6 +80,7 @@
   const age = $derived(vehicle ? ageNow(vehicle.age_s, fetchedAt, now) : null);
   const stale = $derived(gone || (!!vehicle && isStale(age, vehicle.stale_after_s)));
   const stops = $derived(trip?.stops ?? []);
+  const stopNames = $derived(stops.map((s) => s.name));
   const cur = $derived(stops.findIndex((s) => s.state === "current" || s.state === "next"));
   const routeId = $derived(vehicle?.route_id ?? trip?.route_id ?? null);
   const service = $derived(vehicle?.route_name ?? trip?.route_name ?? null);
@@ -114,10 +116,10 @@
         {#if routeId && service}<button class="tw-link" title="Timetable of this route" onclick={() => onroute(routeId)}>{service}</button>{:else}{service ?? BLANK}{/if}
       </KeyValue>
       <KeyValue label="OPERATOR" value={agency} />
-      <KeyValue label="ROUTE" value="{vehicle?.origin ?? BLANK} → {vehicle?.destination ?? vehicle?.headsign ?? trip?.headsign ?? BLANK}" />
+      <KeyValue label="ROUTE" value="{vehicle?.origin ? cleanName(vehicle.origin) : BLANK} → {cleanName(vehicle?.destination ?? vehicle?.headsign ?? trip?.headsign ?? BLANK)}" />
       {#if vehicle}
         <KeyValue label="NEXT STOP">
-          {#if vehicle.next_stop}{vehicle.next_stop.name} · {hhmm(vehicle.next_stop.eta ?? vehicle.next_stop.scheduled)}{:else}{BLANK}{/if}
+          {#if vehicle.next_stop}{cleanName(vehicle.next_stop.name)} · {hhmm(vehicle.next_stop.eta ?? vehicle.next_stop.scheduled)}{:else}{BLANK}{/if}
         </KeyValue>
         <KeyValue label="DELAY"><Delay {...delayCell(vehicle.delay_s, true)} suspect={vehicle.delay_suspect} /></KeyValue>
         <KeyValue label="SPEED" value={vehicle.speed_mph == null ? BLANK : String(Math.round(vehicle.speed_mph))} unit="MPH" />
@@ -141,9 +143,9 @@
         <div class="tw-list" bind:this={listEl}>
           {#each stops as s (s.seq)}
             {@const t = stopTimes(s)}
-            <button class="tw-stop is-{s.state}" title={t.title} class:is-cur={s.state === "current" || s.state === "next"} onclick={() => onstop(s.stop_id)}>
+            <button class="tw-stop is-{s.state}" title="{s.name} · {t.title}" class:is-cur={s.state === "current" || s.state === "next"} onclick={() => onstop(s.stop_id)}>
               <span class="tw-mark" aria-hidden="true"></span>
-              <span class="tw-name">{s.name}</span>
+              <span class="tw-name">{cleanName(s.name, stopNames)}</span>
               {#if tagOf(s) || trackOf(s)}<span class="tw-tag tw-sub">{[tagOf(s), trackOf(s) && `TRK ${trackOf(s)}`].filter(Boolean).join(" · ")}</span>{/if}
               <span class="tw-t">{#if t.arrival}<span class="tw-arr">{t.arrival}</span> {/if}{t.time}</span>
               <span class="tw-t tw-tag"><Delay {...timeTag(s.delay_s, s.dep_estimated ?? s.arr_estimated)} /></span>

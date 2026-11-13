@@ -7,6 +7,7 @@
   import { BLANK } from "$lib/hud/fmt";
   import type { Vehicle } from "$lib/types/transit";
   import { onMount } from "svelte";
+  import { cleanName } from "$lib/displayName";
   import Delay from "./Delay.svelte";
   import { ageNow, delayCell, freshness, sinceText, trainTitle } from "./lib/transitView";
 
@@ -37,6 +38,9 @@
   const byNumber = (a: Vehicle, b: Vehicle): number =>
     a.agency.localeCompare(b.agency) || (Number.parseInt(a.train ?? "") || 0) - (Number.parseInt(b.train ?? "") || 0) || a.id.localeCompare(b.id);
   const sorted = $derived([...vehicles].sort(byNumber));
+  /** every place name in the list: a " STATION" is only dropped where no other name would then read the same */
+  const names = $derived(vehicles.flatMap((v) => [v.origin, v.next_stop?.name, v.destination ?? v.headsign].filter((n): n is string => !!n)));
+  const short = (name: string | null | undefined): string => (name ? cleanName(name, names) : BLANK);
 
   /** Replay the flash each time `updated` changes (not on first show). */
   function flash(node: HTMLElement, _updated: string | null) {
@@ -67,9 +71,9 @@
             <span class="num">{v.train ?? BLANK}</span>
             <span>{v.route_name ?? BLANK}</span>
             <span>{v.agency}</span>
-            {#if !compact}<span>{v.origin ?? BLANK}</span>{/if}
-            <span>{v.next_stop?.name ?? BLANK}</span>
-            {#if !compact}<span>{v.destination ?? v.headsign ?? BLANK}</span>{/if}
+            {#if !compact}<span title={v.origin ?? ""}>{short(v.origin)}</span>{/if}
+            <span title={v.next_stop?.name ?? ""}>{short(v.next_stop?.name)}</span>
+            {#if !compact}<span title={v.destination ?? v.headsign ?? ""}>{short(v.destination ?? v.headsign)}</span>{/if}
             <span class="r" title={trainTitle(v)}><Delay {...delayCell(v.delay_s)} suspect={v.delay_suspect} /></span>
             <span class="tl__mark is-{freshness(ageOf(v), v.stale_after_s)}" use:flash={v.updated} title="{sinceText(ageOf(v))} since fresh data"></span>
           </button>

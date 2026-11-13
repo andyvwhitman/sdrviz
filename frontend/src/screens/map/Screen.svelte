@@ -38,6 +38,7 @@
   import { canvasMeasure, FONTS, type Measure } from "./lib/measure";
   import { describePointer, milepostSegments } from "./lib/pointer";
   import type { LonLat } from "./lib/project";
+  import { countOnly, listFoldedByDefault } from "./lib/overlays";
   import { resolveSelection } from "./lib/selection";
   import type { GeoFeatureCollection, MapData, Places, RoutesDoc } from "./lib/types";
   import { DETAIL_ZOOM, type DetailArea, type DetailCollection } from "./lib/detail";
@@ -78,7 +79,7 @@
   });
 
   // ---- mode, selection
-  const mode = $derived(router.query("mode") === "schematic" ? "schematic" : "geo");
+  const mode = $derived(router.query("mode") === "schematic" ? ("schematic" as const) : ("geo" as const));
   const snap = $derived(live.state);
   const selection = $derived(snap && data ? resolveSelection(router.query("select"), snap, data) : null);
   const setMode = (m: "geo" | "schematic"): void => router.setQuery({ mode: m === "geo" ? null : m });
@@ -90,6 +91,9 @@
   // ---- the side panel (`?page=station|trip|route&id=`): one at a time, and the trains in view
   const PANEL_W = 440;
   const current = $derived(panel.current);
+  const overlayView = $derived({ stageWidth: stage.width, panelWidth: current ? PANEL_W : 0, mode });
+  const heroCountOnly = $derived(countOnly(overlayView));
+  const listFolded = $derived(listFoldedByDefault(overlayView));
   let inView = $state.raw<Vehicle[]>([]);
   let centre = $state<{ lon: number; lat: number; n: number } | null>(null);
   let reveal = $state<{ lon: number; lat: number; n: number } | null>(null);
@@ -139,6 +143,8 @@
     focus = { id, n: (focus?.n ?? 0) + 1 };
   };
   let moved = $state(false);
+  /** a terminal is in view (geo) or has a schematic (schematic mode): the TERMINALS chip shows */
+  const hasTerminals = $derived(mode === "geo" ? terminals.length > 0 : !!data?.detail);
 
   // ---- the viewer's own position (LOCATE centres the map on it)
   let locate = $state<{ n: number } | null>(null);
@@ -153,6 +159,8 @@
   });
 
   // ---- overlays are label obstacles: measured (offset geometry, immune to the stage scale)
+  let termsOpen = $state(false);
+  let termsEl = $state<HTMLElement>();
   let readoutEl = $state<HTMLElement>();
   let ctlEl = $state<HTMLElement>();
   let onairEl = $state<HTMLElement>();
@@ -162,6 +170,7 @@
   $effect(() => {
     const els = [readoutEl, ctlEl, onairEl, attribEl, cursorEl];
     if (els.some((el) => !el)) return;
+    if (termsEl) els.push(termsEl); // the open TERMINALS list is an obstacle too
     const measureAll = (): void => {
       overlays = els.map((el) => ({ x0: el!.offsetLeft, y0: el!.offsetTop, x1: el!.offsetLeft + el!.offsetWidth, y1: el!.offsetTop + el!.offsetHeight }));
     };
@@ -286,11 +295,11 @@
       <div class="mp-readout__row">
         <span class="hero__big">{counts?.trains ?? fmt.BLANK}</span>
         <span class="hero__stack">
-          <span class="a">TRAIN{counts?.trains === 1 ? "" : "S"} TRACKED {#if counts?.sim}<SimTag />{/if}{#if counts?.live}<span class="mp-live-n"> · {counts.live} LIVE</span>{/if}</span>
-          <span class="b">{counts?.feeds ?? 0} FEEDS · {counts?.stations ?? 0} STATIONS · {counts?.detectors ?? 0} DETECTORS</span>
+          <span class="a">TRAIN{counts?.trains === 1 ? "" : "S"} TRACKED {#if counts?.sim}<SimTag />{/if}{#if counts?.live && !heroCountOnly}<span class="mp-live-n"> · {counts.live} LIVE</span>{/if}</span>
+          <span class="b" class:is-hidden={heroCountOnly}>{counts?.feeds ?? 0} FEEDS · {counts?.stations ?? 0} STATIONS · {counts?.detectors ?? 0} DETECTORS</span>
         </span>
       </div>
-      <TrainList fetchedAt={transit.fetchedAt} vehicles={inView} selectedId={trainId} onselect={(id) => openTrain(id, true)} compact={width < 1500} />
+      <TrainList fetchedAt={transit.fetchedAt} vehicles={inView} selectedId={trainId} onselect={(id) => openTrain(id, true)} compact={width - (current ? PANEL_W : 0) < 1500} folded={listFolded} />
     </div>
 
     <div class="mp-onair" bind:this={onairEl}><OnAirList rows={snap?.active_transmissions ?? []} {demoMs} {demoRow} /></div>
@@ -304,26 +313,27 @@
       {#if mode === "geo" && !station}
         <Chip text="NATIONAL" kind="filter" button onclick={() => (national = { n: (national?.n ?? 0) + 1 })} />
       {/if}
+      {#if hasTerminals}
+        <Chip button kind="filter" pressed={termsOpen} onclick={() => (termsOpen = !termsOpen)}>TERMINALS<span class="mp-caret" aria-hidden="true"></span></Chip>
+      {/if}
       {#if station}
         <Chip text="BACK" kind="filter" button onclick={closeStation} />
       {:else}
-        <span class="mp-zoom"><span class="k">ZOOM</span>{zoomText}×</span>
+        <span class="mp-zoom" class:is-hidden={heroCountOnly}><span class="k">ZOOM</span>{zoomText}×</span>
       {/if}
     </div>
 
-    {#if mode === "geo" && terminals.length}
-      <div class="mp-terms" aria-label="Terminals with track detail">
-        <span class="mp-terms__head">TERMINALS</span>
-        {#each terminals as t (t.id)}
-          <Chip text={t.short} kind="filter" button pressed={focus?.id === t.id && zoom >= DETAIL_ZOOM} onclick={() => showTerminal(t.id)} />
-        {/each}
-      </div>
-    {:else if mode === "schematic" && data?.detail}
-      <div class="mp-terms" aria-label="Terminals with a track schematic">
-        <span class="mp-terms__head">TERMINALS</span>
-        {#each STATIONS as s (s.area)}
-          <Chip text={s.title.join(" ")} kind="filter" button pressed={station?.area === s.area} onclick={() => (station?.area === s.area ? closeStation() : openStation(s.area))} />
-        {/each}
+    {#if termsOpen && hasTerminals}
+      <div class="mp-terms" bind:this={termsEl} aria-label="Terminals">
+        {#if mode === "geo"}
+          {#each terminals as t (t.id)}
+            <Chip text={t.short} kind="filter" button pressed={focus?.id === t.id && zoom >= DETAIL_ZOOM} onclick={() => (showTerminal(t.id), (termsOpen = false))} />
+          {/each}
+        {:else}
+          {#each STATIONS as s (s.area)}
+            <Chip text={s.title.join(" ")} kind="filter" button pressed={station?.area === s.area} onclick={() => (station?.area === s.area ? closeStation() : openStation(s.area), (termsOpen = false))} />
+          {/each}
+        {/if}
       </div>
     {/if}
 

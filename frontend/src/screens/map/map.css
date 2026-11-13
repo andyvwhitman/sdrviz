@@ -59,6 +59,7 @@
 .mp-attrib a:hover { color: var(--ink-2); }
 
 .mp-cursor { position: absolute; right: calc(24px + var(--pn-w, 0px)); bottom: 12px; font: 400 var(--fs-11)/1 var(--font-data); color: var(--ink-2); z-index: 3; white-space: nowrap; }
+@media (pointer: coarse) { .mp-cursor { display: none; } } /* no pointer to read out on touch */
 .mp-cursor .k { font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink-3); margin-right: 8px; }
 
 .mp-demo { position: absolute; left: 50%; bottom: 40px; transform: translateX(-50%); display: flex; gap: 12px; align-items: center;
@@ -85,7 +86,10 @@
 .mp-readout, .mp-ctl, .mp-attrib, .mp-cursor, .mp-onair:not(:empty) { background: var(--bg-void); box-shadow: 0 0 0 4px var(--bg-void); }
 
 /* terminal buttons: right edge, under the mode buttons; one per terminal with track detail in view */
-.mp-terms { position: absolute; right: calc(24px + var(--pn-w, 0px)); top: 56px; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; z-index: 3; }
+.mp-terms { position: absolute; right: calc(24px + var(--pn-w, 0px)); top: 56px; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; z-index: 3;
+  background: var(--bg-void); box-shadow: 0 0 0 4px var(--bg-void); }
+.mp-caret { display: inline-block; margin-left: 6px; border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 5px solid currentColor; vertical-align: middle; }
+.mp-ctl .mp-zoom.is-hidden, .mp-readout .is-hidden { display: none; }
 .mp-terms__head { font: 500 var(--fs-11)/16px var(--font-label); letter-spacing: var(--track-label); color: var(--ink-3); }
 
 /* track-level detail */

@@ -17,10 +17,15 @@
     compact?: boolean;
     /** when `vehicles` arrived (ms), to age each position */
     fetchedAt?: number;
+    /** the list starts folded; the header chevron opens or folds it by hand until this changes */
+    folded?: boolean;
   }
-  let { vehicles, selectedId, onselect, compact = false, fetchedAt = 0 }: Props = $props();
+  let { vehicles, selectedId, onselect, compact = false, fetchedAt = 0, folded = false }: Props = $props();
 
   let open = $state(true);
+  $effect(() => {
+    open = !folded;
+  });
   let now = $state(Date.now());
   onMount(() => {
     const timer = setInterval(() => (now = Date.now()), 1000);
@@ -82,9 +87,10 @@
     font: 500 var(--fs-11)/16px var(--font-label); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--ink-3);
   }
   .tl__head:hover { color: var(--ink-2); }
+  @media (pointer: coarse) { .tl__head { min-height: 32px; } }
   .tl__caret { width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 6px solid currentColor; transform: rotate(-90deg); transition: transform var(--t-micro); }
   .tl__caret.is-open { transform: none; }
-  .tl__rows { max-height: 320px; overflow-y: auto; overflow-x: hidden; }
+  .tl__rows { max-height: calc(9 * 23px); /* the header and 8 rows, then scroll */ overflow-y: auto; overflow-x: hidden; }
   .tl__row {
     display: grid; grid-template-columns: 52px 180px 76px 120px 160px 120px 84px 8px; column-gap: 10px; align-items: baseline; width: 100%;
     min-height: 22px; padding: 2px 6px 2px 0; border: 0; border-bottom: 1px solid var(--grid); background: none; text-align: left; cursor: pointer;

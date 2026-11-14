@@ -13,7 +13,7 @@
   import type { Trip, TripStop, Vehicle } from "$lib/types/transit";
   import Panel, { type PanelControls } from "./Panel.svelte";
   import Delay from "./Delay.svelte";
-  import { estMark, stopCode, stopTimes, TRACK_STATIONS } from "./lib/boardView";
+  import { estMark, PASS_LABEL, passTime, stopCode, stopTimes, TRACK_STATIONS } from "./lib/boardView";
   import { ageNow, ageText, clockOf, delayCell, hhmm, hhmmss, isStale, timeTag, trainTitle } from "./lib/transitView";
 
   interface Props extends PanelControls {
@@ -50,7 +50,7 @@
     let alive = true;
     const load = async (): Promise<void> => {
       try {
-        const next = await api.transit.trip(id);
+        const next = await api.transit.trip(id, { passes: true });
         if (alive) [trip, failed] = [next, false];
       } catch {
         if (alive) failed = true;
@@ -81,6 +81,7 @@
   const stale = $derived(gone || (!!vehicle && isStale(age, vehicle.stale_after_s)));
   const stops = $derived(trip?.stops ?? []);
   const stopNames = $derived(stops.map((s) => s.name));
+  const stopCount = $derived(stops.filter((s) => s.kind !== "pass").length);
   const cur = $derived(stops.findIndex((s) => s.state === "current" || s.state === "next"));
   const routeId = $derived(vehicle?.route_id ?? trip?.route_id ?? null);
   const service = $derived(vehicle?.route_name ?? trip?.route_name ?? null);
@@ -138,18 +139,27 @@
     </section>
 
     <section class="inspector__sec tw-stops">
-      <h4>STOPS{stops.length ? ` · ${stops.length}` : ""}</h4>
+      <h4>STOPS{stopCount ? ` · ${stopCount}` : ""}</h4>
       {#if stops.length}
         <div class="tw-list" bind:this={listEl}>
           {#each stops as s (s.seq)}
-            {@const t = stopTimes(s)}
-            <button class="tw-stop is-{s.state}" title="{s.name} · {t.title}" class:is-cur={s.state === "current" || s.state === "next"} onclick={() => onstop(s.stop_id)}>
-              <span class="tw-mark" aria-hidden="true"></span>
-              <span class="tw-name">{cleanName(s.name, stopNames)}</span>
-              {#if tagOf(s) || trackOf(s)}<span class="tw-tag tw-sub">{[tagOf(s), trackOf(s) && `TRK ${trackOf(s)}`].filter(Boolean).join(" · ")}</span>{/if}
-              <span class="tw-t">{#if t.arrival}<span class="tw-arr">{t.arrival}</span> {/if}{t.time}</span>
-              <span class="tw-t tw-tag"><Delay {...timeTag(s.delay_s, s.dep_estimated ?? s.arr_estimated)} /></span>
-            </button>
+            {#if s.kind === "pass"}
+              <button class="tw-stop is-{s.state} is-pass" title="{s.name} · approximate time, the train does not stop" onclick={() => onstop(s.stop_id)}>
+                <span class="tw-mark" aria-hidden="true"></span>
+                <span class="tw-name">{cleanName(s.name, stopNames)}</span>
+                <span class="tw-tag tw-sub">{PASS_LABEL}</span>
+                <span class="tw-t">{passTime(s.pass_scheduled, s.pass_estimated)}</span>
+              </button>
+            {:else}
+              {@const t = stopTimes(s)}
+              <button class="tw-stop is-{s.state}" title="{s.name} · {t.title}" class:is-cur={s.state === "current" || s.state === "next"} onclick={() => onstop(s.stop_id)}>
+                <span class="tw-mark" aria-hidden="true"></span>
+                <span class="tw-name">{cleanName(s.name, stopNames)}</span>
+                {#if tagOf(s) || trackOf(s)}<span class="tw-tag tw-sub">{[tagOf(s), trackOf(s) && `TRK ${trackOf(s)}`].filter(Boolean).join(" · ")}</span>{/if}
+                <span class="tw-t">{#if t.arrival}<span class="tw-arr">{t.arrival}</span> {/if}{t.time}</span>
+                <span class="tw-t tw-tag"><Delay {...timeTag(s.delay_s, s.dep_estimated ?? s.arr_estimated)} /></span>
+              </button>
+            {/if}
           {/each}
         </div>
       {:else if reported && !reported.trip_id}
@@ -186,6 +196,11 @@
   .tw-t { font-variant-numeric: tabular-nums; text-align: right; }
   .tw-arr { color: var(--ink-3); margin-right: 6px; }
   .tw-sub { grid-area: k; margin-top: 2px; }
+  /* a pass is not a stop: small dashed mark, dashed rule, dim, and a label that is always on screen */
+  .is-pass { border-bottom-style: dashed; color: var(--ink-2); }
+  .is-pass .tw-mark { border-style: dashed; background: none; width: 5px; height: 5px; margin-left: 1px; }
+  .is-pass .tw-sub { letter-spacing: 0.1em; color: var(--ink-2); }
+  .is-pass.is-passed { color: var(--ink-3); }
   .tw-mark { grid-area: m; } .tw-name { grid-area: n; }
   .tw-t { grid-area: t; } .tw-tag.tw-t { grid-area: g; }
   .tw-live { color: var(--state-idle); }

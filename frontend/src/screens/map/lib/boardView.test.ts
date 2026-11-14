@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { endpoint, estMark, stateWord, stopCode, stopTimes, timeCell, trackCell } from "./boardView";
+import { endpoint, estMark, passTime, PASS_LABEL, rowsFor, stateWord, stopCode, stopTimes, timeCell, trackCell } from "./boardView";
 
 const at = (hm: string) => `2026-11-13T${hm}:00-05:00`;
 
@@ -88,5 +88,25 @@ describe("estMark", () => {
     expect(estMark("clock")).toBe("EST. ");
     expect(estMark("position")).toBe("");
     expect(estMark(undefined)).toBe("");
+  });
+});
+
+describe("passes", () => {
+  it("formats an approximate time with a tilde, the expected one when there is realtime", () => {
+    expect(passTime(at("14:32"), null)).toBe("~14:32");
+    expect(passTime(at("14:32"), at("14:41"))).toBe("~14:41");
+  });
+  it("labels every pass row, never like a stop", () => {
+    expect(PASS_LABEL).toBe("PASSES \u00B7 DOES NOT STOP");
+  });
+  it("keeps passes out of departures and arrivals", () => {
+    const board = { departures: [{ trip_id: "d" }], arrivals: [{ trip_id: "a" }], passing: [{ trip_id: "p" }] } as never;
+    expect(rowsFor(board, "departures").map((r) => r.trip_id)).toEqual(["d"]);
+    expect(rowsFor(board, "arrivals").map((r) => r.trip_id)).toEqual(["a"]);
+    expect(rowsFor(board, "passing").map((r) => r.trip_id)).toEqual(["p"]);
+  });
+  it("has no passing rows without the parameter", () => {
+    expect(rowsFor({ departures: [], arrivals: [] } as never, "passing")).toEqual([]);
+    expect(rowsFor(null, "passing")).toEqual([]);
   });
 });

@@ -1,11 +1,13 @@
 /** Pure helpers for the station board and the trip's stop rows: the merged time cell, state words, track, from/to. */
 
 import { BLANK } from "$lib/hud/fmt";
-import type { BoardRow, StateBasis } from "$lib/types/transit";
+import type { BoardRow, PassRow, StateBasis, StationBoard } from "$lib/types/transit";
 import { hhmm } from "./transitView";
 
 /** Stations where Amtrak announces tracks: an Amtrak row with no track there reads "TBD". */
 export const TRACK_STATIONS: readonly string[] = ["WAS", "BAL", "NYP"];
+
+export type BoardTab = "departures" | "arrivals" | "passing";
 
 export interface TimeCell {
   /** the timetable's time, struck through, only when the expected time differs from it */
@@ -26,10 +28,10 @@ export function timeCell(scheduled: string | null, estimated: string | null): Ti
  * What a passed row says. Only a train whose position says so may read LEFT (departures) or IN (arrivals); one passed
  * by the clock alone is an estimate and says so.
  */
-export function stateWord(row: Pick<BoardRow, "state" | "state_basis">, tab: "departures" | "arrivals"): string {
+export function stateWord(row: Pick<BoardRow, "state" | "state_basis">, tab: BoardTab): string {
   if (row.state !== "passed") return "";
   if (row.state_basis === "clock") return "EST. PASSED";
-  return tab === "departures" ? "LEFT" : "IN";
+  return tab === "departures" ? "LEFT" : tab === "arrivals" ? "IN" : "PASSED";
 }
 
 /** "4" when the agency gave a track, "TBD" for an Amtrak row at a station that announces tracks, else nothing. */
@@ -39,7 +41,7 @@ export function trackCell(row: Pick<BoardRow, "track" | "source">, stationCode: 
 }
 
 /** The far end of the row: arrivals show where the train came FROM, departures where it goes TO. */
-export function endpoint(row: Pick<BoardRow, "origin" | "destination" | "headsign" | "route_name">, tab: "departures" | "arrivals"): string {
+export function endpoint(row: Pick<BoardRow, "origin" | "destination" | "headsign" | "route_name">, tab: BoardTab): string {
   const name = tab === "arrivals" ? (row.origin ?? row.headsign) : (row.destination ?? row.headsign ?? row.route_name);
   return name ?? BLANK;
 }
@@ -87,3 +89,15 @@ export function stopTimes(s: StopTimeFields): StopTimes {
 
 /** A current or next stop that only the clock says so: marked as an estimate. */
 export const estMark = (basis: StateBasis | undefined): string => (basis === "clock" ? "EST. " : "");
+
+/** The rows of one tab. Passes live only under PASSING: departures and arrivals never contain one. */
+export function rowsFor(board: Pick<StationBoard, "departures" | "arrivals" | "passing"> | null, tab: BoardTab): (BoardRow | PassRow)[] {
+  if (!board) return [];
+  return tab === "passing" ? (board.passing ?? []) : board[tab];
+}
+
+/** A pass time is always approximate: "~14:32" (the expected time when there is realtime). */
+export const passTime = (scheduled: string | null | undefined, estimated: string | null | undefined): string => `~${hhmm(estimated ?? scheduled)}`;
+
+/** The label of a pass row, always on screen, never in the style of a stop. */
+export const PASS_LABEL = "PASSES \u00B7 DOES NOT STOP";

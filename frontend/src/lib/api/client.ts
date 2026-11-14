@@ -135,9 +135,10 @@ export const api = {
     /** route lines and parent stations for a "west,south,east,north" box at a map zoom */
     lines: (bbox: string, zoom: number) => get<{ lines: Line[] }>("/transit/lines", { bbox, zoom }),
     stops: (bbox: string, zoom: number) => get<{ stops: Stop[] }>("/transit/stops", { bbox, zoom }),
-    trip: (tripId: string) => get<Trip>(`/transit/trips/${encodeURIComponent(tripId)}`),
+    /** `passes` also lists the stations the train runs through without stopping (decision 17) */
+    trip: (tripId: string, { passes = false } = {}) => get<Trip>(`/transit/trips/${encodeURIComponent(tripId)}`, passes ? { passes: 1 } : undefined),
     /** a station or station group; `agency` (name) and `source` (id) keep only those rows */
-    station: (stopId: string, query: { back?: number; ahead?: number; date?: string; agency?: string; source?: string } = {}) =>
+    station: (stopId: string, query: { back?: number; ahead?: number; date?: string; agency?: string; source?: string; passing?: 1 } = {}) =>
       get<StationBoard>(`/transit/stations/${encodeURIComponent(stopId)}`, query),
     route: (routeId: string, date?: string) => get<RouteTimetable>(`/transit/routes/${encodeURIComponent(routeId)}`, { date }),
     board: (placeId: string, query: { back?: number; ahead?: number } = {}) =>

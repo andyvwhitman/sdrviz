@@ -9,10 +9,10 @@
   import { api } from "$lib/api/client";
   import Chip from "$lib/components/Chip.svelte";
   import { BLANK } from "$lib/hud/fmt";
-  import type { BoardRow, Stop, StationBoard } from "$lib/types/transit";
+  import type { BoardRow, PassRow, Stop, StationBoard } from "$lib/types/transit";
   import Panel, { type PanelControls } from "./Panel.svelte";
   import Delay from "./Delay.svelte";
-  import { endpoint, stateWord, timeCell, trackCell } from "./lib/boardView";
+  import { type BoardTab, endpoint, PASS_LABEL, passTime, rowsFor, stateWord, timeCell, trackCell } from "./lib/boardView";
   import { hhmm, timeTag } from "./lib/transitView";
 
   interface Props extends PanelControls {
@@ -36,7 +36,7 @@
 
   let board = $state.raw<StationBoard | null>(null);
   let failed = $state(false);
-  let tab = $state<"departures" | "arrivals">("departures");
+  let tab = $state<BoardTab>("departures");
   let agency = $state<string | null>(null);
 
   $effect(() => {
@@ -48,7 +48,7 @@
     let located = same;
     const load = async (): Promise<void> => {
       try {
-        const next = await api.transit.station(id, { back: BACK_MIN, ahead: AHEAD_MIN });
+        const next = await api.transit.station(id, { back: BACK_MIN, ahead: AHEAD_MIN, passing: 1 });
         if (!alive) return;
         [board, failed] = [next, false];
         if (next.canonical_id) oncanonical?.(id, next.canonical_id);
@@ -65,14 +65,15 @@
     };
   });
 
-  const agencies = $derived(board ? [...new Set([...board.departures, ...board.arrivals].map((r) => r.agency))].sort() : []);
+  const agencies = $derived(board ? [...new Set([...board.departures, ...board.arrivals, ...(board.passing ?? [])].map((r) => r.agency))].sort() : []);
   /** every name on the board, so a " STATION" is only dropped where the rest stay distinct */
-  const names = $derived(board ? [...board.departures, ...board.arrivals].map((r) => endpoint(r, tab)) : []);
-  const rows = $derived((board?.[tab] ?? []).filter((r) => !agency || r.agency === agency));
+  const names = $derived(rowsFor(board, tab).map((r) => endpoint(r, tab)));
+  const rows = $derived(rowsFor(board, tab).filter((r) => !agency || r.agency === agency));
   const passed = $derived(rows.filter((r) => r.state === "passed"));
   const ahead = $derived(rows.filter((r) => r.state !== "passed"));
-  const timeTitle = (r: BoardRow): string =>
-    [r.route_name, `SCHEDULED ${hhmm(r.scheduled)}`, r.estimated ? `EXPECTED ${hhmm(r.estimated)}` : "NO REALTIME"].filter(Boolean).join(" · ");
+  const timeTitle = (r: BoardRow | PassRow): string =>
+    [r.route_name, `${tab === "passing" ? "APPROX. " : ""}SCHEDULED ${hhmm(r.scheduled)}`, r.estimated ? `EXPECTED ${hhmm(r.estimated)}` : "NO REALTIME"].filter(Boolean).join(" · ");
+  const isPass = (r: BoardRow | PassRow): r is PassRow => "approx" in r;
 
   /** scroll to the first upcoming row */
   let listEl = $state<HTMLElement>();
@@ -87,19 +88,30 @@
   });
 </script>
 
-{#snippet line(r: BoardRow)}
-  {@const tag = timeTag(r.delay_s, r.estimated)}
-  {@const t = timeCell(r.scheduled, r.estimated)}
+{#snippet line(r: BoardRow | PassRow)}
   {@const word = stateWord(r, tab)}
-  <button class="sw-row is-{r.state}" onclick={() => ontrip(r.trip_id)} title={timeTitle(r)}>
-    <span class="sw-t">{#if t.scheduled}<s>{t.scheduled}</s> {/if}{t.time}</span>
-    <span class="sw-n">{r.agency} {r.train ?? ""}</span>
-    {#if controls.full}<span class="sw-d sw-r">{r.route_name ?? BLANK}</span>{/if}
-    <span class="sw-d" title={endpoint(r, tab)}>{cleanName(endpoint(r, tab), names)}</span>
-    <span class="sw-k sw-trk">{#if trackCell(r, board?.stop.code)}TRK {trackCell(r, board?.stop.code)}{/if}</span>
-    <span class="sw-k sw-g">{#if r.state === "cancelled"}CANCELLED{:else}<Delay {...tag} />{/if}</span>
-    <span class="sw-k sw-s">{word}</span>
-  </button>
+  {#if isPass(r)}
+    <button class="sw-row is-{r.state} is-pass" onclick={() => ontrip(r.trip_id)} title={timeTitle(r)}>
+      <span class="sw-t">{passTime(r.scheduled, r.estimated)}</span>
+      <span class="sw-n">{r.agency} {r.train ?? ""}</span>
+      {#if controls.full}<span class="sw-d sw-r">{r.route_name ?? BLANK}</span>{/if}
+      <span class="sw-d" title={endpoint(r, "departures")}>{cleanName(endpoint(r, "departures"), names)}</span>
+      <span class="sw-k sw-pass">{PASS_LABEL}<span class="sw-pass-to">&nbsp;· {cleanName(endpoint(r, "departures"), names)}</span></span>
+      <span class="sw-k sw-g">{word}</span>
+    </button>
+  {:else}
+    {@const tag = timeTag(r.delay_s, r.estimated)}
+    {@const t = timeCell(r.scheduled, r.estimated)}
+    <button class="sw-row is-{r.state}" onclick={() => ontrip(r.trip_id)} title={timeTitle(r)}>
+      <span class="sw-t">{#if t.scheduled}<s>{t.scheduled}</s> {/if}{t.time}</span>
+      <span class="sw-n">{r.agency} {r.train ?? ""}</span>
+      {#if controls.full}<span class="sw-d sw-r">{r.route_name ?? BLANK}</span>{/if}
+      <span class="sw-d" title={endpoint(r, tab)}>{cleanName(endpoint(r, tab), names)}</span>
+      <span class="sw-k sw-trk">{#if trackCell(r, board?.stop.code)}TRK {trackCell(r, board?.stop.code)}{/if}</span>
+      <span class="sw-k sw-g">{#if r.state === "cancelled"}CANCELLED{:else}<Delay {...tag} />{/if}</span>
+      <span class="sw-k sw-s">{word}</span>
+    </button>
+  {/if}
 {/snippet}
 
 <Panel title={board?.stop.name ?? name ?? stopId} kind="STATION · {board?.stop.kind ?? 'STOP'}" label="Station {board?.stop.name ?? name}" {...controls}>
@@ -109,6 +121,7 @@
   <div class="sw-chips">
     <Chip text="DEPARTURES" kind="filter" button pressed={tab === "departures"} onclick={() => (tab = "departures")} />
     <Chip text="ARRIVALS" kind="filter" button pressed={tab === "arrivals"} onclick={() => (tab = "arrivals")} />
+    <Chip text="PASSING" kind="filter" button pressed={tab === "passing"} onclick={() => (tab = "passing")} title="Trains that run through without stopping" />
   </div>
   {#if agencies.length > 1}
     <div class="sw-chips" aria-label="Agency">
@@ -117,10 +130,10 @@
     </div>
   {/if}
   <section class="inspector__sec sw-board" class:is-wide={controls.full}>
-    <h4>{tab === "departures" ? "LEFT / LEAVING" : "ARRIVED / ARRIVING"} · LAST {BACK_MIN} MIN · NEXT {AHEAD_MIN / 60} H</h4>
+    <h4>{tab === "departures" ? "LEFT / LEAVING" : tab === "arrivals" ? "ARRIVED / ARRIVING" : "PASSED / PASSING (APPROX.)"} · LAST {BACK_MIN} MIN · NEXT {AHEAD_MIN / 60} H</h4>
     {#if board}
       <div class="sw-row sw-head" aria-hidden="true">
-        <span class="sw-t">TIME</span><span class="sw-n">TRAIN</span>{#if controls.full}<span class="sw-r">SERVICE</span>{/if}<span class="sw-d">{tab === "departures" ? "TO" : "FROM"}</span><span class="sw-trk">TRACK</span><span class="sw-g">STATUS</span>
+        <span class="sw-t">TIME</span><span class="sw-n">TRAIN</span>{#if controls.full}<span class="sw-r">SERVICE</span>{/if}<span class="sw-d">{tab === "arrivals" ? "FROM" : "TO"}</span><span class="sw-trk">{tab === "passing" ? "" : "TRACK"}</span><span class="sw-g">{tab === "passing" ? "" : "STATUS"}</span>
       </div>
       <div class="sw-list" bind:this={listEl}>
         {#each passed as r (`${r.trip_id}-${r.scheduled}`)}{@render line(r)}{/each}
@@ -154,6 +167,14 @@
   .sw-board:not(.is-wide) .sw-head .sw-d, .sw-board:not(.is-wide) .sw-head .sw-trk { display: none; }
   .sw-t s { font-size: var(--fs-11); color: var(--ink-3); margin-right: 6px; }
   .sw-trk { color: var(--ink-2); }
+  /* a pass is not a stop: dashed rule, dim time and a label that is always on screen */
+  .is-pass { border-bottom-style: dashed; color: var(--ink-2); }
+  .is-pass .sw-n { color: var(--ink-2); }
+  .sw-pass { grid-area: 2 / 1 / 3 / 4; color: var(--ink-2); letter-spacing: 0.1em; overflow: hidden; text-overflow: ellipsis; }
+  .is-pass .sw-d { display: none; }
+  .sw-board.is-wide .is-pass .sw-d { display: block; }
+  .sw-board.is-wide .sw-pass { grid-area: 1 / 5 / 2 / 7; }
+  .sw-board.is-wide .sw-pass-to { display: none; }
   .sw-row:hover:not(.sw-head) { background: var(--bg-panel); }
   .sw-t { font-variant-numeric: tabular-nums; }
   .sw-n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

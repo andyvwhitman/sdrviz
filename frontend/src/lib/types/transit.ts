@@ -52,6 +52,8 @@ export type TripStopState = "passed" | "current" | "next" | "upcoming" | "skippe
 export type StateBasis = "position" | "clock";
 
 export interface TripStop {
+  /** "pass" (with `?passes=1`): a station the train runs through without stopping; absent or "stop" otherwise */
+  kind?: "stop" | "pass";
   stop_id: string;
   name: string;
   seq: number;
@@ -63,6 +65,9 @@ export interface TripStop {
   track: string | null;
   state: TripStopState;
   state_basis?: StateBasis;
+  /** a pass entry's approximate times, interpolated along the track */
+  pass_scheduled?: string;
+  pass_estimated?: string | null;
 }
 
 /** GET /transit/trips/{trip_id} */
@@ -134,6 +139,24 @@ export interface BoardRow {
   added?: boolean;
 }
 
+/** A train that runs through a station without stopping (`?passing=1`); its times are approximate. */
+export interface PassRow {
+  trip_id: string;
+  source: string;
+  train: string | null;
+  route_name: string | null;
+  agency: string;
+  headsign: string | null;
+  origin: string | null;
+  destination: string | null;
+  scheduled: string;
+  estimated: string | null;
+  delay_s: number | null;
+  state: "passed" | "upcoming";
+  state_basis: StateBasis;
+  approx: true;
+}
+
 /** GET /transit/stations/{stop_id} */
 export interface StationBoard {
   /** the id to address the station by (a group id, or the stop's own id) */
@@ -142,6 +165,8 @@ export interface StationBoard {
   routes: { id: string; name: string; short_name: string | null; color: string | null; agency: string }[];
   departures: BoardRow[];
   arrivals: BoardRow[];
+  /** with `?passing=1`, else empty */
+  passing?: PassRow[];
 }
 
 /** GET /transit/routes/{route_id}: one timetable grid per direction */

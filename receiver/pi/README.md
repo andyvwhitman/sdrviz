@@ -70,3 +70,26 @@ Start at the default (36.4 dB). Run the probe:
   backend is connected, the probe will be refused, and the other way round.
 - **Later:** the `sdrviz-agent` will replace `rtl_tcp` and add health data (temperature,
   dropped samples). These files will stay as the simple fallback.
+
+## The node agent (sdrviz-node)
+
+The agent runs the receiver chain on the Pi (channelizer, squelch, demod, Opus) and sends audio, spectrum, key-ups and health
+to the server over one outbound WebSocket (`docs/node-protocol.md`). It reads IQ from the local `rtl_tcp` service.
+
+Install (as root, after `setup.sh`): `cd ~/sdrviz/receiver/pi && sudo bash install-node.sh`. It makes a git checkout in
+`/opt/sdrviz-node/src`, a venv in `/opt/sdrviz-node/venv`, the `sdrviz-node` command, `/etc/sdrviz-node/` and the
+`sdrviz-node` service. Run it again to update.
+
+Enroll: in the web app, Settings > Nodes > Add node, copy the node key, then on the Pi
+`sudo -u sdrviz sdrviz-node enroll 'sdrviz-node1....'` (or save the key as `/etc/sdrviz-node/pi.key`) and
+`sudo systemctl restart sdrviz-node`. The key is valid 24 hours and works once.
+
+| Task | Command (on the Pi) |
+|---|---|
+| State of the agent and uplink | `sdrviz-node status` |
+| Service status / live log | `systemctl status sdrviz-node` / `journalctl -u sdrviz-node -f` |
+| Settings (rtl_tcp host and port, centre, rate, workers) | `sudo -u sdrviz nano /etc/sdrviz-node/agent.toml`, then restart the service |
+| Run in the foreground against a recording | `sdrviz-node run --replay file.iq` (uint8 I/Q at the configured rate) |
+
+Files in `/etc/sdrviz-node/`: `node.json` (server address, node id, permanent secret; mode 0600), `agent.toml`
+(optional), `state.json` (what Settings commands changed: tune, gain, squelch, channels), `status.json`.

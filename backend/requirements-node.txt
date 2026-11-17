@@ -1,0 +1,6 @@
+# What the sdrviz-node agent needs on the Pi (installed into /opt/sdrviz-node/venv by receiver/pi/install-node.sh).
+# The agent imports app.node (numpy only), app.live.opus (PyAV) and the wire format app.live.node_protocol (pydantic).
+numpy==2.5.4
+av==19.0.2  # libopus is bundled in the wheel
+websockets==17.4
+pydantic==2.14.3

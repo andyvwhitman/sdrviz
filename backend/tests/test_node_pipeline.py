@@ -1,6 +1,7 @@
 """app.node runs without the web app: no imports from the rest of app, and the pipeline works on its own."""
 
 import ast
+import importlib.util
 from pathlib import Path
 
 import numpy as np
@@ -66,3 +67,15 @@ def test_pipeline_pool_gives_the_same_chunks():
         for _ in range(7):
             a, b = serial.process(rtl_bytes(0.1)), threaded.process(rtl_bytes(0.1))
             assert a.chunks == b.chunks
+
+
+def test_agent_package_only_uses_node_and_the_wire_modules():
+    allowed = {"app.live.protocol", "app.live.node_protocol", "app.live.opus"}
+    for path in (NODE_DIR / "agent").glob("*.py"):
+        package = "app.node.agent"
+        for node in ast.walk(ast.parse(path.read_text())):
+            if not isinstance(node, ast.ImportFrom) or (node.level == 0 and not (node.module or "").startswith("app")):
+                continue
+            module = importlib.util.resolve_name("." * node.level + (node.module or ""), package)
+            imported = [module] + [f"{module}.{alias.name}" for alias in node.names]
+            assert any(name.startswith("app.node") or name in allowed for name in imported), f"{path.name}: {module}"

@@ -1,0 +1,39 @@
+[Unit]
+Description=sdrviz node agent (receiver chain and uplink to the server)
+Documentation=file:///opt/sdrviz-node/src/docs/node-protocol.md
+After=network-online.target sdrviz-rtltcp.service
+Wants=network-online.target sdrviz-rtltcp.service
+
+[Service]
+Type=simple
+User=sdrviz
+Group=sdrviz
+# install-node.sh rewrites /opt/sdrviz-node/src below when it was told to use another checkout.
+WorkingDirectory=/opt/sdrviz-node/src/backend
+Environment=SDRVIZ_NODE_DIR=/etc/sdrviz-node
+ExecStart=/opt/sdrviz-node/venv/bin/python -m app.node.agent run
+Restart=always
+RestartSec=3
+# The agent exits cleanly on SIGTERM; five seconds is plenty (rtl_tcp stopped for 90 s once).
+TimeoutStopSec=5
+
+# Hardening: the agent needs the network, /etc/sdrviz-node (credentials, state, status) and nothing else.
+NoNewPrivileges=yes
+ProtectSystem=strict
+ReadWritePaths=/etc/sdrviz-node
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictNamespaces=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+LockPersonality=yes
+CapabilityBoundingSet=
+SystemCallArchitectures=native
+UMask=0077
+MemoryMax=512M
+
+[Install]
+WantedBy=multi-user.target

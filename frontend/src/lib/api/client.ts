@@ -63,6 +63,10 @@ const get = <T = Json>(path: string, query?: Query) => request<T>("GET", path, u
 const post = <T = Json>(path: string, body?: unknown, query?: Query) => request<T>("POST", path, body ?? {}, query);
 const put = <T = Json>(path: string, body: unknown) => request<T>("PUT", path, body);
 const del = <T = void>(path: string, query?: Query) => request<T>("DELETE", path, undefined, query);
+const patch = <T = Json>(path: string, body: unknown) => request<T>("PATCH", path, body);
+
+/** The verbs, for API modules that live in their own file (see api/nodes.ts). */
+export const http = { get, post, patch };
 
 export const api = {
   auth: {

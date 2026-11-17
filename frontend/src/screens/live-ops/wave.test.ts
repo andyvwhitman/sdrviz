@@ -16,11 +16,11 @@ describe("waveEnvelope", () => {
     expect(Math.max(...peaks(env))).toBeLessThan(0.12);
   });
 
-  it("rises with the level above the floor, newest at the right", () => {
-    const quiet = waveEnvelope(Array(100).fill(-47), -47, 10)[183][1];
-    const loud = waveEnvelope(Array(100).fill(-27), -47, 10)[183][1];
-    expect(loud).toBeGreaterThan(quiet);
-    expect(loud).toBeLessThanOrEqual(1);
+  it("is taller where the level is louder, newest at the right", () => {
+    const levels = [...Array(50).fill(-45), ...Array(50).fill(-25)];
+    const env = peaks(waveEnvelope(levels, -47, 10));
+    expect(env[183]).toBeGreaterThan(env[5]);
+    expect(env[183]).toBeLessThanOrEqual(1);
   });
 
   it("small level changes still show, normalised to the transmission's own range", () => {

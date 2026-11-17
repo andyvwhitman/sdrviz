@@ -27,18 +27,16 @@
 .lo-menu__item:hover, .lo-menu__item:focus-visible { color: var(--ink); background: var(--grid); }
 .lo-menu__item[aria-checked="true"] { color: var(--ink); }
 
-/* ---- front wall: spectrum, ruler, waterfall, LOFAR (brief 9.1.2) ------- */
+/* ---- front wall: spectrum, ruler, waterfall (brief 9.1.2) ------- */
 .lo-plot { position: relative; overflow: hidden; }
 .lo-box.lo-plot { position: absolute; }
 .lo-plot > canvas, .lo-plot > svg { position: absolute; left: 0; top: 0; display: block; }
 .lo-plot > canvas { image-rendering: pixelated; }
 .lo-plot > .lo-bezel { position: absolute; inset: 0; box-shadow: inset 0 0 0 1px var(--line-faint); pointer-events: none; }
-/* waterfall and LOFAR: bezel left and right only, so canvas row 0 (the newest) and the last row are never under a stroke */
-.lo-fall > .lo-bezel, .lo-lofar > .lo-bezel { box-shadow: inset 1px 0 0 var(--line-faint), inset -1px 0 0 var(--line-faint); }
+/* waterfall: bezel left and right only, so canvas row 0 (the newest) and the last row are never under a stroke */
+.lo-fall > .lo-bezel { box-shadow: inset 1px 0 0 var(--line-faint), inset -1px 0 0 var(--line-faint); }
 .lo-scale { position: absolute; font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink-3); white-space: nowrap; }
 .lo-scale .mono { font: 400 var(--fs-11)/1 var(--font-data); letter-spacing: 0; }
-.lo-lofar-head { position: absolute; }
-.lo-lofar-head .lo-ramp { position: absolute; left: 0; height: 6px; width: 184px; background: var(--ramp); box-shadow: inset 0 0 0 1px var(--line-faint); }
 
 /* frozen front wall: the displayed feed is stale or faulted (brief 9.1.7) */
 .lo-wall-frozen canvas { opacity: 0.35; }
@@ -84,14 +82,6 @@
 .lo-log .txlog__head .mono { font: 400 var(--fs-12)/1 var(--font-data); color: var(--ink-2); }
 .lo-log .lo-rows { position: relative; flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--line-faint) transparent; }
 .lo-log:not(.lo-browsing) .lo-rows { overflow-y: hidden; }
-
-/* ---- CTC track strip (M18, brief 9.1.6) ----------------------------------- */
-.lo-ctc { position: absolute; inset: 0; box-shadow: inset 0 1px 0 var(--grid); }
-.lo-ctc svg text.lo-rt { font: 500 var(--fs-11) var(--font-label); letter-spacing: 0.1em; text-transform: uppercase; fill: var(--ink-2); }
-.lo-ctc svg text.lo-st { font: 500 var(--fs-11) var(--font-label); letter-spacing: 0.06em; text-transform: uppercase; fill: var(--ink-3); }
-.lo-ctc svg text.lo-tr { font: 400 var(--fs-11) var(--font-data); fill: var(--ink-2); }
-.lo-ctc svg text.lo-tr.is-tx { fill: var(--state-tx); }
-.lo-ctc svg text.lo-eq { font: 400 var(--fs-11) var(--font-data); fill: var(--ink-3); }
 
 /* ---- inspector extras ----------------------------------------------------- */
 .lo-wave { display: flex; overflow: hidden; justify-content: flex-end; }

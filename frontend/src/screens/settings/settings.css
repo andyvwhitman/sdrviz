@@ -44,3 +44,9 @@
 .st-table th { text-align: left; padding: 0 0 6px; font-weight: 500; }
 .st-table td { padding: 2px 0; font: 400 var(--fs-12)/1.2 var(--font-data); color: var(--ink); }
 .st-table .chip { height: 22px; padding: 0 6px; }
+
+/* nodes */
+.nd { display: flex; flex-direction: column; gap: 12px; flex: none; }
+.nd-meta { margin-top: 10px; }
+.nd-high { color: var(--state-stale); }
+.nd-key { margin: 10px 0 0; }

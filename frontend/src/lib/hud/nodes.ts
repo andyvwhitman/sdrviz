@@ -1,5 +1,7 @@
 /** Words and numbers for a node's link: quality (0-100) as a label and a 5-step meter, lag in ms or s. */
 
+import type { NodeStatus } from "$lib/types/nodes";
+import type { ChipKind } from "./chips";
 import { BLANK } from "./fmt";
 
 export type LinkLabel = "GOOD" | "FAIR" | "POOR";
@@ -30,3 +32,6 @@ export function formatLag(ms: number | null): string {
 export const HIGH_LAG_MS = 1000;
 
 export const isHighLag = (ms: number | null): boolean => ms != null && ms >= HIGH_LAG_MS;
+
+/** The chip of a node state: ONLINE bright, PENDING neutral, OFFLINE and REVOKED dim. Never ember or red (decisions 7, 26). */
+export const NODE_CHIP: Record<NodeStatus, ChipKind> = { ONLINE: "active", OFFLINE: "offline", PENDING: "armed", REVOKED: "offline" };

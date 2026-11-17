@@ -9,6 +9,7 @@
   import { api, ApiError } from "$lib/api/client";
   import { shell } from "$lib/stores/shell.svelte";
   import BackendPanel from "./BackendPanel.svelte";
+  import NodesSection from "./NodesSection.svelte";
   import SourceCard from "./SourceCard.svelte";
   import SourceForm from "./SourceForm.svelte";
   import { withEnabled } from "./sourceForm";
@@ -88,16 +89,17 @@
 
 <div class="st">
   <section class="st-col st-col--sources" aria-label="Transit data feeds">
-    <header class="st-ph">
-      <span class="t-panel">TRANSIT DATA FEEDS</span>
-      <span class="mono">{sources?.length ?? 0}</span>
-      <span class="t-micro">GTFS · GTFS-RT · AMTRAKER · LINES</span>
-      <span class="grow"></span>
-      <Button sm onclick={() => (editing = "new")}>+ ADD SOURCE</Button>
-    </header>
-    {#if notice}<p class="st-card__error" role="alert">{notice}</p>{/if}
-
     <div class="st-list">
+      <NodesSection />
+      <header class="st-ph">
+        <span class="t-panel">TRANSIT DATA FEEDS</span>
+        <span class="mono">{sources?.length ?? 0}</span>
+        <span class="t-micro">GTFS · GTFS-RT · AMTRAKER · LINES</span>
+        <span class="grow"></span>
+        <Button sm onclick={() => (editing = "new")}>+ ADD SOURCE</Button>
+      </header>
+      {#if notice}<p class="st-card__error" role="alert">{notice}</p>{/if}
+
       {#if editing === "new"}
         {#key "new"}<SourceForm source={null} existingIds={sources?.map((s) => s.id) ?? []} onsave={save} oncancel={() => (editing = null)} />{/key}
       {/if}

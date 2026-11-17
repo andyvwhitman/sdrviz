@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { BLANK } from "./fmt";
-import { formatLag, isHighLag, linkLabel, linkSteps } from "./nodes";
+import { NODE_CHIP, formatLag, isHighLag, linkLabel, linkSteps } from "./nodes";
 
 describe("linkLabel", () => {
   it("names the band of a quality", () => {
@@ -34,5 +34,16 @@ describe("formatLag", () => {
     expect(isHighLag(999)).toBe(false);
     expect(isHighLag(1000)).toBe(true);
     expect(isHighLag(null)).toBe(false);
+  });
+});
+
+describe("NODE_CHIP", () => {
+  it("covers every state and never uses the ember or fault looks", () => {
+    expect(Object.keys(NODE_CHIP).sort()).toEqual(["OFFLINE", "ONLINE", "PENDING", "REVOKED"]);
+    for (const kind of Object.values(NODE_CHIP)) expect(["tx", "fault"]).not.toContain(kind);
+  });
+  it("makes an offline node dimmer than an online one", () => {
+    expect(NODE_CHIP.ONLINE).toBe("active");
+    expect(NODE_CHIP.OFFLINE).toBe("offline");
   });
 });

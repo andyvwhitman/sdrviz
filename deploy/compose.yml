@@ -1,0 +1,37 @@
+# sdrviz on one machine: Caddy (TLS, the built app) in front of the API.
+# Run from this folder:  docker compose up --build
+name: sdrviz
+
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: deploy/api/Dockerfile
+    restart: unless-stopped
+    environment:
+      SDRVIZ_PASSWORD: ${SDRVIZ_PASSWORD:?set SDRVIZ_PASSWORD in .env}
+      SDRVIZ_SECRET: ${SDRVIZ_SECRET:?set SDRVIZ_SECRET in .env}
+      SDRVIZ_RTLTCP_HOST: ${SDRVIZ_RTLTCP_HOST:-}
+    volumes:
+      - data:/data
+
+  caddy:
+    build:
+      context: ..
+      dockerfile: deploy/caddy/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      SDRVIZ_DOMAIN: ${SDRVIZ_DOMAIN:-localhost}
+    ports:
+      - "${SDRVIZ_HTTP_PORT:-80}:80"
+      - "${SDRVIZ_HTTPS_PORT:-443}:443"
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  data:
+  caddy_data:
+  caddy_config:

@@ -22,3 +22,6 @@ design/screens/*
 
 # Downloaded GTFS schedules
 data/transit/
+
+# Deployment secrets (deploy/.env.example is the template)
+deploy/.env

@@ -2,8 +2,8 @@
 
     IQ (2.4 MS/s) → Channelizer → 48 kS/s baseband per channel → Squelch → FmDemod → 8 kHz PCM
 
-The channelizer folds each channel's frequency shift into its filter taps and only computes the
-decimated output samples, so every channel comes out of one matrix multiply per block.
+The channelizer is a fast-convolution (overlap-save) filter bank: one FFT of each block is shared
+by all channels, and each channel needs only a small inverse FFT at the 48 kS/s output rate.
 """
 
 from dataclasses import dataclass, field
@@ -29,8 +29,50 @@ def iq_from_u8(raw: bytes) -> np.ndarray:
     return (samples[0::2] + 1j * samples[1::2]).astype(np.complex64)
 
 
+def _fast_size(n: int) -> int:
+    """Smallest FFT-friendly number (only the prime factors 2, 3, 5 and 7) that is at least n."""
+    while True:
+        rest = n
+        for prime in (2, 3, 5, 7):
+            while rest % prime == 0:
+                rest //= prime
+        if rest == 1:
+            return n
+        n += 1
+
+
+@dataclass(frozen=True)
+class _Plan:
+    """Sizes and filter for one block length (overlap-save)."""
+
+    history: int  # samples kept in front of the new block; at least the filter length - 1
+    size: int  # FFT size: history + block length
+    out_size: int  # inverse FFT size: size // decim
+    skip: int  # outputs to drop from the front: they belong to the history
+    bins: np.ndarray  # the out_size bins around DC, in FFT order: 0, 1, ... then ..., -2, -1
+    response: np.ndarray  # filter response at those bins, with the 1/decim of the smaller inverse FFT folded in
+    steps: np.ndarray  # 0, 1, 2, ... for the phase ramp
+
+
+@dataclass(frozen=True)
+class Block:
+    """One IQ block after the shared FFT, ready for `Channelizer.extract`, once per channel (thread safe)."""
+
+    spectrum: np.ndarray
+    plan: _Plan
+    start: int  # absolute sample index of the first sample of the FFT block
+
+
 class Channelizer:
-    """Shift, filter and decimate many channels out of one wideband IQ stream."""
+    """Shift, filter and decimate many channels out of one wideband IQ stream (fast convolution).
+
+    One FFT of the block (plus the end of the previous one) is shared by all channels. For each channel
+    the bins around its frequency are multiplied by the low-pass response and brought back by an inverse
+    FFT 1/decim as long, which is the filtered, shifted and decimated signal. The part of the shift that
+    does not land on a bin (at most half a bin, under 10 Hz) is removed by a rotation afterwards.
+    Outputs match the direct filter except that signals further than 24 kHz from a channel are dropped
+    instead of folded into it.
+    """
 
     def __init__(self, sample_rate: int, center_hz: int, num_taps: int = 191, cutoff_hz: float = 6_000):
         if sample_rate % IF_RATE:
@@ -39,37 +81,66 @@ class Channelizer:
         self.center_hz = center_hz
         self.decim = sample_rate // IF_RATE
         self.taps = lowpass(num_taps, cutoff_hz, sample_rate)
-        self._tail = np.zeros(num_taps - 1, dtype=np.complex64)
-        self._base = -(num_taps - 1)  # absolute index of the first sample in the extended block, mod rate
-        self._bank: dict[int, np.ndarray] = {}  # offset Hz → shifted taps
+        self._history = np.zeros(num_taps - 1, dtype=np.complex64)
+        self._consumed = 0  # samples processed so far
+        self._plans: dict[int, _Plan] = {}
+        self._bin_index: dict[tuple[int, int], np.ndarray] = {}
 
     def in_band(self, freq_hz: int) -> bool:
         return abs(freq_hz - self.center_hz) < 0.45 * self.rate
 
-    def _shifted_taps(self, offset_hz: int) -> np.ndarray:
-        if offset_hz not in self._bank:
-            j = np.arange(len(self.taps))
-            self._bank[offset_hz] = (self.taps * np.exp(-2j * np.pi * offset_hz * j / self.rate)).astype(np.complex64)
-        return self._bank[offset_hz]
+    def _plan(self, block_len: int) -> _Plan:
+        if block_len not in self._plans:
+            if block_len % self.decim:
+                raise ValueError(f"block length {block_len} must be a multiple of {self.decim}")
+            need = len(self.taps) - 1
+            history = -(-need // self.decim) * self.decim  # a whole number of output samples
+            while (block_len + history) % self.decim or _fast_size(block_len + history) != block_len + history:
+                history += self.decim
+            size = block_len + history
+            out_size = size // self.decim
+            bins = np.fft.fftfreq(out_size, 1 / out_size).round().astype(np.int64)
+            response = np.fft.fft(self.taps, size)[bins % size] / self.decim
+            self._plans[block_len] = _Plan(
+                history, size, out_size, history // self.decim, bins, response.astype(np.complex64), np.arange(out_size)
+            )
+        return self._plans[block_len]
 
-    def process(self, iq: np.ndarray, freqs_hz: list[int]) -> np.ndarray:
-        """One block of IQ (length a multiple of decim) → array (len(iq)//decim, len(freqs_hz)) at IF_RATE."""
-        extended = np.concatenate([self._tail, iq])
-        self._tail = extended[-(len(self.taps) - 1) :]
-        base = self._base % self.rate
-        self._base += len(iq)
+    def begin(self, iq: np.ndarray) -> Block:
+        """Take the next block (length a multiple of decim): updates the stream state, does the shared FFT."""
+        plan = self._plan(len(iq))
+        padding = np.zeros(plan.history - len(self._history), dtype=np.complex64)
+        extended = np.concatenate([padding, self._history, iq])
+        self._history = extended[-len(self._history) :]
+        start = self._consumed - plan.history
+        self._consumed += len(iq)
+        return Block(np.fft.fft(extended), plan, start)
+
+    def extract(self, block: Block, freq_hz: int) -> np.ndarray:
+        """One channel of a block at IF_RATE, length len(iq)//decim. Safe to call from several threads."""
+        plan, offset = block.plan, round(freq_hz - self.center_hz)
+        shift = round(offset * plan.size / self.rate)  # whole bins
+        if (plan.size, shift) not in self._bin_index:
+            self._bin_index[plan.size, shift] = (shift + plan.bins) % plan.size
+        narrow = block.spectrum[self._bin_index[plan.size, shift]] * plan.response
+        out = np.fft.ifft(narrow)[plan.skip :]
+
+        # What the bins did not shift (the mix with e^{-j2π offset n / rate} for absolute sample n), applied
+        # at the filter's centre sample, so it is the same phase as mixing before the filter.
+        residual_hz = offset - shift * self.rate / plan.size
+        centre = plan.history + plan.steps[: len(out)] * self.decim - (len(self.taps) - 1) / 2
+        cycles = (offset * block.start % self.rate + residual_hz * centre) / self.rate
+        return (out * np.exp(-2j * np.pi * cycles)).astype(np.complex64)
+
+    def process(self, iq: np.ndarray, freqs_hz: list[int], pool=None) -> np.ndarray:
+        """One block of IQ (length a multiple of decim) → array (len(iq)//decim, len(freqs_hz)) at IF_RATE.
+
+        `pool` is an optional executor (anything with `map`) to spread the channels over cores."""
+        block = self.begin(iq)
         if not freqs_hz:
             return np.empty((len(iq) // self.decim, 0), dtype=np.complex64)
-
-        windows = sliding_window_view(extended, len(self.taps))[:: self.decim]
-        offsets = [round(f - self.center_hz) for f in freqs_hz]
-        bank = np.stack([self._shifted_taps(off) for off in offsets], axis=1)
-        out = windows @ bank
-
-        # Remaining part of the frequency shift: e^{-j2π f n / rate} at each output sample's start index.
-        starts = base + np.arange(out.shape[0], dtype=np.int64) * self.decim
-        cycles = (np.outer(starts, np.array(offsets, dtype=np.int64)) % self.rate) / self.rate
-        return (out * np.exp(-2j * np.pi * cycles)).astype(np.complex64)
+        columns = (pool.map if pool else map)(lambda freq: self.extract(block, freq), freqs_hz)
+        return np.stack(list(columns), axis=1)
 
 
 @dataclass
@@ -183,3 +254,28 @@ def carrier_gate(pcm: bytes, baseband: np.ndarray, threshold: float) -> bytes:
     keep = np.repeat((power >= threshold).astype(np.float32), len(audio) // windows)
     keep = np.convolve(np.pad(keep, (0, len(audio) - len(keep)), mode="edge"), np.ones(GATE_FADE) / GATE_FADE, "same")
     return (audio * keep).astype("<i2").tobytes()
+
+
+@dataclass
+class Reception:
+    """What one channel did with one block."""
+
+    power_db: float
+    was_open: bool
+    is_open: bool
+    pcm: bytes | None  # None while the squelch is shut
+
+
+def receive(squelch: Squelch, demod: FmDemod, baseband: np.ndarray) -> Reception:
+    """Power, demod, squelch and carrier gate for one channel's block. Each channel has its own state,
+    so channels can run in different threads."""
+    power = channel_power(baseband)
+    pcm = demod.process(baseband)  # always demodulate, so the filter state stays continuous
+    was_open = squelch.is_open
+    is_open = squelch.update(power, demod.hiss)
+    power_db = float(10 * np.log10(power + 1e-12))
+    if not (was_open or is_open):
+        return Reception(power_db, was_open, is_open, None)
+    # silence the noise burst where the carrier drops, without waiting for the squelch to close
+    pcm = carrier_gate(pcm, baseband, squelch.floor * 10 ** (squelch.close_db / 10))
+    return Reception(power_db, was_open, is_open, pcm)

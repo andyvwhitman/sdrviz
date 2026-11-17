@@ -1,8 +1,13 @@
 """The NFM receiver chain recovers a tone FM-modulated onto one channel, and stays quiet elsewhere."""
 
+from concurrent.futures import ThreadPoolExecutor
+
 import numpy as np
+import pytest
 
 from app.radio.dsp import AUDIO_RATE, Channelizer, FmDemod, Squelch, carrier_gate, channel_power, iq_from_u8
+
+from .reference_dsp import MatmulChannelizer
 
 RATE = 2_400_000
 CENTER = 160_897_500
@@ -106,3 +111,70 @@ def test_noise_squelch_ignores_bleed_over():
     assert snr16 > 8  # the power squelch alone would have opened
     assert not opened[ch16]
     assert opened[CH54]
+
+
+# --- the FFT channelizer against the original matmul one -----------------------------------------------------
+
+
+def rms_error_db(new: np.ndarray, reference: np.ndarray) -> float:
+    return float(10 * np.log10(np.mean(np.abs(new - reference) ** 2) / np.mean(np.abs(reference) ** 2)))
+
+
+@pytest.mark.parametrize("rate", [2_400_000, 1_536_000])
+@pytest.mark.parametrize("offset_hz", [-500_000, -123_456, -1_000, 0, 777, 5_000, 300_001, 550_000])
+def test_fft_channelizer_matches_matmul(rate, offset_hz):
+    """A tone 2.5 kHz off the channel plus noise, over 20 blocks: every block matches the reference, so no seams."""
+    block = rate // 10
+    freq = CENTER + offset_hz
+    n = 20 * block
+    t = np.arange(n) / rate
+    rng = np.random.default_rng(offset_hz % 1000)
+    noise = 0.0005 * (rng.standard_normal(n) + 1j * rng.standard_normal(n))
+    iq = (0.3 * np.exp(2j * np.pi * (offset_hz + 2_500) * t) + noise).astype(np.complex64)
+    new, reference = Channelizer(rate, CENTER), MatmulChannelizer(rate, CENTER)
+    for start in range(0, n, block):
+        chunk = iq[start : start + block]
+        out = new.process(chunk, [freq])
+        assert out.shape == (block // new.decim, 1)
+        assert rms_error_db(out, reference.process(chunk, [freq])) < -60
+
+
+def test_fft_channelizer_threads_give_the_same_answer():
+    iq = np.random.default_rng(5).standard_normal(BLOCK).astype(np.complex64)
+    freqs = [CENTER + off for off in (-300_000, -1_000, 20_000, 400_000)]
+    with ThreadPoolExecutor(3) as pool:
+        threaded = Channelizer(RATE, CENTER).process(iq, freqs, pool)
+    assert np.array_equal(threaded, Channelizer(RATE, CENTER).process(iq, freqs))
+
+
+def test_fft_channelizer_accepts_other_block_lengths():
+    chan = Channelizer(RATE, CENTER)
+    for length in (BLOCK, BLOCK // 2, 50 * 1_000):
+        assert chan.process(np.zeros(length, dtype=np.complex64), [CH54]).shape == (length // chan.decim, 1)
+
+
+def tone_snr_db(audio: np.ndarray) -> float:
+    spectrum = np.abs(np.fft.rfft(audio * np.hanning(len(audio)))) ** 2
+    peak = np.argmax(spectrum)
+    return float(
+        10 * np.log10(spectrum[peak - 3 : peak + 4].sum() / (spectrum.sum() - spectrum[peak - 3 : peak + 4].sum()))
+    )
+
+
+def test_nfm_burst_sounds_and_squelches_like_the_old_chain():
+    """Quiet, then a keyed carrier, then quiet again: same open/close decisions, audio SNR within 0.5 dB."""
+    quiet = np.random.default_rng(2).normal(127.5, 2.5, int(1.6 * RATE)).clip(0, 255).astype(np.uint8).tobytes()
+    iq = iq_from_u8(quiet + rtl_bytes(1.0) + quiet[:RATE])
+    results = []
+    for channelizer in (Channelizer(RATE, CENTER), MatmulChannelizer(RATE, CENTER)):
+        demod, squelch, opened, pcm = FmDemod(), Squelch(), [], bytearray()
+        for start in range(0, len(iq), BLOCK):
+            baseband = channelizer.process(iq[start : start + BLOCK], [CH54])[:, 0]
+            pcm += demod.process(baseband)
+            opened.append(squelch.update(channel_power(baseband), demod.hiss))
+        audio = np.frombuffer(bytes(pcm), dtype="<i2").astype(np.float32)
+        loud = audio[int(2.2 * AUDIO_RATE) : int(2.9 * AUDIO_RATE)]  # inside the burst
+        results.append((opened, tone_snr_db(loud)))
+    (new_open, new_snr), (old_open, old_snr) = results
+    assert new_open == old_open and any(new_open) and not all(new_open)
+    assert abs(new_snr - old_snr) < 0.5

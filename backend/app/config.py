@@ -40,6 +40,7 @@ class Settings(BaseSettings):
     rtltcp_freq_hz: int = 160_897_500  # between AAR 52 and 53
     rtltcp_rate: int = 1_536_000  # multiple of 48 000; 1.536 MS/s covers AAR 07-97
     rtltcp_gain_db: float | None = 36.4  # None = automatic gain
+    dsp_workers: int | None = None  # threads for the per-channel work; None = one per CPU core
     squelch_db: float = 8.0  # opens this far above the channel's noise floor
     # How the receiver appears on the Feeds page and the map.
     rtltcp_name: str = "SDR-01 Pi"

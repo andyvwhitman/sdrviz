@@ -57,7 +57,7 @@ class Runtime:
         self.engine = ReplayEngine(self)
         self.prefetcher: Prefetcher | None = None
         # Real audio from the rtl_tcp receiver, once it has a host; the replay's synthetic audio then stays quiet.
-        self.radio = RadioSource(self)
+        self.radio = RadioSource(self, workers=settings.dsp_workers)
         # Real train positions and station boards; sources that are down only show up in /api/transit/sources.
         self.transit: TransitService | None = None
         if settings.transit_sources is None or settings.transit_sources:

@@ -133,3 +133,28 @@ def test_reconfigure_adjusts_running_squelch(client, calls):
     asyncio.run(radio.reconfigure(radio.config.model_copy(update={"squelch_db": 12.0})))
     assert (Rx.squelch.open_db, Rx.squelch.close_db) == (12.0, 9.0)
     assert calls == []
+
+
+def test_process_block_keys_up_on_a_carrier_and_leaves_the_rest_shut(client, calls):
+    """The threaded per-block path: a carrier on AAR 54 opens only that channel, first frame flagged FIRST."""
+    import numpy as np
+
+    from app.live import protocol
+    from app.radio.dsp import Channelizer
+
+    from .test_radio_dsp import BLOCK, CENTER, CH54, RATE, rtl_bytes
+
+    radio = client.app.state.rt.radio
+    radio.config = Receiver(id=1, **{**SETTINGS, "freq_hz": CENTER, "rate": RATE})
+    channelizer = Channelizer(RATE, CENTER)
+    wanted = radio._in_band(channelizer)
+    ch54 = next(cid for cid in wanted if abs(radio.channels[cid].freq.freq_mhz * 1e6 - CH54) < 1)
+    noise = np.random.default_rng(2).normal(127.5, 2.5, BLOCK * 2).clip(0, 255).astype(np.uint8).tobytes()
+    for _ in range(6):  # the first blocks only measure each channel's noise floor
+        assert not radio._process(channelizer, noise, wanted, want_spectrum=False).frames
+
+    result = radio._process(channelizer, rtl_bytes(0.1), wanted, want_spectrum=True)
+    assert result.opened == [ch54]
+    assert result.spectrum is not None
+    assert [cid for cid, _ in result.frames] == [ch54]
+    assert result.frames[0][1][3] == protocol.FLAG_FIRST  # the flags byte of the audio frame header

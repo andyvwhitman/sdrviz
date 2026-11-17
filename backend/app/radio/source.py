@@ -9,8 +9,10 @@ synthetic clips. Audio only goes to browsers that asked for that channel (the `a
 import asyncio
 import contextlib
 import logging
+import os
 import time
 from collections import deque
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
@@ -19,7 +21,7 @@ import numpy as np
 from ..live import protocol
 from ..models import Frequency, Receiver
 from ..sim.world import LIVE_FEED_ID
-from .dsp import Channelizer, FmDemod, Squelch, carrier_gate, channel_power, iq_from_u8, spectrum_dbfs
+from .dsp import Channelizer, FmDemod, Reception, Squelch, iq_from_u8, receive, spectrum_dbfs
 from .events import LiveEvents
 from .receiver import is_active, retunes
 from .rtltcp import RtlTcpClient
@@ -56,7 +58,7 @@ class BlockResult:
 class RadioSource:
     """Owns the rtl_tcp connection and the receiver chain; runs as one asyncio task."""
 
-    def __init__(self, rt: "Runtime", seq_base: int = 1_000_000):
+    def __init__(self, rt: "Runtime", seq_base: int = 1_000_000, workers: int | None = None):
         self.rt = rt
         self.config: Receiver = rt.receiver
         self.hub = rt.hub
@@ -69,6 +71,7 @@ class RadioSource:
         self._blocks = 0
         self._next_second = 0.0
         self.status: dict = {}
+        self.pool = ThreadPoolExecutor(workers or os.cpu_count() or 1, thread_name_prefix="channel")
 
     @property
     def active(self) -> bool:
@@ -173,30 +176,28 @@ class RadioSource:
         return wanted
 
     def _process(self, channelizer: Channelizer, raw: bytes, wanted: list[str], want_spectrum: bool) -> BlockResult:
-        """Runs in a worker thread (numpy releases the GIL)."""
+        """Runs in a worker thread (numpy releases the GIL); the channels are spread over `self.pool`."""
         iq = iq_from_u8(raw)
         result = BlockResult(spectrum=spectrum_dbfs(iq) if want_spectrum else None)
-        baseband = channelizer.process(iq, [_hz(self.channels[cid].freq) for cid in wanted])
-        for column, cid in enumerate(wanted):
+        block = channelizer.begin(iq)
+
+        def receive_channel(cid: str) -> Reception:
             rx = self.channels[cid]
-            signal = baseband[:, column]
-            power = channel_power(signal)
-            rx.power_db = float(10 * np.log10(power + 1e-12))
-            pcm = rx.demod.process(signal)  # always demodulate, so filter state stays continuous
-            was_open = rx.squelch.is_open
-            is_open = rx.squelch.update(power, rx.demod.hiss)
-            if not (was_open or is_open):
+            return receive(rx.squelch, rx.demod, channelizer.extract(block, _hz(rx.freq)))
+
+        for cid, heard in zip(wanted, self.pool.map(receive_channel, wanted), strict=True):
+            rx = self.channels[cid]
+            rx.power_db = heard.power_db
+            if heard.pcm is None:
                 continue
-            if is_open and not was_open:
+            if heard.is_open and not heard.was_open:
                 self._seq += 1
                 rx.seq, rx.offset_ms = self._seq, 0
                 result.opened.append(cid)
-            elif was_open and not is_open:
+            elif heard.was_open and not heard.is_open:
                 result.closed.append(cid)
-            # silence the noise burst where the carrier drops, without waiting for the squelch to close
-            pcm = carrier_gate(pcm, signal, rx.squelch.floor * 10 ** (rx.squelch.close_db / 10))
-            flags = (protocol.FLAG_FIRST if not was_open else 0) | (protocol.FLAG_LAST if not is_open else 0)
-            frame = protocol.audio_frame(rx.freq.aar_channel or 0, rx.seq, rx.offset_ms, flags, pcm)
+            flags = (0 if heard.was_open else protocol.FLAG_FIRST) | (0 if heard.is_open else protocol.FLAG_LAST)
+            frame = protocol.audio_frame(rx.freq.aar_channel or 0, rx.seq, rx.offset_ms, flags, heard.pcm)
             result.frames.append((cid, frame))
             rx.offset_ms += protocol.CHUNK_MS
         return result

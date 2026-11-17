@@ -133,6 +133,21 @@ Opus encode costs under 1% of one core. The Pi reached 72.5 C under load with no
 
 Decision (45): replace the per-channel matmul channelizer with an FFT-based fast-convolution (overlap-save) channelizer, and spread channel work across cores with threads (numpy releases the GIL). Target: all 91 AAR channels under 50% of real time on the CM5, output matching today's channelizer within a stated tolerance.
 
+### FFT channelizer result (BE-1, 2026-11-17)
+
+`dsp.py` now uses a fast-convolution (overlap-save) channelizer: one FFT per block shared by all channels, then per channel the low-pass response on the bins around it and a 1/32-size inverse FFT. Per-channel work (extract, power, demod, squelch, carrier gate) runs in a `ThreadPoolExecutor` (setting `SDRVIZ_DSP_WORKERS`, default one per CPU core). Measured on the CM5 with `tools/bench_dsp.py` (1.536 MS/s, 100 ms blocks, every 4th channel carrying an FM voice; Pi at 48.3 C before, 58.7 C after, `get_throttled` 0x0):
+
+| Channels | 4 threads | 1 thread |
+|---|---|---|
+| 8 | 21% | 24% |
+| 24 | 29% | 37% |
+| 48 | 41% | 56% |
+| 91 (AAR 07-97) | 61% | 91% |
+
+Split at 91 channels with 4 threads (ms per 100 ms block, wall): u8 to complex 1.5, spectrum 3.7, shared FFT 11.8, channel work about 44. With one thread the channel work is 73 ms (extract 32, demod and squelch 41). The old matmul chain needed 273% at 91 channels; this is 4.5 times less on one core, and the work scales across cores almost linearly.
+
+**The 50% target for 91 channels is missed (61%).** What is left is the serial part (shared FFT 11.8 ms, spectrum 3.7 ms, conversion 1.5 ms, about 17 ms) and the channel work divided by four. Candidate next steps, none taken (plan says stop and ask): run the spectrum and shared FFT concurrently, drop `FmDemod`'s 63-tap and 129-tap matmuls for FFT filters, or listen to fewer channels (48 channels costs 41%).
+
 ## 12. The rtl_tcp service on the Pi
 
 `sdrviz-rtltcp.service` (in `/opt/sdrviz`) grew to 2.7 GB RSS over 4 days (it buffers when clients are slow and never frees) and took 90 s to stop (it ignores SIGTERM while blocked on USB). Fixes for the node setup: `TimeoutStopSec=5`, a `MemoryMax` (with `Restart=always`) or a periodic restart, and bind to 127.0.0.1 instead of 0.0.0.0 once the agent runs on the Pi. These need the owner's sudo (OWNER ticket).

@@ -179,7 +179,7 @@
   .tw-cols.is-wide .tw-stops { align-self: stretch; }
   .is-stale { opacity: 0.75; }
   .tw-est { color: var(--ink-2); }
-  .tw-stale { color: var(--state-fault); }
+  .tw-stale { color: var(--state-stale); }
   .tw-link { padding: 0; border: 0; background: none; font: inherit; color: var(--ink); text-transform: inherit; text-decoration: underline dotted var(--ink-3); text-underline-offset: 3px; cursor: pointer; }
   .tw-link:hover { color: var(--state-idle); }
   .tw-stops { flex: 1; min-height: 160px; display: flex; flex-direction: column; }

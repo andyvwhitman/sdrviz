@@ -10,6 +10,17 @@ const TRAILING = [/\s+AMTRAK STATION$/i, /\s+RAIL STATION$/i, /\s+AMTRAK$/i, /\s
 const INFIX = /\s+(MARC|AMTRAK|VRE)(?=\s)/gi;
 const STATION = /\s+STATION$/i;
 
+/**
+ * Stations whose short form would be ambiguous or lose the city ("PENN" is Baltimore, New York and Newark alike).
+ * Matched against the raw name; a grouped station's own `short_name` still wins in `displayName`.
+ */
+const KEEP_CITY: [RegExp, string][] = [
+  [/^PENN STATION MARC$/i, "Baltimore Penn"],
+  [/^(BALTIMORE|BAL) PENN( STATION)?( MARC| AMTRAK)?$/i, "Baltimore Penn"],
+  [/^(NEW YORK PENN( STATION)?|PENN STATION)$/i, "New York Penn"],
+  [/^(GRAY )?30TH ST(REET)?( STATION)?$/i, "Philadelphia 30th Street"],
+];
+
 function stripBoilerplate(name: string): string {
   let out = name.trim().replace(INFIX, "");
   for (let changed = true; changed; ) {
@@ -27,6 +38,8 @@ function stripBoilerplate(name: string): string {
  * names in the same list or view), so "PENN STATION" is kept beside a plain "PENN".
  */
 export function cleanName(name: string, peers: readonly string[] = []): string {
+  const city = KEEP_CITY.find(([pattern]) => pattern.test(name.trim()));
+  if (city) return city[1];
   const kept = stripBoilerplate(name);
   const bare = kept.replace(STATION, "");
   if (bare === kept || !bare.trim()) return kept;

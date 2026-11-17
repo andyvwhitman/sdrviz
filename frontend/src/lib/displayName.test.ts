@@ -17,8 +17,16 @@ describe("cleanName", () => {
   });
   it("strips STATION only while the result stays unique among the peers", () => {
     expect(cleanName("CAMDEN STATION MARC", ["CAMDEN STATION MARC", "BALTIMORE PENN"])).toBe("CAMDEN");
-    expect(cleanName("PENN STATION", ["PENN STATION", "PENN"])).toBe("PENN STATION");
-    expect(cleanName("PENN STATION", ["PENN STATION", "PENN AMTRAK"])).toBe("PENN STATION");
+    expect(cleanName("LAUREL STATION", ["LAUREL STATION", "LAUREL"])).toBe("LAUREL STATION");
+    expect(cleanName("LAUREL STATION", ["LAUREL STATION", "LAUREL AMTRAK"])).toBe("LAUREL STATION");
+  });
+  it("keeps the city for Penn stations and 30th Street", () => {
+    expect(cleanName("PENN STATION MARC")).toBe("Baltimore Penn");
+    expect(cleanName("Baltimore Penn Station")).toBe("Baltimore Penn");
+    expect(cleanName("Penn Station")).toBe("New York Penn");
+    expect(cleanName("New York Penn Station")).toBe("New York Penn");
+    expect(cleanName("Gray 30th St Station")).toBe("Philadelphia 30th Street");
+    expect(cleanName("30TH STREET STATION")).toBe("Philadelphia 30th Street");
   });
   it("is not fooled by itself as a peer", () => {
     expect(cleanName("CAMDEN STATION", ["CAMDEN STATION"])).toBe("CAMDEN");
@@ -32,6 +40,9 @@ describe("cleanName", () => {
 describe("displayName", () => {
   it("prefers the short name of a grouped station", () => {
     expect(displayName({ name: "Washington Union Station", short_name: "Washington Union" })).toBe("Washington Union");
+  });
+  it("uses the backend short name for Baltimore Penn", () => {
+    expect(displayName({ name: "Baltimore Penn Station", short_name: "Baltimore Penn" })).toBe("Baltimore Penn");
   });
   it("cleans the name when there is none", () => {
     expect(displayName({ name: "BWI RAIL STATION MARC", short_name: null })).toBe("BWI");

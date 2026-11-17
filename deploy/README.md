@@ -36,7 +36,7 @@ Stop with `docker compose down` (add `-v` to also delete the data volumes).
    writes `deploy/.env` with a generated password (printed once) and starts the stack. Re-run it to update.
 
 The server clones from GitHub, so push `main` first. No VPN: SSH is open to the internet with password login turned off (keys only). To narrow it, re-run
-provision.sh with `SDRVIZ_SSH_FROM=<your ip>/32`. The server runs the simulated radio (`SDRVIZ_SIM` defaults to true) until a node is enrolled.
+provision.sh with `SDRVIZ_SSH_FROM=<your ip>/32`. A new server's `.env` has `SDRVIZ_SIM=false`: no simulated radio, feeds or trains, only real transit data and your nodes.
 
 ## LAN receiver
 

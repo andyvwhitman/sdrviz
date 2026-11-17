@@ -6,6 +6,7 @@
   import { api } from "$lib/api/client";
   import { BLANK } from "$lib/hud/fmt";
   import type { Board, BoardEntry } from "$lib/types/transit";
+  import { trainTag } from "./lib/transitView";
 
   interface Props {
     placeId: string;
@@ -51,7 +52,7 @@
     <div class="bd-row {tone(e)}" title="{e.route ?? ''} · {label(e)}">
       <span class="bd-t">{hhmm(e.scheduled)}</span>
       <span class="bd-t bd-est">{e.estimated && hhmm(e.estimated) !== hhmm(e.scheduled) ? hhmm(e.estimated) : ""}</span>
-      <span class="bd-n">{e.agency} {e.train ?? ""}</span>
+      <span class="bd-n">{trainTag(e)}</span>
       <span class="bd-d">{e.event === "arrival" ? `FROM ${e.origin ?? BLANK}` : (e.headsign ?? e.route ?? BLANK)}</span>
       <span class="bd-k">{e.track ? `TRK ${e.track}` : label(e)}</span>
     </div>
@@ -83,8 +84,8 @@
 {/if}
 
 <style>
-  .bd-row { display: grid; grid-template-columns: 44px 44px 100px 1fr auto; gap: 8px; align-items: baseline; padding: 5px 0; border-bottom: 1px solid var(--grid); font: 400 var(--fs-12)/1.2 var(--font-data); color: var(--ink); }
-  .bd-t { font-variant-numeric: tabular-nums; }
+  .bd-row { display: grid; grid-template-columns: 44px 44px 100px 1fr auto; gap: 8px; align-items: baseline; padding: 5px 0; border-bottom: 1px solid var(--grid); font: var(--type-name); letter-spacing: var(--track-name); text-transform: uppercase; color: var(--ink); }
+  .bd-t { font: var(--type-num); font-variant-numeric: tabular-nums; }
   .bd-est { color: var(--ink-2); }
   .bd-n { white-space: nowrap; }
   .bd-d { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-2); text-transform: uppercase; }

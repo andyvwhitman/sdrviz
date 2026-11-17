@@ -13,7 +13,7 @@
   import type { LonLat } from "./lib/project";
   import { schematicTrainPosition, type SchematicLayout } from "./lib/schematicLayout";
   import type { Route } from "./lib/types";
-  import { ageNow, isStale, thinByGrid, trainTitle } from "./lib/transitView";
+  import { ageNow, isStale, thinByGrid, trainTag } from "./lib/transitView";
   import VehicleMark from "./VehicleMark.svelte";
 
   interface Props {
@@ -86,7 +86,7 @@
         onselect={() => onselect(t.v.id)}
       />
       {#if named.has(t.v.id) || selectedId === t.v.id}
-        <text class="mp-vlabel" x={(t.pos[0] + 16).toFixed(1)} y={(t.pos[1] + 4).toFixed(1)}>{trainTitle(t.v)}</text>
+        <text class="mp-vlabel" x={(t.pos[0] + 16).toFixed(1)} y={(t.pos[1] + 4).toFixed(1)}>{trainTag(t.v)}</text>
       {/if}
     </g>
   {/each}

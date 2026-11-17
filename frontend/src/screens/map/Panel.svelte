@@ -71,8 +71,8 @@
   .is-full .pn { inset: 28px; padding: 16px 24px 20px; box-shadow: 0 0 0 1px var(--bg-void), 0 12px 48px rgb(0 0 0 / 0.6); }
   .pn::before { --c: var(--line); }
   .pn__bar { display: flex; align-items: center; gap: 8px; min-height: 32px; }
-  .pn__title { flex: 1; min-width: 0; font: 600 calc(var(--fs-24) * 0.8)/1.15 var(--font-display); letter-spacing: var(--track-display); text-transform: uppercase; color: var(--ink); overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; }
-  .is-full .pn__title { font-size: var(--fs-24); }
+  .pn__title { flex: 1; min-width: 0; font: var(--type-title); letter-spacing: var(--track-title); text-transform: uppercase; color: var(--ink); overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; }
+  .is-full .pn__title { font: var(--type-title-lg); letter-spacing: var(--track-title); }
   .pn__kind { display: flex; justify-content: space-between; gap: 12px; font: 500 var(--fs-11)/1.2 var(--font-label); letter-spacing: var(--track-label); color: var(--ink-3); text-transform: uppercase; }
   .pn__kindtext { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .pn__status { flex: none; white-space: nowrap; font-variant-numeric: tabular-nums; }

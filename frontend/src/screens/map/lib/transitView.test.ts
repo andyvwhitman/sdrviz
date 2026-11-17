@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { hhmmss, nearestStop, ageNow, ageText, bboxParam, delayBarPx, delayCell, delayLabel, delayShort, delayTone, formatDelay, hhmm, timeTag, isStale, freshness, sinceText, snapBbox, thinByGrid, viewBbox, zoomBucket, bucketZoom } from "./transitView";
+import { hhmmss, nearestStop, ageNow, ageText, bboxParam, delayBarPx, delayCell, delayLabel, delayShort, delayTone, formatDelay, hhmm, timeTag, trainTag, isStale, freshness, sinceText, snapBbox, thinByGrid, viewBbox, zoomBucket, bucketZoom } from "./transitView";
 
 describe("delay", () => {
   it("is on time within two minutes either way", () => {
@@ -171,5 +171,20 @@ describe("sinceText", () => {
     expect(sinceText(60)).toBe("1 min");
     expect(sinceText(185)).toBe("3 min");
     expect(sinceText(null)).toBe("unknown");
+  });
+});
+
+describe("trainTag", () => {
+  it("is a short uppercase agency code and the train number", () => {
+    expect(trainTag({ agency: "Amtrak", train: "20" })).toBe("AMTK 20");
+    expect(trainTag({ agency: "MARC", train: "523" })).toBe("MARC 523");
+    expect(trainTag({ agency: "Brightline", train: "103" })).toBe("BRTL 103");
+  });
+  it("keeps a short agency whole and cuts a long unknown one", () => {
+    expect(trainTag({ agency: "MBTA", train: "1" })).toBe("MBTA 1");
+    expect(trainTag({ agency: "Virginia Railway Express", train: "7" })).toBe("VIRG 7");
+  });
+  it("has no trailing space without a train number", () => {
+    expect(trainTag({ agency: "Amtrak", train: null })).toBe("AMTK");
   });
 });

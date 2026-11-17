@@ -114,13 +114,13 @@
     <section class="inspector__sec">
       <h4>STATUS</h4>
       <KeyValue label="SERVICE">
-        {#if routeId && service}<button class="tw-link" title="Timetable of this route" onclick={() => onroute(routeId)}>{service}</button>{:else}{service ?? BLANK}{/if}
+        <span class="tw-nm">{#if routeId && service}<button class="tw-link" title="Timetable of this route" onclick={() => onroute(routeId)}>{service}</button>{:else}{service ?? BLANK}{/if}</span>
       </KeyValue>
-      <KeyValue label="OPERATOR" value={agency} />
-      <KeyValue label="ROUTE" value="{vehicle?.origin ? cleanName(vehicle.origin) : BLANK} → {cleanName(vehicle?.destination ?? vehicle?.headsign ?? trip?.headsign ?? BLANK)}" />
+      <KeyValue label="OPERATOR"><span class="tw-nm">{agency}</span></KeyValue>
+      <KeyValue label="ROUTE"><span class="tw-nm">{vehicle?.origin ? cleanName(vehicle.origin) : BLANK} → {cleanName(vehicle?.destination ?? vehicle?.headsign ?? trip?.headsign ?? BLANK)}</span></KeyValue>
       {#if vehicle}
         <KeyValue label="NEXT STOP">
-          {#if vehicle.next_stop}{cleanName(vehicle.next_stop.name)} · {hhmm(vehicle.next_stop.eta ?? vehicle.next_stop.scheduled)}{:else}{BLANK}{/if}
+          {#if vehicle.next_stop}<span class="tw-nm">{cleanName(vehicle.next_stop.name)}</span> · <span class="tw-num">{hhmm(vehicle.next_stop.eta ?? vehicle.next_stop.scheduled)}</span>{:else}{BLANK}{/if}
         </KeyValue>
         <KeyValue label="DELAY"><Delay {...delayCell(vehicle.delay_s, true)} suspect={vehicle.delay_suspect} /></KeyValue>
         <KeyValue label="SPEED" value={vehicle.speed_mph == null ? BLANK : String(Math.round(vehicle.speed_mph))} unit="MPH" />
@@ -178,6 +178,8 @@
   .tw-cols.is-wide { display: grid; grid-template-columns: minmax(340px, 420px) 1fr; gap: 32px; align-items: start; }
   .tw-cols.is-wide .tw-stops { align-self: stretch; }
   .is-stale { opacity: 0.75; }
+  .tw-nm { font: var(--type-name); letter-spacing: var(--track-name); text-transform: uppercase; }
+  .tw-num { font: var(--type-num); }
   .tw-est { color: var(--ink-2); }
   .tw-stale { color: var(--state-stale); }
   .tw-link { padding: 0; border: 0; background: none; font: inherit; color: var(--ink); text-transform: inherit; text-decoration: underline dotted var(--ink-3); text-underline-offset: 3px; cursor: pointer; }
@@ -187,13 +189,14 @@
   .tw-stop {
     display: grid; grid-template-columns: 14px 1fr 84px 92px; grid-template-areas: "m n t g" ". k k ."; align-items: baseline; column-gap: 8px; width: 100%;
     padding: 5px 4px; border: 0; border-bottom: 1px solid var(--grid); background: none; text-align: left; cursor: pointer;
-    font: 400 var(--fs-12)/1.2 var(--font-data); color: var(--ink); text-transform: uppercase;
+    font: var(--type-name); letter-spacing: var(--track-name); color: var(--ink); text-transform: uppercase;
   }
   .tw-stop:hover { background: var(--bg-panel); }
   .tw-mark { align-self: center; width: 7px; height: 7px; border: 1px solid var(--line); border-radius: 50%; }
   .tw-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .tw-tag { font: 500 var(--fs-11)/1.2 var(--font-label); letter-spacing: 0.08em; color: var(--ink-3); white-space: nowrap; }
   .tw-t { font-variant-numeric: tabular-nums; text-align: right; }
+  .tw-t:not(.tw-tag) { font: var(--type-num); }
   .tw-arr { color: var(--ink-3); margin-right: 6px; }
   .tw-sub { grid-area: k; margin-top: 2px; }
   /* a pass is not a stop: small dashed mark, dashed rule, dim, and a label that is always on screen */

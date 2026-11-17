@@ -13,7 +13,7 @@
   import Panel, { type PanelControls } from "./Panel.svelte";
   import Delay from "./Delay.svelte";
   import { type BoardTab, endpoint, PASS_LABEL, passTime, rowsFor, stateWord, timeCell, trackCell } from "./lib/boardView";
-  import { hhmm, timeTag } from "./lib/transitView";
+  import { hhmm, timeTag, trainTag } from "./lib/transitView";
 
   interface Props extends PanelControls {
     stopId: string;
@@ -93,7 +93,7 @@
   {#if isPass(r)}
     <button class="sw-row is-{r.state} is-pass" onclick={() => ontrip(r.trip_id)} title={timeTitle(r)}>
       <span class="sw-t">{passTime(r.scheduled, r.estimated)}</span>
-      <span class="sw-n">{r.agency} {r.train ?? ""}</span>
+      <span class="sw-n">{trainTag(r)}</span>
       {#if controls.full}<span class="sw-d sw-r">{r.route_name ?? BLANK}</span>{/if}
       <span class="sw-d" title={endpoint(r, "departures")}>{cleanName(endpoint(r, "departures"), names)}</span>
       <span class="sw-k sw-pass">{PASS_LABEL}<span class="sw-pass-to">&nbsp;· {cleanName(endpoint(r, "departures"), names)}</span></span>
@@ -104,7 +104,7 @@
     {@const t = timeCell(r.scheduled, r.estimated)}
     <button class="sw-row is-{r.state}" onclick={() => ontrip(r.trip_id)} title={timeTitle(r)}>
       <span class="sw-t">{#if t.scheduled}<s>{t.scheduled}</s> {/if}{t.time}</span>
-      <span class="sw-n">{r.agency} {r.train ?? ""}</span>
+      <span class="sw-n">{trainTag(r)}</span>
       {#if controls.full}<span class="sw-d sw-r">{r.route_name ?? BLANK}</span>{/if}
       <span class="sw-d" title={endpoint(r, tab)}>{cleanName(endpoint(r, tab), names)}</span>
       <span class="sw-k sw-trk">{#if trackCell(r, rows)}TRK {trackCell(r, rows)}{/if}</span>
@@ -156,7 +156,7 @@
   .sw-row {
     display: grid; grid-template-columns: 92px 1fr auto; grid-template-areas: "t n g" "k d s"; column-gap: 8px; row-gap: 2px; align-items: baseline;
     width: 100%; padding: 5px 4px; border: 0; border-bottom: 1px solid var(--grid); background: none; text-align: left; cursor: pointer;
-    font: 400 var(--fs-12)/1.2 var(--font-data); color: var(--ink); text-transform: uppercase;
+    font: var(--type-name); letter-spacing: var(--track-name); color: var(--ink); text-transform: uppercase;
   }
   .sw-t { grid-area: t; } .sw-n { grid-area: n; } .sw-d { grid-area: d; } .sw-trk { grid-area: k; } .sw-g { grid-area: g; text-align: right; } .sw-s { grid-area: s; text-align: right; }
   .sw-r { grid-area: r; }
@@ -176,7 +176,7 @@
   .sw-board.is-wide .sw-pass { grid-area: 1 / 5 / 2 / 7; }
   .sw-board.is-wide .sw-pass-to { display: none; }
   .sw-row:hover:not(.sw-head) { background: var(--bg-panel); }
-  .sw-t { font-variant-numeric: tabular-nums; }
+  .sw-t { font: var(--type-num); font-variant-numeric: tabular-nums; }
   .sw-n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .sw-d { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-2); }
   .sw-k { font: 500 var(--fs-11)/1.2 var(--font-label); letter-spacing: 0.08em; color: var(--ink-3); white-space: nowrap; }

@@ -99,7 +99,7 @@
   .tl__row {
     display: grid; grid-template-columns: 52px 180px 76px 120px 160px 120px 108px 8px; column-gap: 10px; align-items: baseline; width: 100%;
     min-height: 22px; padding: 2px 6px 2px 0; border: 0; border-bottom: 1px solid var(--grid); background: none; text-align: left; cursor: pointer;
-    font: 400 var(--fs-12)/1.2 var(--font-data); color: var(--ink); text-transform: uppercase; white-space: nowrap;
+    font: var(--type-name); letter-spacing: var(--track-name); color: var(--ink); text-transform: uppercase; white-space: nowrap;
   }
   .is-compact .tl__row { grid-template-columns: 52px 170px 76px 160px 108px 8px; }
   .tl__row > span { overflow: hidden; text-overflow: ellipsis; }
@@ -120,6 +120,7 @@
   .tl__mark:global(.is-flash) { animation: tl-flash 250ms ease-out; }
   @keyframes tl-flash { from { filter: brightness(2.4); } to { filter: brightness(1); } }
   @media (prefers-reduced-motion: reduce) { .tl__mark:global(.is-flash) { animation: none; } }
+  .tl__row .num, .tl__row .r { font: var(--type-num); }
   .tl__row .num { font-weight: 600; }
   .tl__row:hover { background: var(--bg-raised); }
   .tl__row.is-sel { background: var(--bg-raised); box-shadow: inset 2px 0 0 var(--state-select); }

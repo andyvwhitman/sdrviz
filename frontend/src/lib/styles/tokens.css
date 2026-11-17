@@ -65,6 +65,15 @@
      14 design px, which is ~11.5 px on screen at the 1440 stage on an iPad (scale 0.82). */
   --fs-11: 14px; --fs-12: 15px; --fs-13: 16px; --fs-15: 18px; --fs-18: 21px;
   --fs-24: 27px; --fs-32: 35px; --fs-48: 52px; --fs-72: 76px;
+
+  /* Transit typography (decision 32). Names and labels: the label font, uppercase. Numbers and times: mono.
+     Use as `font: var(--type-name)`; titles also take `letter-spacing: var(--track-title)`. */
+  --type-title:   600 calc(var(--fs-24) * 0.8)/1.15 var(--font-label);  /* panel title */
+  --type-title-lg: 600 var(--fs-24)/1.15 var(--font-label);              /* panel title, maximized */
+  --type-section: 600 var(--fs-13)/1 var(--font-label);                  /* agency titles, card and section heads */
+  --type-name:    500 var(--fs-13)/1.2 var(--font-label);                /* a station, route or train name in a row */
+  --type-num:     400 var(--fs-12)/1.2 var(--font-data);                 /* a time, number, delay or track */
+  --track-title: 0.08em; --track-name: 0.04em;
   --track-label: 0.10em;
   --track-display: 0.12em;
 

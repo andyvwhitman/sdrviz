@@ -104,4 +104,4 @@
 
 /* transit layers: stops take a generous click target; the train marker's ring and labels */
 .hud .mp-stop-hit { fill: transparent; stroke: none; }
-.hud .mp-vlabel      { font: 500 var(--fs-12) var(--font-data); letter-spacing: 0.04em; fill: var(--ink); }
+.hud .mp-vlabel      { font: 500 var(--fs-12) var(--font-label); letter-spacing: 0.08em; text-transform: uppercase; fill: var(--ink); }

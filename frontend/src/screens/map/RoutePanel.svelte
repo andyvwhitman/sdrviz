@@ -91,13 +91,14 @@
   .rp-date { font: 500 var(--fs-12)/1 var(--font-data); color: var(--ink-2); font-variant-numeric: tabular-nums; }
   .rp-dir { min-width: 0; }
   .rp-scroll { overflow-x: auto; padding-bottom: 6px; }
-  .rp-grid { border-collapse: collapse; font: 400 var(--fs-12)/1.2 var(--font-data); color: var(--ink); text-transform: uppercase; }
+  .rp-grid { border-collapse: collapse; font: var(--type-num); color: var(--ink); text-transform: uppercase; }
   .rp-grid th, .rp-grid td { padding: 4px 8px; border-bottom: 1px solid var(--grid); text-align: right; white-space: nowrap; font-weight: 400; font-variant-numeric: tabular-nums; }
   .rp-grid thead th { font: 600 var(--fs-12)/1.2 var(--font-data); position: sticky; top: 0; background: var(--bg-raised); }
   .rp-stop { position: sticky; left: 0; z-index: 1; min-width: 150px; max-width: 190px; text-align: left !important; background: var(--bg-raised); overflow: hidden; text-overflow: ellipsis; }
   .is-wide .rp-stop { min-width: 260px; max-width: 320px; }
   .is-wide .rp-name { max-width: 310px; }
   .rp-name, .rp-train { padding: 0; border: 0; background: none; font: inherit; color: inherit; text-transform: inherit; cursor: pointer; }
+  .rp-name { font: var(--type-name); letter-spacing: var(--track-name); }
   .rp-name { max-width: 180px; overflow: hidden; text-overflow: ellipsis; }
   .rp-name:hover, .rp-train:hover { color: var(--state-idle); }
   .rp-none { color: var(--ink-3); }

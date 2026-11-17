@@ -139,6 +139,16 @@ export const clockOf = (ms: number): string => (ms ? easternSeconds.format(new D
 
 export const trainTitle = (v: Pick<Vehicle, "agency" | "train">): string => `${v.agency} ${v.train ?? ""}`.trim();
 
+/** Agencies whose plain upper-cased name is too long or too alike to read as a tag. */
+const AGENCY_CODES: Record<string, string> = { AMTRAK: "AMTK", BRIGHTLINE: "BRTL", METROLINK: "MLNK", CALTRAIN: "CALT" };
+
+/** A short uppercase tag for map labels and rows: `AMTK 20`, `MARC 523`. A name of up to five letters stays whole. */
+export function trainTag(v: Pick<Vehicle, "agency" | "train">): string {
+  const agency = v.agency.trim().toUpperCase();
+  const code = AGENCY_CODES[agency] ?? (agency.length <= 5 ? agency : agency.slice(0, 4));
+  return `${code} ${v.train ?? ""}`.trim();
+}
+
 // ---- what to ask the API for
 
 /** [west, south, east, north] */

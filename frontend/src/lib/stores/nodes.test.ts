@@ -60,4 +60,13 @@ describe("nodesStore polling", () => {
     nodesStore.upsert(node(2));
     expect(nodesStore.nodes.map((n) => `${n.number}:${n.name}`)).toEqual(["1:N1", "2:N2", "3:renamed"]);
   });
+
+  it("keeps a history sample per poll and per node, with nulls while a node is not online", async () => {
+    nodesStore.history = {};
+    list.mockResolvedValueOnce([{ ...node(1), link_quality: 90, lag_ms: 200 } as SdrNode]);
+    await nodesStore.refresh();
+    list.mockResolvedValueOnce([{ ...node(1), link_quality: null, lag_ms: null } as SdrNode]);
+    await nodesStore.refresh();
+    expect(nodesStore.history["node-1"].map((s) => s.link)).toEqual([90, null]);
+  });
 });

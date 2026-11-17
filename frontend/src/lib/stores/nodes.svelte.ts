@@ -1,4 +1,5 @@
 import { nodesApi } from "$lib/api/nodes";
+import { appendSample, type Sample } from "$lib/nodeHealth";
 import type { SdrNode } from "$lib/types/nodes";
 
 export const NODES_POLL_MS = 5_000;
@@ -12,6 +13,8 @@ class NodesStore {
   /** at least one poll has answered, so an empty list means "no nodes" and not "not loaded yet" */
   loaded = $state(false);
   failed = $state(false);
+  /** the last 30 minutes of link and lag per node id, one sample per poll while a Nodes screen is open */
+  history = $state.raw<Record<string, Sample[]>>({});
 
   #users = 0;
   #timer: ReturnType<typeof setInterval> | undefined;
@@ -30,11 +33,18 @@ class NodesStore {
   async refresh(): Promise<void> {
     try {
       this.nodes = await nodesApi.list();
+      this.#record(this.nodes, Date.now());
       this.loaded = true;
       this.failed = false;
     } catch {
       this.failed = true;
     }
+  }
+
+  #record(nodes: SdrNode[], now: number): void {
+    const next: Record<string, Sample[]> = {};
+    for (const node of nodes) next[node.id] = appendSample(this.history[node.id], { t: now, link: node.link_quality, lag: node.lag_ms });
+    this.history = next;
   }
 
   /** Replace one node in the list at once (after create, revoke, re-key or an edit) without waiting for the poll. */

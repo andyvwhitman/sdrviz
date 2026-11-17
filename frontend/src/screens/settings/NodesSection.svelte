@@ -10,11 +10,14 @@
   import type { NewNode, SdrNode } from "$lib/types/nodes";
   import AddNodeForm from "./AddNodeForm.svelte";
   import NodeCard from "./NodeCard.svelte";
+  import NodeDetail from "./NodeDetail.svelte";
   import NodeKeyModal from "./NodeKeyModal.svelte";
 
   let showRevoked = $state(false);
   let now = $state(Date.now());
   let adding = $state(false);
+  /** the node whose health view is open */
+  let inspected = $state<SdrNode | null>(null);
   let busy = $state(new Set<string>());
   let notice = $state("");
   /** The key to show, held only while its dialog is open: never in a store, the URL or storage. */
@@ -79,10 +82,14 @@
   {:else if nodesStore.loaded && !shown.length && !adding}
     <EmptyState title="NO NODES" detail="No nodes. Add one to receive from outside the LAN." />
   {:else}
-    {#each shown as node (node.id)}<NodeCard {node} {now} busy={busy.has(node.id)} onrekey={() => rekey(node)} onrevoke={() => revoke(node)} />{/each}
+    {#each shown as node (node.id)}<NodeCard {node} {now} busy={busy.has(node.id)} onrekey={() => rekey(node)} onrevoke={() => revoke(node)} onhealth={() => (inspected = node)} />{/each}
   {/if}
 </section>
 
 {#if shownKey}
   <NodeKeyModal nodeName={shownKey.node.name} keyText={shownKey.key} expiresAt={shownKey.node.key_expires_at} rekey={shownKey.rekey} onclose={() => (shownKey = null)} />
+{/if}
+
+{#if inspected}
+  <NodeDetail node={inspected} onclose={() => (inspected = null)} />
 {/if}

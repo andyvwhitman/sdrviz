@@ -15,8 +15,9 @@
     busy?: boolean;
     onrekey: () => void;
     onrevoke: () => void;
+    onhealth: () => void;
   }
-  let { node, now, busy = false, onrekey, onrevoke }: Props = $props();
+  let { node, now, busy = false, onrekey, onrevoke, onhealth }: Props = $props();
 
   /** which action is waiting for its confirmation */
   let confirming = $state<"rekey" | "revoke" | null>(null);
@@ -65,6 +66,7 @@
       <Button sm disabled={busy} onclick={() => confirmed(onrevoke)}>CONFIRM REVOKE</Button>
       <Button sm onclick={() => (confirming = null)}>CANCEL</Button>
     {:else}
+      <Button sm onclick={onhealth}>HEALTH</Button>
       <Button sm disabled={busy} onclick={() => (confirming = "rekey")}>RE-KEY</Button>
       <span class="grow"></span>
       {#if node.status !== "REVOKED"}<Button sm disabled={busy} onclick={() => (confirming = "revoke")}>REVOKE</Button>{/if}

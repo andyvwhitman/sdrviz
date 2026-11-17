@@ -15,6 +15,7 @@ from .live import protocol
 from .live.hub import Hub
 from .models import Bank, FeedAck, Prefs, Receiver
 from .nodes.service import NodeRegistry
+from .nodes.session import NodeConnections
 from .radio.receiver import load_receiver, save_receiver
 from .radio.source import RadioSource
 from .sim import live_state
@@ -44,9 +45,11 @@ class Runtime:
         if seed_if_empty(self.db, settings):
             log.info("seeded %s", settings.database_file)
 
+        self.nodes = NodeRegistry(self.db, settings.public_url)  # remote receiver nodes (docs/node-protocol.md)
+        self.nodes.on_feeds_changed = self.reload_node_feeds
         self.data: SimData = load_sim_data(self.db, settings)
         self.receiver: Receiver = load_receiver(self.db, settings)
-        self.world: World = load_world(self.db, settings, self.receiver)
+        self.world: World = load_world(self.db, settings, self.receiver, self.nodes)
         self.health: Health = self._load_health()
         self.prefs: Prefs = self._load_prefs()
         self.scenario: ScenarioSpec | None = None
@@ -59,7 +62,7 @@ class Runtime:
         self.prefetcher: Prefetcher | None = None
         # Real audio from the rtl_tcp receiver, once it has a host; the replay's synthetic audio then stays quiet.
         self.radio = RadioSource(self, workers=settings.dsp_workers)
-        self.nodes = NodeRegistry(self.db, settings.public_url)  # remote receiver nodes (see docs/node-protocol.md)
+        self.node_connections = NodeConnections(self)  # live /ws/node sessions
         # Real train positions and station boards; sources that are down only show up in /api/transit/sources.
         self.transit: TransitService | None = None
         if settings.transit_sources is None or settings.transit_sources:
@@ -134,8 +137,13 @@ class Runtime:
 
     def reload_world(self) -> None:
         """Re-read frequencies, banks and feeds after a CRUD change and tell the clients."""
-        self.world = load_world(self.db, self.settings, self.receiver)
+        self.world = load_world(self.db, self.settings, self.receiver, self.nodes)
         self.engine.resync()
+
+    def reload_node_feeds(self) -> None:
+        """A node was enrolled, changed or revoked: its feed row appears, changes or goes."""
+        self.reload_world()
+        self.publish_snapshot()
 
     async def set_receiver(self, receiver: Receiver) -> None:
         """Save new receiver settings and apply them live: the feed row, the radio connection, the clients."""

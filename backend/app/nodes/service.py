@@ -18,6 +18,7 @@ from sqlmodel import Session, col, func, select
 from ..auth import LoginLimiter
 from ..db import open_session
 from ..live import node_protocol as wire
+from ..models import Feed, Frequency
 from .models import Node, NodeCredential, NodeEvent
 from .schemas import CommandIn, CommandResult, Location, NodeDetail, NodeEventOut, NodeOut
 
@@ -74,6 +75,10 @@ def iso(moment: datetime | None) -> str | None:
     return aware(moment).isoformat(timespec="seconds") if moment else None
 
 
+def node_feed_id(number: int) -> str:
+    return f"node-{number}"
+
+
 def hash_secret(secret: str) -> str:
     return hashlib.sha256(secret.encode()).hexdigest()
 
@@ -90,6 +95,8 @@ class NodeRegistry:
         self.live: dict[str, NodeLive] = {}
         # BE-5 sets this to send a command to a connected node and wait for its ack.
         self.command_sender: Callable[[str, CommandIn], Awaitable[CommandResult]] | None = None
+        # Set by the runtime: called after a change that adds, changes or removes a node's feed row.
+        self.on_feeds_changed: Callable[[], None] = lambda: None
 
     # --- reading ---------------------------------------------------------------------------------------------
 
@@ -111,6 +118,30 @@ class NodeRegistry:
 
     def channels_for(self, preset: str) -> list[int]:
         return PRESETS[preset]
+
+    def feeds(self, freqs: dict[str, Frequency]) -> list[Feed]:
+        """Enrolled nodes as feeds (driver sdrviz-agent) that hear the channels of their preset."""
+        with open_session(self.engine) as session:
+            nodes = session.exec(select(Node).where(Node.status == "OFFLINE").order_by(Node.number)).all()
+        feeds = []
+        for node in nodes:
+            wanted = set(PRESETS[node.preset])
+            hears = [cid for cid, freq in freqs.items() if freq.aar_channel in wanted]
+            feeds.append(
+                Feed(
+                    id=node_feed_id(node.number),
+                    name=node.name,
+                    short=node.name.split()[0],
+                    site="remote node",
+                    lat=node.lat,
+                    lon=node.lon,
+                    coverage_radius_km=20,
+                    hears=hears,
+                    driver="sdrviz-agent",
+                    sample_rate_msps=1.536,
+                )
+            )
+        return feeds
 
     # --- Settings actions --------------------------------------------------------------------------------------
 
@@ -141,7 +172,10 @@ class NodeRegistry:
                 node.lat, node.lon = location.lat, location.lon
             session.add(node)
             session.commit()
-            return self._view(session, node)
+            view = self._view(session, node)
+        if node.status == "OFFLINE":
+            self.on_feeds_changed()
+        return view
 
     def rekey(self, node_id: str) -> tuple[NodeOut, str]:
         """A new enrollment key. The node's current secret keeps working until the new enrollment completes."""
@@ -170,7 +204,13 @@ class NodeRegistry:
                 self._event(session, node_id, "revoked", "revoked in Settings")
                 session.add_all([node, credential])
                 session.commit()
-            return self._view(session, node)
+                changed = True
+            else:
+                changed = False
+            view = self._view(session, node)
+        if changed:
+            self.on_feeds_changed()
+        return view
 
     async def send_command(self, node_id: str, command: CommandIn) -> CommandResult:
         if not self.command_sender or not self.live.get(node_id, NodeLive()).online:
@@ -207,7 +247,8 @@ class NodeRegistry:
                 return False
             self._finish_enrollment(session, node, credential)
             session.commit()
-            return True
+        self.on_feeds_changed()
+        return True
 
     def mark_seen(self, node_id: str, agent_version: str | None = None) -> None:
         with open_session(self.engine) as session:
@@ -235,6 +276,7 @@ class NodeRegistry:
         if pending and not permanent:
             self._finish_enrollment(session, node, credential)
             session.commit()
+            self.on_feeds_changed()
         return Authenticated(node, PRESETS[node.preset], None)
 
     def _enroll(
@@ -299,7 +341,7 @@ class NodeRegistry:
         return NodeOut(
             id=node.id,
             number=node.number,
-            feed_id=f"node-{node.number}",
+            feed_id=node_feed_id(node.number),
             name=node.name,
             location=Location(lat=node.lat, lon=node.lon),
             preset=node.preset,

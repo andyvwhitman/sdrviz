@@ -2,6 +2,7 @@
 
 import json
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
 
 from sqlalchemy import literal_column
 from sqlalchemy.engine import Engine
@@ -10,6 +11,9 @@ from sqlmodel import select
 from ..config import Settings
 from ..db import open_session
 from ..models import Bank, Feed, Frequency, Receiver
+
+if TYPE_CHECKING:
+    from ..nodes.service import NodeRegistry
 
 
 @dataclass
@@ -46,8 +50,10 @@ class World:
         return feed.short if feed else feed_id
 
 
-def load_world(engine: Engine, settings: Settings, receiver: Receiver | None = None) -> World:
-    """Read the editable resources from the database, in insertion order."""
+def load_world(
+    engine: Engine, settings: Settings, receiver: Receiver | None = None, nodes: "NodeRegistry | None" = None
+) -> World:
+    """Read the editable resources from the database, in insertion order. Enrolled nodes join as feeds."""
     with open_session(engine) as session:
 
         def table(model):
@@ -59,6 +65,8 @@ def load_world(engine: Engine, settings: Settings, receiver: Receiver | None = N
     if receiver and receiver.host:
         feed = live_feed(receiver, freqs)
         feeds[feed.id] = feed
+    if nodes:
+        feeds |= {feed.id: feed for feed in nodes.feeds(freqs)}
     return World(freqs, banks, feeds, load_places(settings), load_routes(settings), sim=settings.sim)
 
 

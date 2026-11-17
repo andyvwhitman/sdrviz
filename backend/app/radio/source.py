@@ -153,8 +153,10 @@ class RadioSource:
     def _publish(self, result: BlockResult) -> None:
         world_freqs = self.rt.world.freqs
         for up in result.key_ups:
-            self.events.key_up(up.key, up.tx_seq, up.snr_db, up.power_db)
+            self.events.key_up(up.key, up.tx_seq, up.snr_db, up.power_db)  # refused when a node got there first
         for chunk in result.chunks:
+            if not self.events.owns(chunk.key, LIVE_FEED_ID):
+                continue
             flags = (protocol.FLAG_FIRST if chunk.first else 0) | (protocol.FLAG_LAST if chunk.last else 0)
             aar_channel = world_freqs[chunk.key].aar_channel or 0
             self.hub.send_audio(

@@ -1,9 +1,21 @@
 """/api/nodes: Settings creates, lists, patches, re-keys and revokes nodes and sends them commands."""
 
+import contextlib
+
 from fastapi import APIRouter, HTTPException
 
 from ..deps import RT
-from ..nodes.schemas import CommandIn, CommandResult, NodeCreate, NodeDetail, NodeOut, NodePatch, NodeWithKey
+from ..live import node_protocol as wire
+from ..nodes.schemas import (
+    ChannelsIn,
+    CommandIn,
+    CommandResult,
+    NodeCreate,
+    NodeDetail,
+    NodeOut,
+    NodePatch,
+    NodeWithKey,
+)
 from ..nodes.service import NodeNotFound, NodeOffline
 
 router = APIRouter(prefix="/nodes", tags=["nodes"])
@@ -36,13 +48,18 @@ def get_node(node_id: str, rt: RT) -> NodeDetail:
 
 
 @router.patch("/{node_id}")
-def patch_node(node_id: str, body: NodePatch, rt: RT) -> NodeOut:
+async def patch_node(node_id: str, body: NodePatch, rt: RT) -> NodeOut:
     try:
-        return rt.nodes.update(node_id, body.name, body.location, body.preset)
+        node = rt.nodes.update(node_id, body.name, body.location, body.preset)
     except NodeNotFound as error:
         raise _not_found(node_id) from error
     except ValueError as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
+    if body.preset is not None and node.status == "ONLINE":  # tell the running node its new channel list
+        channels = ChannelsIn(type="channels", channels=rt.nodes.channels_for(node.preset))
+        with contextlib.suppress(NodeOffline):
+            await rt.nodes.send_command(node_id, channels)
+    return node
 
 
 @router.post("/{node_id}/rekey")
@@ -55,11 +72,13 @@ def rekey_node(node_id: str, rt: RT) -> NodeWithKey:
 
 
 @router.post("/{node_id}/revoke")
-def revoke_node(node_id: str, rt: RT) -> NodeOut:
+async def revoke_node(node_id: str, rt: RT) -> NodeOut:
     try:
-        return rt.nodes.revoke(node_id)
+        node = rt.nodes.revoke(node_id)
     except NodeNotFound as error:
         raise _not_found(node_id) from error
+    await rt.node_connections.close(node_id, wire.CLOSE_REVOKED, "node revoked")
+    return node
 
 
 @router.post("/{node_id}/commands")

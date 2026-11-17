@@ -28,6 +28,7 @@ class LiveTx:
     started: float  # monotonic, for the timer
     snr_db: float
     rssi_dbfs: float
+    feed_id: str = LIVE_FEED_ID  # the receiver that owns this transmission
 
     def elapsed(self) -> float:
         return time.monotonic() - self.started
@@ -52,9 +53,18 @@ class LiveEvents:
 
     # --- transitions -----------------------------------------------------------
 
-    def key_up(self, channel_id: str, seq: int, snr_db: float, rssi_dbfs: float) -> None:
+    def owns(self, channel_id: str, feed_id: str) -> bool:
+        """Whether `feed_id`'s transmission is the one on air on this channel."""
+        tx = self.on_air.get(channel_id)
+        return tx is not None and tx.feed_id == feed_id
+
+    def key_up(self, channel_id: str, seq: int, snr_db: float, rssi_dbfs: float, feed_id: str = LIVE_FEED_ID) -> bool:
+        """Start a transmission. First key-up wins (decision 49): False when another receiver already has
+        this channel on air; the caller then ignores that transmission until its key-down."""
+        if channel_id in self.on_air:
+            return False
         t = self._now()
-        tx = LiveTx(f"live-{seq}", seq, channel_id, t, time.monotonic(), snr_db, rssi_dbfs)
+        tx = LiveTx(f"live-{seq}", seq, channel_id, t, time.monotonic(), snr_db, rssi_dbfs, feed_id)
         self.on_air[channel_id] = tx
         freq = self.world.freqs[channel_id]
         row = self._row(tx, live=True)
@@ -65,7 +75,7 @@ class LiveEvents:
                 tx_seq=seq,
                 channel_id=channel_id,
                 aar=f"CH{freq.aar_channel:02d}",
-                feed_id=LIVE_FEED_ID,
+                feed_id=feed_id,
                 receptions=row["receptions"],
                 role="unknown",
                 role_tag=ROLE_TAGS.get("unknown", "UNK"),
@@ -79,11 +89,13 @@ class LiveEvents:
             )
         )
         self._send_channel(channel_id)
+        return True
 
-    def key_down(self, channel_id: str) -> None:
-        tx = self.on_air.pop(channel_id, None)
-        if not tx:
+    def key_down(self, channel_id: str, feed_id: str = LIVE_FEED_ID) -> None:
+        """End the transmission, if `feed_id` owns it."""
+        if not self.owns(channel_id, feed_id):
             return
+        tx = self.on_air.pop(channel_id)
         duration = round(tx.elapsed(), 1)
         self.last_end[channel_id] = tx.t + duration
         self.hub.broadcast(
@@ -91,8 +103,9 @@ class LiveEvents:
         )
         self._send_channel(channel_id)
 
-    def levels(self, readings: dict[str, tuple[float, float]]) -> None:
-        """readings: channel id → (power dBFS, SNR dB), for the channels on air."""
+    def levels(self, readings: dict[str, tuple[float, float]], feed_id: str = LIVE_FEED_ID) -> None:
+        """readings: channel id → (power dBFS, SNR dB), for the channels `feed_id` has on air."""
+        readings = {cid: reading for cid, reading in readings.items() if self.owns(cid, feed_id)}
         levels = {cid: {"db": round(db, 1), "peak": round(db, 1)} for cid, (db, _) in readings.items()}
         for cid, (db, snr) in readings.items():
             if tx := self.on_air.get(cid):
@@ -111,7 +124,7 @@ class LiveEvents:
     # --- views -----------------------------------------------------------------
 
     def _receptions(self, tx: LiveTx) -> list[dict]:
-        return [{"feed_id": LIVE_FEED_ID, "snr_db": round(tx.snr_db, 1), "rssi_dbfs": round(tx.rssi_dbfs, 1)}]
+        return [{"feed_id": tx.feed_id, "snr_db": round(tx.snr_db, 1), "rssi_dbfs": round(tx.rssi_dbfs, 1)}]
 
     def _row(self, tx: LiveTx, live: bool) -> dict:
         freq = self.world.freqs[tx.channel_id]
@@ -125,8 +138,8 @@ class LiveEvents:
             "frequency_id": tx.channel_id,
             "label": freq.label,
             "off_bank": tx.channel_id not in self._bank_ids(),
-            "feed_id": LIVE_FEED_ID,
-            "feed_label": self.world.feed_short(LIVE_FEED_ID),
+            "feed_id": tx.feed_id,
+            "feed_label": self.world.feed_short(tx.feed_id),
             "role": "unknown",
             "role_tag": ROLE_TAGS.get("unknown", "UNK"),
             "speaker": None,
@@ -158,8 +171,8 @@ class LiveEvents:
                     "tx_id": tx.id,
                     "elapsed_s": round(elapsed, 1),
                     "timer": f"{int(elapsed // 60):02d}:{elapsed % 60:04.1f}",
-                    "primary_feed": LIVE_FEED_ID,
-                    "via": self.world.feed_short(LIVE_FEED_ID),
+                    "primary_feed": tx.feed_id,
+                    "via": self.world.feed_short(tx.feed_id),
                     "receptions": self._receptions(tx),
                     "train_id": None,
                 },

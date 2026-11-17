@@ -123,7 +123,7 @@ def feed_health(feed_id: str, session: DB, rt: RT, minutes: int = Query(60, ge=1
 def waterfall(feed_id: str, session: DB, rt: RT, rows: int = Query(120, ge=1, le=600)) -> Response:
     """Backfill for the spectrum watcher: `rows` x 1024 int8 dBFS, oldest first."""
     feed = known_feed(session, rt, feed_id)
-    if feed_id == LIVE_FEED_ID:  # no recorded history yet: an empty (floor) backfill, not the synthetic one
+    if feed_id == LIVE_FEED_ID or feed_id.startswith("node-"):  # real receivers: an empty (floor) backfill
         body = bytes([0x81]) * (rows * spectrum.BINS)  # int8 -127 dBFS
     else:
         body = spectrum.waterfall(rt.inputs, feed_id, rt.clock.now() % DAY, rows, WATERFALL_ROW_S)

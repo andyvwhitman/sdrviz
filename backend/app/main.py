@@ -19,6 +19,7 @@ from .routers import (
     geo,
     live,
     lofar,
+    node_ws,
     nodes,
     prefs,
     radio,
@@ -67,6 +68,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         api.include_router(module.router, dependencies=[Depends(require_session)])
     app.include_router(api)
     app.include_router(live.router)
+    app.include_router(node_ws.router)
 
     if Path(FRONTEND_DIST).is_dir():
         app.mount("/", StaticFiles(directory=FRONTEND_DIST, html=True), name="frontend")

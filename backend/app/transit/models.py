@@ -10,6 +10,10 @@ SUSPECT_LATE_S = 12 * 3600  # a delay beyond this late is flagged (a real 6 hour
 SUSPECT_EARLY_S = 30 * 60  # ...and one beyond this early: trains do not run half an hour ahead
 
 
+def is_suspect(delay_s: int | None) -> bool:
+    return delay_s is not None and (delay_s > SUSPECT_LATE_S or delay_s < -SUSPECT_EARLY_S)
+
+
 def delay_status(delay_s: int | None) -> Literal["on_time", "late", "early", "unknown"]:
     if delay_s is None:
         return "unknown"
@@ -58,7 +62,7 @@ class Vehicle(BaseModel):
     @property
     def delay_suspect(self) -> bool:
         """The delay is implausible (over 12 h late or 30 min early). Never clamped: it is only flagged."""
-        return self.delay_s is not None and (self.delay_s > SUSPECT_LATE_S or self.delay_s < -SUSPECT_EARLY_S)
+        return is_suspect(self.delay_s)
 
 
 class TripStop(BaseModel):
@@ -158,6 +162,12 @@ class BoardRow(BaseModel):
     state: Literal["passed", "upcoming", "cancelled"]
     state_basis: Literal["position", "clock"] = "clock"  # position = from the train's fresh position; clock = estimated
     added: bool = False  # realtime shows this train but the schedule has no such trip
+
+    @computed_field
+    @property
+    def delay_suspect(self) -> bool:
+        """Same rule as Vehicle.delay_suspect."""
+        return is_suspect(self.delay_s)
 
 
 class PassRow(BaseModel):

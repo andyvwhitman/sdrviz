@@ -4,8 +4,6 @@ import { BLANK } from "$lib/hud/fmt";
 import type { BoardRow, PassRow, StateBasis, StationBoard } from "$lib/types/transit";
 import { hhmm } from "./transitView";
 
-/** Stations where Amtrak announces tracks: an Amtrak row with no track there reads "TBD". */
-export const TRACK_STATIONS: readonly string[] = ["WAS", "BAL", "NYP"];
 
 export type BoardTab = "departures" | "arrivals" | "passing";
 
@@ -34,10 +32,14 @@ export function stateWord(row: Pick<BoardRow, "state" | "state_basis">, tab: Boa
   return tab === "departures" ? "LEFT" : tab === "arrivals" ? "IN" : "PASSED";
 }
 
-/** "4" when the agency gave a track, "TBD" for an Amtrak row at a station that announces tracks, else nothing. */
-export function trackCell(row: Pick<BoardRow, "track" | "source">, stationCode: string | null | undefined): string {
+/**
+ * "4" when the agency gave a track; "TBD" only when the same agency has already given a track to another row on
+ * this board (so tracks are announced here, just not yet for this train); else nothing. Amtrak publishes tracks for
+ * a few stations and trains only (none at Washington, Baltimore or New York Penn), so a fixed list would mislead.
+ */
+export function trackCell(row: Pick<BoardRow, "track" | "source">, rows: readonly { source: string; track?: string | null }[]): string {
   if (row.track) return row.track;
-  return row.source === "amtrak" && !!stationCode && TRACK_STATIONS.includes(stationCode.toUpperCase()) ? "TBD" : "";
+  return rows.some((other) => other.source === row.source && !!other.track) ? "TBD" : "";
 }
 
 /** The far end of the row: arrivals show where the train came FROM, departures where it goes TO. */

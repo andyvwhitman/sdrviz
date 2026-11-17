@@ -363,3 +363,11 @@ Two new `Vehicle` fields; `delay_s` is never clamped.
 - `next_stop_unavailable: string | null`: why `next_stop` is null: `"no stop data"` (the train has no known stops: no
   scheduled trip matched and no stop list in the feed) or `"terminated"` (it has passed all of them). null when
   `next_stop` is set.
+
+## Sprint 1 follow-ups (v1.4.1)
+
+- `BoardRow.delay_suspect: boolean`: same rule as `Vehicle.delay_suspect` (more than 12 h late or 30 min early).
+- A GTFS-RT trip update applies only to the service day in its `start_date` (MARC, MBTA and Brightline all send
+  it); an update without one applies as before. A vehicle position likewise applies only to the run
+  it is on. Before this, yesterday's and tomorrow's runs of the same trip took today's realtime and showed on
+  boards as duplicate rows "+24 H" late or early.

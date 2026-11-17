@@ -137,6 +137,8 @@ export interface BoardRow {
   state_basis?: StateBasis;
   /** a train in realtime that is not in the schedule */
   added?: boolean;
+  /** the delay is implausible (over 12 h late or 30 min early) */
+  delay_suspect?: boolean;
 }
 
 /** A train that runs through a station without stopping (`?passing=1`); its times are approximate. */

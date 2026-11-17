@@ -2,7 +2,7 @@
 
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 
 from google.transit import gtfs_realtime_pb2
 
@@ -46,6 +46,7 @@ class StopUpdate:
 class TripUpdate:
     trip_id: str
     route_id: str | None = None
+    start_date: date | None = None  # the service day the update is about, when the feed says
     canceled: bool = False
     added: bool = False  # a trip the schedule does not have
     delay: int | None = None  # trip-level delay, when the feed gives one
@@ -107,6 +108,14 @@ class VehiclePosition:
     at_stop: bool = False  # STOPPED_AT that stop
 
 
+def _service_date(text: str) -> date | None:
+    """GTFS-RT start_date "YYYYMMDD"; None when missing or malformed."""
+    try:
+        return datetime.strptime(text, "%Y%m%d").date() if text else None
+    except ValueError:
+        return None
+
+
 def parse_trip_updates(data: bytes) -> dict[str, TripUpdate]:
     feed = gtfs_realtime_pb2.FeedMessage()
     feed.ParseFromString(data)
@@ -121,6 +130,7 @@ def parse_trip_updates(data: bytes) -> dict[str, TripUpdate]:
         update = TripUpdate(
             trip_id,
             route_id=tu.trip.route_id or None,
+            start_date=_service_date(tu.trip.start_date),
             canceled=tu.trip.schedule_relationship == CANCELED,
             added=tu.trip.schedule_relationship == ADDED,
             delay=tu.delay if tu.HasField("delay") else None,

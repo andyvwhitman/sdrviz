@@ -467,3 +467,23 @@ async def _test_a_failed_first_poll_ends_warming(tmp_path):
     async with httpx.AsyncClient(transport=transport(routes)) as client:
         await p.update(client)
     assert not p.warming and p.api_status().state == "error"
+
+
+def test_realtime_applies_only_to_its_service_day(provider):
+    """Yesterday's and tomorrow's runs of a trip must not take today's update (they showed up +/-24 h late)."""
+    provider.trip_updates = parse_trip_updates(make_trip_updates(late_s=120))
+    update = provider.trip_updates["Train100"]
+    today = NOW.astimezone(provider.static.timezone).date()
+    update.start_date = today
+    assert provider.update_for("Train100", today) is update
+    assert provider.update_for("Train100", today - timedelta(days=1)) is None
+    assert provider.update_for("Train100", today + timedelta(days=1)) is None
+
+
+def test_board_row_flags_a_suspect_delay():
+    from app.transit.models import BoardRow
+
+    row = dict(trip_id="t", source="s", agency="A", scheduled=NOW, state="upcoming")
+    assert BoardRow(**row, delay_s=24 * 3600).delay_suspect
+    assert not BoardRow(**row, delay_s=600).delay_suspect
+    assert not BoardRow(**row).delay_suspect

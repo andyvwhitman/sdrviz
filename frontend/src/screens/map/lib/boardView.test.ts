@@ -33,17 +33,17 @@ describe("stateWord", () => {
 
 describe("trackCell", () => {
   it("shows the track when there is one", () => {
-    expect(trackCell({ track: "12", source: "amtrak" }, "WAS")).toBe("12");
-    expect(trackCell({ track: "2", source: "vre" }, null)).toBe("2");
+    expect(trackCell({ track: "12", source: "amtrak" }, [])).toBe("12");
+    expect(trackCell({ track: "2", source: "vre" }, [])).toBe("2");
   });
-  it("says TBD for an Amtrak row at WAS, BAL and NYP without a track", () => {
-    expect(trackCell({ track: null, source: "amtrak" }, "WAS")).toBe("TBD");
-    expect(trackCell({ track: null, source: "amtrak" }, "nyp")).toBe("TBD");
+  it("says TBD only when the same agency already announced a track on this board", () => {
+    const rows = [{ track: "3", source: "amtrak" }, { track: null, source: "amtrak" }, { track: null, source: "marc" }];
+    expect(trackCell(rows[1], rows)).toBe("TBD");
+    expect(trackCell(rows[2], rows)).toBe("");
   });
-  it("says nothing elsewhere", () => {
-    expect(trackCell({ track: null, source: "amtrak" }, "BWI")).toBe("");
-    expect(trackCell({ track: null, source: "marc" }, "WAS")).toBe("");
-    expect(trackCell({ track: null, source: "amtrak" }, null)).toBe("");
+  it("says nothing where no track has been announced", () => {
+    const rows = [{ track: null, source: "amtrak" }, { track: null, source: "amtrak" }];
+    expect(trackCell(rows[0], rows)).toBe("");
   });
 });
 

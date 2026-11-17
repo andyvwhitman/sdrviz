@@ -168,7 +168,21 @@ class GtfsProvider(Provider):
 
     # hooks the Amtraker provider overrides (its live data is keyed by day as well)
     def update_for(self, trip_id: str, day: date) -> TripUpdate | None:
-        return self.trip_updates.get(trip_id)
+        """The realtime update of this trip on this service day only, when the feed names the day (`start_date`;
+        MARC, MBTA and Brightline do). Without the check, yesterday's and tomorrow's runs of the same trip took
+        today's times and showed up on boards a day late or early."""
+        update = self.trip_updates.get(trip_id)
+        if update is None or (update.start_date and update.start_date != day):
+            return None
+        return update
+
+    def position_for(self, trip_id: str, day: date) -> VehiclePosition | None:
+        """The vehicle running this trip, if it is running it on this service day."""
+        position = self._position_of(trip_id)
+        trip = self.static.trips.get(trip_id) if self.static else None
+        if position is None or trip is None:
+            return position
+        return position if self.trip_day(trip, position.timestamp or datetime.now(UTC)) == day else None
 
     def row_trip_id(self, trip_id: str, day: date) -> str:
         return trip_id
@@ -747,7 +761,7 @@ class GtfsProvider(Provider):
         times = feed.stop_times[trip_id]
         st = times[index]
         route = self._route_of(trip)
-        live = self.update_for(trip_id, day) or self._position_of(trip_id)
+        live = self.update_for(trip_id, day) or self.position_for(trip_id, day)
         legs = self.legs(trip_id, day) if live else None
         if legs:  # realtime: estimates and state come from the same legs and progress as the trip page
             progress, basis = self.progress(trip_id, day, legs, now)

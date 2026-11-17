@@ -13,7 +13,7 @@
   import type { Trip, TripStop, Vehicle } from "$lib/types/transit";
   import Panel, { type PanelControls } from "./Panel.svelte";
   import Delay from "./Delay.svelte";
-  import { estMark, PASS_LABEL, passTime, stopCode, stopTimes, TRACK_STATIONS } from "./lib/boardView";
+  import { estMark, PASS_LABEL, passTime, stopCode, stopTimes } from "./lib/boardView";
   import { ageNow, ageText, clockOf, delayCell, hhmm, hhmmss, isStale, timeTag, trainTitle } from "./lib/transitView";
 
   interface Props extends PanelControls {
@@ -88,8 +88,8 @@
   const agency = $derived(vehicle?.agency ?? trip?.agency ?? BLANK);
   const title = $derived(vehicle ? trainTitle(vehicle) : trip ? `${trip.agency} ${trip.train ?? ""}`.trim() : tripId);
 
-  /** the track of a stop: its own, or TBD for an Amtrak train at a station that announces tracks */
-  const trackOf = (s: TripStop): string => s.track ?? (agency === "Amtrak" && TRACK_STATIONS.includes(stopCode(s.stop_id) ?? "") ? "TBD" : "");
+  /** the track of a stop, when the agency has given one */
+  const trackOf = (s: TripStop): string => s.track ?? "";
   const tagOf = (s: TripStop): string =>
     s.state === "skipped" ? "SKIPPED" : s.state === "current" ? `${estMark(s.state_basis)}AT STOP` : s.state === "next" ? `${estMark(s.state_basis)}NEXT` : "";
   /** the glance form of the freshness, for the panel's subheader */

@@ -107,8 +107,8 @@
       <span class="sw-n">{r.agency} {r.train ?? ""}</span>
       {#if controls.full}<span class="sw-d sw-r">{r.route_name ?? BLANK}</span>{/if}
       <span class="sw-d" title={endpoint(r, tab)}>{cleanName(endpoint(r, tab), names)}</span>
-      <span class="sw-k sw-trk">{#if trackCell(r, board?.stop.code)}TRK {trackCell(r, board?.stop.code)}{/if}</span>
-      <span class="sw-k sw-g">{#if r.state === "cancelled"}CANCELLED{:else}<Delay {...tag} />{/if}</span>
+      <span class="sw-k sw-trk">{#if trackCell(r, rows)}TRK {trackCell(r, rows)}{/if}</span>
+      <span class="sw-k sw-g">{#if r.state === "cancelled"}CANCELLED{:else}<Delay {...tag} suspect={r.delay_suspect} />{/if}</span>
       <span class="sw-k sw-s">{word}</span>
     </button>
   {/if}

@@ -10,6 +10,8 @@
     "allowJs": false,
     "checkJs": false,
     "isolatedModules": true,
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
     "verbatimModuleSyntax": true,
     "types": ["svelte", "vite/client", "node"],
     "baseUrl": ".",

@@ -14,7 +14,7 @@
 
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { Plugin } from "vite";
-import type { CommandResult, NodeCommand, NodeEvent, NodeHealth, SdrNode } from "../src/lib/types/nodes";
+import type { CommandResult, NodeCommand, NodeEvent, NodeHealth, SdrNode } from "../src/lib/types/nodes.ts";
 
 type FakeNode = SdrNode & { events: NodeEvent[]; secret: string };
 

@@ -41,6 +41,29 @@ else
   bad "service $SERVICE is $(systemctl is-active "$SERVICE")"
 fi
 
+if systemctl is-active --quiet "$SERVICE"; then
+  pid="$(systemctl show -p MainPID --value "$SERVICE")"
+  rss_kb="$(awk '/^VmRSS:/ {print $2}' "/proc/$pid/status" 2>/dev/null)"
+  restarts="$(systemctl show -p NRestarts --value "$SERVICE")"
+  limit="$(systemctl show -p MemoryMax --value "$SERVICE")"
+  if [[ -n "$rss_kb" ]]; then
+    if (( rss_kb > 400000 )); then
+      bad "memory: rtl_tcp uses $((rss_kb / 1024)) MB (limit ${limit}); it should stay under ~100 MB"
+    else
+      ok "memory: rtl_tcp uses $((rss_kb / 1024)) MB (limit ${limit})"
+    fi
+  fi
+  info "restarts since the service was started: ${restarts:-unknown}"
+fi
+
+if systemctl list-unit-files sdrviz-node.service >/dev/null 2>&1 && systemctl is-enabled --quiet sdrviz-node 2>/dev/null; then
+  if systemctl is-active --quiet sdrviz-node; then
+    ok "service sdrviz-node is running ($(command -v sdrviz-node >/dev/null && sdrviz-node status 2>&1 | grep -E '^uplink' || echo 'no status'))"
+  else
+    bad "service sdrviz-node is $(systemctl is-active sdrviz-node)"
+  fi
+fi
+
 if ss -ltn 2>/dev/null | grep -q ":$PORT "; then
   ok "listening on port $PORT"
 else

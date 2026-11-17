@@ -14,6 +14,17 @@ Restart=always
 RestartSec=3
 # rtl_tcp exits when the dongle is unplugged; Restart=always brings it back when it returns.
 
+# Stopping and memory (measured 2026-11-16, docs/deployment-architecture.md section 12): rtl_tcp ignored
+# SIGTERM while blocked on USB and took 90 s to stop, and it buffers when a client is slow and never frees
+# it (2.7 GB resident after 4 days). So: stop within 5 s (SIGTERM to rtl_tcp, SIGKILL to anything left),
+# start squeezing it at 384 MB and kill it at 512 MB; Restart=always then starts a fresh one in 3 s.
+# A healthy rtl_tcp with one client uses well under 100 MB.
+TimeoutStopSec=5
+KillMode=mixed
+SendSIGKILL=yes
+MemoryHigh=384M
+MemoryMax=512M
+
 # Basic hardening; rtl_tcp needs only USB and the network.
 NoNewPrivileges=yes
 ProtectSystem=strict

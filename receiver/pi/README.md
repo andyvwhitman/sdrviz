@@ -56,6 +56,26 @@ With numpy installed it also lists AAR channels that are active right now.
 | Service status | `systemctl status sdrviz-rtltcp` |
 | Live log | `journalctl -u sdrviz-rtltcp -f` |
 | Stop / start | `sudo systemctl stop sdrviz-rtltcp` / `sudo systemctl start sdrviz-rtltcp` |
+| Memory and restarts of rtl_tcp | `sdrviz-check` (RSS and restart count), or `systemctl show sdrviz-rtltcp -p MemoryCurrent -p MemoryMax -p NRestarts` |
+
+## Applying the service fixes (stop in 5 s, memory cap)
+
+`sdrviz-rtltcp.service` now has `TimeoutStopSec=5`, `KillMode=mixed`, `SendSIGKILL=yes`, `MemoryHigh=384M` and
+`MemoryMax=512M` (it once grew to 2.7 GB and took 90 s to stop). `Restart=always` starts a fresh rtl_tcp when the
+cap kills it. To apply them on the Pi (sudo):
+```bash
+cd ~/sdrviz && git pull
+sudo install -m 0644 receiver/pi/sdrviz-rtltcp.service /etc/systemd/system/sdrviz-rtltcp.service
+sudo install -m 0755 receiver/pi/check.sh /usr/local/bin/sdrviz-check
+sudo systemctl daemon-reload && sudo systemctl restart sdrviz-rtltcp
+systemd-analyze verify /etc/systemd/system/sdrviz-rtltcp.service     # prints nothing when it is fine
+time sudo systemctl stop sdrviz-rtltcp; sudo systemctl start sdrviz-rtltcp     # the stop should take under 5 s
+sdrviz-check
+```
+Optional test of the cap (temporary, then undone): `sudo systemctl set-property --runtime sdrviz-rtltcp MemoryMax=20M`, watch
+`journalctl -u sdrviz-rtltcp -f` for the kill and the restart, then `sudo systemctl revert sdrviz-rtltcp`.
+`setup.sh` installs the same files, so running it again does the same. `/etc/sdrviz/rtltcp.env` is not touched (it keeps
+`RTLTCP_ADDRESS=0.0.0.0`; see the comment in the file for when to switch to `127.0.0.1`).
 
 ## Tuning the gain
 Start at the default (36.4 dB). Run the probe:

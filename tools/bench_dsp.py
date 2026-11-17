@@ -1,4 +1,4 @@
-"""Benchmark the receiver chain (app/radio/dsp.py) on synthetic IQ: share of real time per stage.
+"""Benchmark the receiver chain (app/node/dsp.py) on synthetic IQ: share of real time per stage.
 
     python tools/bench_dsp.py                       # 8, 24, 48 and 91 channels, one worker per core
     python tools/bench_dsp.py -c 91 -w 1 -b 50      # one case, one thread
@@ -18,7 +18,7 @@ from pathlib import Path
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
-from app.radio.dsp import (
+from app.node.dsp import (
     Channelizer,
     FmDemod,
     Squelch,

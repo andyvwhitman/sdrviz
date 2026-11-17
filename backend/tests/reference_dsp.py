@@ -3,7 +3,7 @@
 import numpy as np
 from numpy.lib.stride_tricks import sliding_window_view
 
-from app.radio.dsp import IF_RATE, lowpass
+from app.node.dsp import IF_RATE, lowpass
 
 
 class MatmulChannelizer:

@@ -13,46 +13,26 @@ import os
 import time
 from collections import deque
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 import numpy as np
 
 from ..live import protocol
 from ..models import Frequency, Receiver
+from ..node.pipeline import BlockResult, ChannelRx, Pipeline
+from ..node.rtltcp import RtlTcpClient
 from ..sim.world import LIVE_FEED_ID
-from .dsp import Channelizer, FmDemod, Reception, Squelch, iq_from_u8, receive, spectrum_dbfs
 from .events import LiveEvents
 from .receiver import is_active, retunes
-from .rtltcp import RtlTcpClient
 
 if TYPE_CHECKING:
     from ..runtime import Runtime
 
 log = logging.getLogger(__name__)
 
-BLOCK_S = 0.1  # one 100 ms audio chunk per IQ block
 RECONNECT_S = (1, 2, 5, 10)
 READ_TIMEOUT_S = 15  # Wi-Fi can stall for seconds; rtl_tcp buffers and catches up
 SPECTRUM_EVERY = 2  # blocks between waterfall rows (5 rows a second)
-
-
-@dataclass
-class ChannelRx:
-    freq: Frequency
-    squelch: Squelch
-    demod: FmDemod = field(default_factory=FmDemod)
-    seq: int = 0
-    offset_ms: int = 0
-    power_db: float = -127.0
-
-
-@dataclass
-class BlockResult:
-    frames: list[tuple[str, bytes]] = field(default_factory=list)
-    opened: list[str] = field(default_factory=list)
-    closed: list[str] = field(default_factory=list)
-    spectrum: np.ndarray | None = None
 
 
 class RadioSource:
@@ -64,14 +44,22 @@ class RadioSource:
         self.hub = rt.hub
         self.events = LiveEvents(rt)
         self.client = RtlTcpClient(self.config.host, self.config.port)
-        self.channels: dict[str, ChannelRx] = {}
-        self._seq = seq_base  # well above the replay engine's tx_seq values
+        self._next_seq = seq_base + 1  # well above the replay engine's tx_seq values
         self._task: asyncio.Task | None = None
         self._arrivals: deque[tuple[float, int]] = deque(maxlen=50)
         self._blocks = 0
         self._next_second = 0.0
         self.status: dict = {}
         self.pool = ThreadPoolExecutor(workers or os.cpu_count() or 1, thread_name_prefix="channel")
+        self.pipeline = self._new_pipeline()
+
+    def _new_pipeline(self) -> Pipeline:
+        cfg = self.config
+        return Pipeline(cfg.rate, cfg.freq_hz, cfg.squelch_db, self.pool, first_seq=self._next_seq)
+
+    @property
+    def channels(self) -> dict[str, ChannelRx]:
+        return self.pipeline.channels
 
     @property
     def active(self) -> bool:
@@ -109,9 +97,7 @@ class RadioSource:
             await self.stop()
             self.start()
         else:
-            for rx in self.channels.values():
-                rx.squelch.open_db = config.squelch_db
-                rx.squelch.close_db = max(0.0, config.squelch_db - 3)
+            self.pipeline.set_squelch(config.squelch_db)
 
     # --- main loop ---------------------------------------------------------
 
@@ -136,8 +122,8 @@ class RadioSource:
         cfg = self.config
         info = await self.client.connect()
         await self.client.tune(cfg.freq_hz, cfg.rate, cfg.gain_db)
-        channelizer = Channelizer(cfg.rate, cfg.freq_hz)
-        self.channels.clear()
+        self._next_seq = self.pipeline.seq + 1  # transmission numbers go on across reconnects
+        self.pipeline = self._new_pipeline()
         self.status.update(
             state="streaming", tuner=info.tuner, center_hz=cfg.freq_hz, rate=cfg.rate, gain_db=cfg.gain_db, error=None
         )
@@ -149,69 +135,34 @@ class RadioSource:
             cfg.rate / 1e6,
         )
 
-        block_bytes = int(cfg.rate * BLOCK_S) * 2
         while True:
-            raw = await self.client.read_block(block_bytes, timeout_s=READ_TIMEOUT_S)
+            raw = await self.client.read_block(self.pipeline.block_bytes, timeout_s=READ_TIMEOUT_S)
             self._arrivals.append((time.monotonic(), len(raw)))
             self._blocks += 1
-            wanted = self._in_band(channelizer)
+            # every known channel inside the tuned window; the pipeline keeps state per channel across blocks
+            freqs = {cid: _hz(freq) for cid, freq in self.rt.world.freqs.items()}
+            for cid in self.pipeline.set_channels(freqs):  # deleted while on air
+                self.events.key_down(cid)
             want_spectrum = self._blocks % SPECTRUM_EVERY == 0 and LIVE_FEED_ID in self.hub.watched_feeds()
-            result = await asyncio.to_thread(self._process, channelizer, raw, wanted, want_spectrum)
+            result = await asyncio.to_thread(self.pipeline.process, raw, want_spectrum)
             self._publish(result)
             self._update_status()
 
     # --- per block -----------------------------------------------------------
 
-    def _in_band(self, channelizer: Channelizer) -> list[str]:
-        """Every known channel inside the tuned window; state is kept per channel across blocks."""
-        freqs = self.rt.world.freqs
-        wanted = [cid for cid in sorted(freqs) if channelizer.in_band(_hz(freqs[cid]))]
-        for cid in list(self.channels):
-            if cid not in wanted and self.channels.pop(cid).squelch.is_open:  # deleted while on air
-                self.events.key_down(cid)
-        for cid in wanted:
-            if cid not in self.channels:
-                sq = Squelch(open_db=self.config.squelch_db, close_db=max(0.0, self.config.squelch_db - 3))
-                self.channels[cid] = ChannelRx(freqs[cid], sq)
-        return wanted
-
-    def _process(self, channelizer: Channelizer, raw: bytes, wanted: list[str], want_spectrum: bool) -> BlockResult:
-        """Runs in a worker thread (numpy releases the GIL); the channels are spread over `self.pool`."""
-        iq = iq_from_u8(raw)
-        result = BlockResult(spectrum=spectrum_dbfs(iq) if want_spectrum else None)
-        block = channelizer.begin(iq)
-
-        def receive_channel(cid: str) -> Reception:
-            rx = self.channels[cid]
-            return receive(rx.squelch, rx.demod, channelizer.extract(block, _hz(rx.freq)))
-
-        for cid, heard in zip(wanted, self.pool.map(receive_channel, wanted), strict=True):
-            rx = self.channels[cid]
-            rx.power_db = heard.power_db
-            if heard.pcm is None:
-                continue
-            if heard.is_open and not heard.was_open:
-                self._seq += 1
-                rx.seq, rx.offset_ms = self._seq, 0
-                result.opened.append(cid)
-            elif heard.was_open and not heard.is_open:
-                result.closed.append(cid)
-            flags = (0 if heard.was_open else protocol.FLAG_FIRST) | (0 if heard.is_open else protocol.FLAG_LAST)
-            frame = protocol.audio_frame(rx.freq.aar_channel or 0, rx.seq, rx.offset_ms, flags, heard.pcm)
-            result.frames.append((cid, frame))
-            rx.offset_ms += protocol.CHUNK_MS
-        return result
-
     def _publish(self, result: BlockResult) -> None:
-        for cid in result.opened:
-            rx = self.channels[cid]
-            self.events.key_up(cid, rx.seq, rx.squelch.snr_db, rx.power_db)
-        for cid, frame in result.frames:
-            self.hub.send_audio(cid, frame)
-        for cid in result.closed:
+        world_freqs = self.rt.world.freqs
+        for up in result.key_ups:
+            self.events.key_up(up.key, up.tx_seq, up.snr_db, up.power_db)
+        for chunk in result.chunks:
+            flags = (protocol.FLAG_FIRST if chunk.first else 0) | (protocol.FLAG_LAST if chunk.last else 0)
+            aar_channel = world_freqs[chunk.key].aar_channel or 0
+            self.hub.send_audio(
+                chunk.key, protocol.audio_frame(aar_channel, chunk.tx_seq, chunk.offset_ms, flags, chunk.pcm)
+            )
+        for cid in result.key_downs:
             self.events.key_down(cid)
-        on_air = {cid: (rx.power_db, rx.squelch.snr_db) for cid, rx in self.channels.items() if rx.squelch.is_open}
-        self.events.levels(on_air)
+        self.events.levels(result.levels)
         if result.spectrum is not None:
             self._send_spectrum(result.spectrum)
         if time.monotonic() >= self._next_second:

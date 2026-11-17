@@ -5,7 +5,7 @@ from concurrent.futures import ThreadPoolExecutor
 import numpy as np
 import pytest
 
-from app.radio.dsp import AUDIO_RATE, Channelizer, FmDemod, Squelch, carrier_gate, channel_power, iq_from_u8
+from app.node.dsp import AUDIO_RATE, Channelizer, FmDemod, Squelch, carrier_gate, channel_power, iq_from_u8
 
 from .reference_dsp import MatmulChannelizer
 

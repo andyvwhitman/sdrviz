@@ -22,7 +22,21 @@ Stop with `docker compose down` (add `-v` to also delete the data volumes).
   Caddy gets a Let's Encrypt certificate by itself.
 - Use a long `SDRVIZ_PASSWORD` and a random `SDRVIZ_SECRET`. Keep `.env` mode 0600.
 - The API port 8100 is not published; only Caddy is reachable.
-- Server stand-up scripts and Litestream backups arrive in Sprint 3.
+- Litestream backups are set aside for now.
+
+## On Hetzner Cloud
+
+1. Once, in the console: create a project, then an API token in it (Read & Write). On your Mac:
+   `brew install hcloud` and `hcloud context create sdrviz` (paste the token).
+2. `deploy/hetzner/provision.sh`: creates the SSH key, private network, firewall (80, 443 and 22 open; SSH is key only,
+   using the first key in ~/.ssh/*.pub), a 20 GB Volume and the server in Ashburn, then prints the IP. Safe to re-run. Settings are at the top of the script.
+3. Add an A record (and AAAA) for your subdomain pointing at that IP.
+4. `scp deploy/server/setup.sh root@<ip>:` then `ssh root@<ip> 'bash setup.sh sdrviz.<yourdomain>'`. It installs
+   Docker and git, keeps Docker's storage (database, certificates) on the Volume, clones the repo to /opt/sdrviz,
+   writes `deploy/.env` with a generated password (printed once) and starts the stack. Re-run it to update.
+
+The server clones from GitHub, so push `main` first. No VPN: SSH is open to the internet with password login turned off (keys only). To narrow it, re-run
+provision.sh with `SDRVIZ_SSH_FROM=<your ip>/32`. The server runs the simulated radio (`SDRVIZ_SIM` defaults to true) until a node is enrolled.
 
 ## LAN receiver
 

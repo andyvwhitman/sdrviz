@@ -11,6 +11,7 @@ services:
     environment:
       SDRVIZ_PASSWORD: ${SDRVIZ_PASSWORD:?set SDRVIZ_PASSWORD in .env}
       SDRVIZ_SECRET: ${SDRVIZ_SECRET:?set SDRVIZ_SECRET in .env}
+      SDRVIZ_PUBLIC_URL: ${SDRVIZ_PUBLIC_URL:-https://localhost}
       SDRVIZ_RTLTCP_HOST: ${SDRVIZ_RTLTCP_HOST:-}
     volumes:
       - data:/data

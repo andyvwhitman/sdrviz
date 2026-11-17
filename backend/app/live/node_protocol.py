@@ -17,6 +17,7 @@ from . import protocol
 PROTOCOL_VERSION = 1
 KEY_PREFIX = "sdrviz-node1."
 HEARTBEAT_S = 5
+IF_RATE_MULTIPLE = 48_000  # the sample rate must be a multiple of this (the channel baseband rate)
 
 # WebSocket close codes (4000-4999 are application codes).
 CLOSE_BAD_MESSAGE = 4400  # malformed or unexpected message; the node reconnects

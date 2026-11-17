@@ -14,6 +14,7 @@ from .db import create_schema, make_engine, open_session, seed_if_empty
 from .live import protocol
 from .live.hub import Hub
 from .models import Bank, FeedAck, Prefs, Receiver
+from .nodes.service import NodeRegistry
 from .radio.receiver import load_receiver, save_receiver
 from .radio.source import RadioSource
 from .sim import live_state
@@ -58,6 +59,7 @@ class Runtime:
         self.prefetcher: Prefetcher | None = None
         # Real audio from the rtl_tcp receiver, once it has a host; the replay's synthetic audio then stays quiet.
         self.radio = RadioSource(self, workers=settings.dsp_workers)
+        self.nodes = NodeRegistry(self.db, settings.public_url)  # remote receiver nodes (see docs/node-protocol.md)
         # Real train positions and station boards; sources that are down only show up in /api/transit/sources.
         self.transit: TransitService | None = None
         if settings.transit_sources is None or settings.transit_sources:

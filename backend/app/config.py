@@ -26,6 +26,8 @@ class Settings(BaseSettings):
     # False turns the replay off entirely: no fake traffic, transcripts, trains, waterfall or feeds.
     sim: bool = True
     port: int = 8100
+    # The address nodes reach this server at; it goes into node keys (https://sdr.example.com in production).
+    public_url: str = "http://localhost:8100"
 
     # Real trains. Sources live in the database (seeded with defaults, edited on the Settings page). [] turns
     # the feature off (tests); SDRVIZ_TRANSIT_SOURCES as a JSON list is only read as that on/off switch.

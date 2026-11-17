@@ -94,7 +94,7 @@ Delay before attempt n (n = 0, 1, 2, ...) = `min(60, 2^n)` seconds times a rando
 
 ### Node key
 
-`sdrviz-node1.<base64url, no padding, of the JSON {"url": "https://host", "node": "<node id>", "secret": "<enrollment secret>", "v": 1}>`. Valid 24 hours, single use. Secrets are 32 random bytes, base64url (43 characters). The server stores only SHA-256 hashes (BE-4). The agent derives the WebSocket address from `url` (`https` to `wss`, `http` to `ws`, path `/ws/node`).
+`sdrviz-node1.<base64url, no padding, of the JSON {"url": "https://host", "node": "<node id>", "secret": "<enrollment secret>", "v": 1}>`. Valid 24 hours, single use. Secrets are 32 random bytes, base64url (43 characters). The server stores only SHA-256 hashes (BE-4). The server writes its own address into the key from the setting `SDRVIZ_PUBLIC_URL` (default `http://localhost:8100`). The agent derives the WebSocket address from `url` (`https` to `wss`, `http` to `ws`, path `/ws/node`).
 
 ## Part 2. REST API (browser, Settings)
 
@@ -114,8 +114,8 @@ Node {
   last_seen: string | null      // last message from the node
   agent_version: string | null  // from the last hello
   health: { cpu_pct, temp_c, rtl_tcp, dropped_blocks, audio_age_ms, uptime_s, channels, tune } | null
-                                // the last health message (fields as in Part 1); null until the first one
-  key_expires_at: string | null // only PENDING: when the current node key stops working
+                                // the last health message (fields as in Part 1); null until the first one since the server started
+  key_expires_at: string | null // while a node key is outstanding (new node, or after a re-key): when it stops working
   created_at: string
 }
 NodeEvent { t: string, kind: "enrolled" | "online" | "offline" | "reconnect" | "rekeyed"
@@ -132,6 +132,7 @@ POST   /nodes/{id}/revoke          -> Node
 POST   /nodes/{id}/commands        -> CommandResult                   (body: Command)
 ```
 
+- Node ids and numbers are never reused. Tables: `node`, `node_credential` (hashes only, plus the secret of an enrollment still waiting for its `enrolled_ack`), `node_event`.
 - `POST /nodes`: creates a PENDING node and a key valid 24 h. `name` 1-40 characters, `lat` -90..90, `lon` -180..180. `key` is the text to show once and offer as a file (`<name>.key`).
 - `PATCH`: changing `preset` of an ONLINE node sends it a `channels` command; a node that is offline gets the list in its next `welcome`. `preset` must be a known one (422 otherwise); the only one in v1 is `aar`.
 - `rekey`: new enrollment secret, 24 h. The old node secret keeps working until the new enrollment completes. On a REVOKED node it makes the node PENDING again. Answers `key` once.

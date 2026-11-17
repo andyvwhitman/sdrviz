@@ -25,17 +25,25 @@ def websocket_authenticated(websocket: WebSocket) -> bool:
 
 
 class LoginLimiter:
-    """At most MAX_ATTEMPTS login attempts per client per minute (in memory)."""
+    """At most MAX_ATTEMPTS attempts per client per minute (in memory). Used for logins and for failed node
+    authentications."""
 
     def __init__(self) -> None:
         self._attempts: defaultdict[str, deque[float]] = defaultdict(deque)
 
-    def allow(self, client: str, now: float | None = None) -> bool:
+    def blocked(self, client: str, now: float | None = None) -> bool:
         now = time.monotonic() if now is None else now
         attempts = self._attempts[client]
         while attempts and now - attempts[0] > WINDOW_S:
             attempts.popleft()
-        if len(attempts) >= MAX_ATTEMPTS:
+        return len(attempts) >= MAX_ATTEMPTS
+
+    def record(self, client: str, now: float | None = None) -> None:
+        self._attempts[client].append(time.monotonic() if now is None else now)
+
+    def allow(self, client: str, now: float | None = None) -> bool:
+        """Count an attempt; False once the client is over the limit."""
+        if self.blocked(client, now):
             return False
-        attempts.append(now)
+        self.record(client, now)
         return True

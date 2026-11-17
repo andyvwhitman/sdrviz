@@ -5,6 +5,8 @@ sqlmodel==0.0.48
 pydantic-settings==2.16.2
 itsdangerous==2.2.0
 numpy==2.5.4
+av==19.0.2  # Opus (libopus) for the node uplink
+websockets==17.4  # fake node and agent client; uvicorn uses it for the server side
 httpx==0.28.1
 gtfs-realtime-bindings==3.0.0
 # Test and lint

@@ -86,7 +86,7 @@
 
 <section class="lg" bind:this={root} aria-label="Transmissions">
   <div class="lg__head">
-    <h2 class="lg__title">TRANSMISSIONS{#if countToday != null} · <span class="lg__n">{countToday}</span> TODAY{/if}</h2>
+    <h2 class="lg__title">TRANSMISSIONS{#if countToday != null}{" · "}<span class="lg__n">{countToday}</span> TODAY{/if}</h2>
     {#if bucket}<button class="lg__chip" type="button" onclick={onclearbucket} aria-label="Return the log to newest">{bucket.label} ×</button>{/if}
     <span class="lg__grow"></span>
     <button class="lg__cont" type="button" aria-pressed={continuous} onclick={ontogglecontinuous} title="Play the next newer transmission when one ends (C)">CONTINUOUS</button>
@@ -156,7 +156,10 @@
 
 <style>
   .lg { min-width: 0; padding-bottom: 24px; }
-  .lg__head { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 16px; border-bottom: 1px solid var(--grid); }
+  .lg__head {
+    position: sticky; top: calc(var(--header-h) + var(--fq-top, 0px)); z-index: 5; background: var(--bg-void);
+    display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 16px; border-bottom: 1px solid var(--grid);
+  }
   .lg__title { margin: 0; font: 500 var(--fs-13)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink); white-space: nowrap; }
   .lg__n { font-family: var(--font-data); }
   .lg__grow { flex: 1; }
@@ -176,7 +179,7 @@
   .lg__air-t { font: 400 var(--fs-13)/1 var(--font-data); color: var(--state-tx); }
   .lg__air-d { font: 400 var(--fs-13)/1 var(--font-data); color: var(--state-tx); }
   .lg__air-k { font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink-2); }
-  .lg__new { display: block; margin: 8px auto; min-height: 32px; padding: 0 16px; font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); position: sticky; top: calc(var(--header-h) + 8px); z-index: 5; background: var(--bg-void); }
+  .lg__new { display: block; margin: 8px auto; min-height: 32px; padding: 0 16px; font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); position: sticky; top: calc(var(--header-h) + var(--fq-top, 0px) + 52px); z-index: 5; background: var(--bg-void); }
   .lg__msg { margin: 0; padding: 16px 16px 4px; font: 500 var(--fs-13)/1.3 var(--font-label); letter-spacing: var(--track-label); color: var(--ink-2); }
   .lg__sentence { margin: 0; padding: 0 16px 16px; max-width: 60ch; font: 400 var(--fs-15)/1.45 var(--font-read); color: var(--ink-3); }
   .lg__sentence a { color: var(--line); }

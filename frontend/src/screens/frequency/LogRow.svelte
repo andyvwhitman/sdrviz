@@ -112,6 +112,8 @@
   .lr {
     position: relative; display: grid; align-items: start; column-gap: 8px; padding: 6px 0 8px; min-height: 44px;
     border-bottom: 1px solid var(--grid); list-style: none;
+    /* scrolled into view, a row stops below the pinned identity and strip, not under them */
+    scroll-margin-top: calc(var(--header-h) + var(--fq-top, 0px) + 52px);
     grid-template-columns: 44px auto auto minmax(0, 1fr);
     grid-template-areas: "play time len feed" ". text text text";
   }

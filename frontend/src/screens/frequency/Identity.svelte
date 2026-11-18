@@ -17,19 +17,19 @@
     info: FrequencyInfo;
     /** the live channel, when this frequency is in the active bank */
     channel: Channel | undefined;
+    /** seconds the channel has been keyed, or null when it is not */
+    keyedElapsed: number | null;
     /** phone: the lid below the name holds heard-by, banks, notes */
     lidOpen: boolean;
     ontogglelid: () => void;
   }
-  let { info, channel, lidOpen, ontogglelid }: Props = $props();
+  let { info, channel, keyedElapsed, lidOpen, ontogglelid }: Props = $props();
 
   const snapshot = $derived(live.state);
-  const active = $derived(snapshot?.active_transmissions.find((row) => row.frequency_id === info.id && row.live));
-  const keyed = $derived(!!channel?.tx || !!active);
-  const elapsed = $derived(active ? Math.max(0, cyclicAge(simClock.now, active.t_offset_s)) : (channel?.tx?.elapsed_s ?? 0));
+  const keyed = $derived(keyedElapsed !== null);
   const lastHeard = $derived(channel?.last_heard ?? null);
   const ageS = $derived(lastHeard ? cyclicAge(simClock.now, lastHeard.end_t) : null);
-  const via = $derived(channel?.tx?.via ?? active?.feed_label ?? "");
+  const via = $derived(channel?.tx?.via ?? "");
 
   const aar4 = $derived(info.aar_channel != null ? fmt.aar(info.aar_channel) : (channel?.aar4 ?? fmt.BLANK));
   const feeds = $derived((channel?.heard_by ?? []).map((id) => snapshot?.feeds.find((feed) => feed.id === id)?.short ?? id));
@@ -59,7 +59,7 @@
     <div class="id__hero" class:is-keyed={keyed} aria-live="off">
       {#if keyed}
         <span class="id__k"><PositionGlyph state="tx" /> KEYED</span>
-        <span class="id__big is-tx">{fmt.dur(elapsed)}</span>
+        <span class="id__big is-tx">{fmt.dur(keyedElapsed ?? 0)}</span>
         {#if via}<span class="id__via">VIA {via}</span>{/if}
       {:else if lastHeard && ageS != null}
         <span class="id__k">LAST HEARD</span>
@@ -83,18 +83,18 @@
 
 <style>
   .id { padding: 0 16px; background: var(--bg-void); }
-  .id__crumb { min-height: 44px; display: flex; align-items: center; font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink-2); text-transform: uppercase; white-space: pre; }
-  .id__crumb a { color: var(--ink-2); border: 0; display: inline-flex; align-items: center; min-height: 44px; }
+  .id__crumb { min-height: 36px; display: flex; align-items: center; font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink-2); text-transform: uppercase; white-space: pre; }
+  .id__crumb a { color: var(--ink-2); border: 0; display: inline-flex; align-items: center; min-height: 36px; }
   .id__crumb a:hover { color: var(--ink); }
   .id__crumb-tail { display: none; }
-  .id__row { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding-bottom: 8px; }
+  .id__row { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding-bottom: 6px; }
   .id__who { min-width: 0; display: grid; gap: 4px; }
   .id__title { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
   .id__aar { font: 500 var(--fs-24)/1 var(--font-data); color: var(--ink); }
   .id__name { margin: 0; position: relative; font: 600 var(--fs-24)/1.1 var(--font-display); letter-spacing: var(--track-display); text-transform: uppercase; color: var(--ink); }
   .id__name[data-ember]::after { content: ""; position: absolute; left: 0; right: 0; bottom: -4px; height: 2px; background: var(--state-recent); }
   .id__name[data-ember="recent-dim"]::after { background: var(--state-recent-dim); }
-  .id__mhz { font: 400 var(--fs-12)/1.3 var(--font-data); color: var(--ink); }
+  .id__mhz { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font: 400 var(--fs-12)/1.3 var(--font-data); color: var(--ink); }
   .id__unit { color: var(--ink-2); }
   .id__sub { font: 500 var(--fs-13)/1.3 var(--font-label); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--ink-2); }
   .id__more { display: none; gap: 24px; font: 500 var(--fs-13)/1.3 var(--font-label); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--ink-2); }
@@ -107,13 +107,14 @@
   .id__via { display: inline-flex; align-items: center; gap: 6px; font: 400 var(--fs-12)/1 var(--font-data); color: var(--ink-3); }
   .id__hero.is-keyed .id__via { color: var(--ink-2); font-family: var(--font-label); letter-spacing: var(--track-label); }
 
-  .id__lid { display: block; width: 100%; min-height: 44px; text-align: left; font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink-2); border-top: 1px solid var(--grid); }
+  .id__lid { display: block; width: 100%; min-height: 36px; text-align: left; font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink-2); border-top: 1px solid var(--grid); }
   .id__lidbody { display: grid; gap: 6px; padding: 4px 0 12px; font: 500 var(--fs-13)/1.3 var(--font-label); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--ink-2); background: var(--bg-raised); padding-inline: 12px; }
   .id__lidbody p { margin: 0; }
   .id__lidbody .id__notes { font: 400 var(--fs-13)/1.4 var(--font-read); letter-spacing: 0; text-transform: none; color: var(--ink-2); }
 
   @media (min-width: 900px) {
     .id { padding: 0 var(--margin-x); }
+    .id__crumb, .id__crumb a { min-height: 28px; }
     .id__crumb-short { display: none; }
     .id__crumb-tail { display: inline; }
     .id__row { padding-bottom: 12px; }

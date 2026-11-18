@@ -22,13 +22,18 @@ async function jumpToScenario(): Promise<void> {
 }
 
 /** Everything that needs a logged-in session. */
+let generation = 0;
+
 export async function startLive(): Promise<void> {
+  const mine = ++generation;
   await jumpToScenario();
+  if (mine !== generation) return; // stopped (logout, 401) while the jump was in flight
   prefs.load().catch((error) => console.warn("prefs unavailable", error));
   connect();
 }
 
 export function stopLive(): void {
+  generation++;
   disconnect();
 }
 

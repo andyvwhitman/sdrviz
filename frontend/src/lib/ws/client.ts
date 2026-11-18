@@ -58,8 +58,13 @@ export class LiveSocket {
       this.handlers.onOpen();
     };
     socket.onmessage = (event: MessageEvent) => {
-      if (typeof event.data === "string") this.handlers.onMessage(JSON.parse(event.data) as ServerMessage);
-      else this.handlers.onBinary(decodeBinary(event.data as ArrayBuffer));
+      // one bad frame is dropped; it must not take the handler (and the rest of the stream's work) down
+      try {
+        if (typeof event.data === "string") this.handlers.onMessage(JSON.parse(event.data) as ServerMessage);
+        else this.handlers.onBinary(decodeBinary(event.data as ArrayBuffer));
+      } catch (error) {
+        console.warn("bad frame from /ws/live", error);
+      }
     };
     socket.onclose = (event: CloseEvent) => {
       if (this.socket !== socket) return; // a superseded socket

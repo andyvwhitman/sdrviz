@@ -1,5 +1,6 @@
 <script lang="ts">
   import { untrack, type Component } from "svelte";
+  import Button from "$lib/components/Button.svelte";
   import AppShell from "$lib/components/AppShell.svelte";
   import PageShell from "$lib/components/PageShell.svelte";
   import Stage from "$lib/components/Stage.svelte";
@@ -44,26 +45,46 @@
   });
 
   let Screen = $state.raw<Component | null>(null);
+  /** the screen's chunk would not load: usually a tab left open across a deploy */
+  let screenFailed = $state(false);
   $effect(() => {
     const wanted = route;
     shell.reset();
     Screen = null;
+    screenFailed = false;
     if (!wanted) return;
     document.title = `SDRVIZ · ${wanted.name}`;
     if (layoutFor(wanted, viewport.phone) === "plate") {
       document.documentElement.dataset.ready = "1";
       return;
     }
-    loadScreen(wanted).then((component) => {
-      if (route === wanted) {
-        Screen = component;
-        buildOn();
-      }
-    });
+    loadScreen(wanted).then(
+      (component) => {
+        if (route === wanted) {
+          Screen = component;
+          buildOn();
+        }
+      },
+      (error: unknown) => {
+        console.warn("screen failed to load", error);
+        if (route === wanted) screenFailed = true;
+      },
+    );
   });
 </script>
 
-{#if route && session.authenticated !== null}
+{#if session.unreachable}
+  <main class="notice" role="alert">
+    <h1>BACKEND UNREACHABLE</h1>
+    <p>RETRYING</p>
+  </main>
+{:else if screenFailed}
+  <main class="notice" role="alert">
+    <h1>NEW VERSION</h1>
+    <p>THIS SCREEN COULD NOT LOAD. RELOAD TO GET THE LATEST.</p>
+    <Button primary onclick={() => location.reload()}>RELOAD</Button>
+  </main>
+{:else if route && session.authenticated !== null}
   {#if layout === "plate"}
     <PageShell {route}><WiderScreen {route} /></PageShell>
   {:else if layout === "page" && !route.shell}
@@ -84,3 +105,9 @@
     </Stage>
   {/if}
 {/if}
+
+<style>
+  .notice { min-height: 100dvh; display: grid; place-content: center; justify-items: start; gap: 12px; padding: 24px 16px; background: var(--bg-void); }
+  .notice h1 { margin: 0; font: var(--type-title-lg); letter-spacing: var(--track-title); color: var(--ink); }
+  .notice p { margin: 0; font: 500 var(--fs-13)/1.3 var(--font-label); letter-spacing: var(--track-label); color: var(--ink-2); }
+</style>

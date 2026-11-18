@@ -16,6 +16,8 @@ export class ApiError extends Error {
   constructor(
     readonly status: number,
     message: string,
+    /** the Retry-After header of a 429 or 423, in seconds */
+    readonly retryAfterS: number | null = null,
   ) {
     super(message);
   }
@@ -54,7 +56,8 @@ async function request<T>(method: string, path: string, body?: unknown, query?: 
       (j: { detail?: unknown }) => String(j.detail ?? response.statusText),
       () => response.statusText,
     );
-    throw new ApiError(response.status, detail);
+    const retryAfter = Number(response.headers.get("Retry-After"));
+    throw new ApiError(response.status, detail, retryAfter > 0 ? retryAfter : null);
   }
   if (response.status === 204) return undefined as T;
   return (await response.json()) as T;

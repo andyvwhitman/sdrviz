@@ -57,5 +57,6 @@
   .sy-login__form { margin-top: 32px; }
   .sy-login__form .btn { justify-self: stretch; min-height: 48px; }
   .sy-login__form .field__input { font-size: 16px; } /* 16 px stops iOS zooming the page on focus */
+  .sy-login .field__error { min-height: calc(var(--fs-13) * 2.6); } /* room for a wait message on two lines */
   .sy-login__ruler { display: none; } /* 1856 design px of ticks has no honest phone version */
 }

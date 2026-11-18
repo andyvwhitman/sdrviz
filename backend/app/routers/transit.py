@@ -106,7 +106,7 @@ def approaching(
     rt: RT,
     lat: Annotated[float, Query(ge=-90, le=90)],
     lon: Annotated[float, Query(ge=-180, le=180)],
-    radius_km: Annotated[float, Query(ge=0.1, le=25, description="how far the track may pass from the point")] = 2,
+    radius_km: Annotated[float, Query(ge=0.1, le=25, description="how far the track may pass from the point")] = 1,
     ahead_min: Annotated[int, Query(ge=1, le=360, description="trains due within this many minutes")] = 60,
     back_min: Annotated[int, Query(ge=0, le=60, description="trains that passed within this many minutes")] = 10,
     agency: str | None = None,

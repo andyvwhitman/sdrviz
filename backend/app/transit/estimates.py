@@ -112,3 +112,11 @@ def next_leg(legs: list[Leg], states: list[str]) -> Leg | None:
 def no_next_stop(legs: list[Leg]) -> str | None:
     """Why a train has no next stop: it has no stops to go by, or it has passed them all."""
     return "terminated" if legs else "no stop data"
+
+
+def current_delay(legs: list[Leg], states: list[str]) -> int | None:
+    """How late the train is running now: its delay at the stop it is at or heading for, else at its last stop."""
+    leg = next_leg(legs, states)
+    if leg is None:
+        leg = legs[-1] if legs else None
+    return leg.arr_d if leg else None

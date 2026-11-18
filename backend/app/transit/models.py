@@ -304,6 +304,7 @@ class SpotStation(BaseModel):
     name: str
     distance_m: int  # straight line from the spot
     stops: bool  # the train calls here (false: it runs through)
+    role: Literal["origin", "terminus", "stop", "pass"]  # origin: DEPARTS; terminus: ends here
     scheduled: datetime | None = None
     eta: datetime | None = None  # scheduled plus the delay known at that point
     delay_s: int | None = None
@@ -312,7 +313,7 @@ class SpotStation(BaseModel):
 class SpotDirection(BaseModel):
     bearing: float | None = None  # degrees clockwise from north, the train's travel direction at the spot
     cardinal: str | None = None  # N, NE, E ... NW
-    label: str | None = None  # NB, SB, EB or WB
+    label: str | None = None  # NB, SB, EB or WB, one per trip (origin to terminal), not the bearing at the spot
     toward: str | None = None  # the station the trip ends at
 
 
@@ -321,7 +322,7 @@ class SpotVehicle(BaseModel):
     lon: float
     speed_mph: float | None = None
     age_s: int | None = None
-    stale: bool = False
+    stale: bool = False  # a real fix older than 90 s
     position: Literal["realtime", "estimated"] = "realtime"
     next_stop: str | None = None
 
@@ -342,6 +343,7 @@ class ApproachingTrain(BaseModel):
     train: str | None = None
     route_id: str | None = None
     route_name: str | None = None
+    line: str | None = None  # a short name that tells lines apart: "MARC Camden", "MARC Penn", "Acela"
     headsign: str | None = None
     origin: str | None = None
     destination: str | None = None

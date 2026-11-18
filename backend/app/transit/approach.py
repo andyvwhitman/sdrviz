@@ -11,8 +11,9 @@ from datetime import datetime, timedelta
 from math import cos, radians, sin
 from typing import TYPE_CHECKING, Literal
 
-from .estimates import Leg
+from .estimates import Leg, current_delay, leg_states
 from .geometry import Path
+from .geometry import bearing as initial_bearing
 from .models import (
     ApproachingTrain,
     SpotBetween,
@@ -34,6 +35,7 @@ MIN_MOVING_MPH = 10  # slower than this is a train crawling or standing, not a s
 TYPICAL_MPH = {"intercity": 60, "commuter": 40}
 AT_SPOT_M = 150  # a train this close along the track is at the spot...
 AT_SPOT_S = 60  # ...and so is one whose ETA is this close to now
+LIVE_FIX_S = 90  # a position fix older than this is stale, whatever the source's own threshold
 STOP_SNAP_M = 250  # a spot this close to a stop of the trip is that stop
 END_SLACK_M = 400  # a spot this far beyond a trip's first or last stop still counts (the platform's far end)
 POSITION_OFF_M = 1000  # a vehicle farther from the trip's shape than this does not belong to it
@@ -78,21 +80,46 @@ def moving_speed_ms(speed_mph: float | None, typical_mph: float) -> float:
 
 
 def reconcile(
-    eta: datetime, now: datetime, gap_m: float, speed_mph: float | None, typical_mph: float
+    eta: datetime, fix_time: datetime, gap_m: float, speed_mph: float | None, typical_mph: float
 ) -> tuple[datetime, bool]:
-    """Hold a clock-based ETA to where the train really is. `gap_m` is the distance along the track from the train to
-    the spot (positive: still to come). The feed's delay is kept unless the position makes it impossible: a train
-    cannot arrive sooner than the distance allows, nor have passed more recently than it allows. The replacement is
-    a lower bound: it covers the distance at the train's speed, or a typical one if the train is crawling at the fix."""
-    speed = max(moving_speed_ms(speed_mph, typical_mph), typical_mph * MPH_TO_MS)  # a slow fix is not the whole way
+    """Hold a clock-based ETA to where the train was when its position was measured. `gap_m` is the distance along
+    the track from the train at `fix_time` to the spot (positive: still to come). The feed's delay is kept unless the
+    position makes it impossible: a train cannot arrive sooner than the distance allows after the fix, nor have passed
+    more recently than it allows. Any replacement is anchored to the fix time, never to now (a fix four minutes old
+    says where the train was four minutes ago), and is a lower bound: it covers the distance at the train's speed, or
+    a typical one if the train is crawling at the fix."""
+    speed = max(moving_speed_ms(speed_mph, typical_mph), typical_mph * MPH_TO_MS)
     if abs(gap_m) <= AT_SPOT_M:
-        return (now, True) if abs((eta - now).total_seconds()) > AT_SPOT_S else (eta, False)
+        if speed_mph is not None and speed_mph < MIN_MOVING_MPH:  # standing at the spot: it leaves when the feed says
+            return (fix_time, True) if eta < fix_time else (eta, False)
+        return (fix_time, True) if abs((eta - fix_time).total_seconds()) > AT_SPOT_S else (eta, False)
     if gap_m > 0:
-        if eta < now + timedelta(seconds=gap_m / V_MAX_MS):
-            return now + timedelta(seconds=gap_m / speed), True
-    elif eta > now - timedelta(seconds=-gap_m / V_MAX_MS):
-        return now - timedelta(seconds=-gap_m / speed), True
+        if eta < fix_time + timedelta(seconds=gap_m / V_MAX_MS):
+            return fix_time + timedelta(seconds=gap_m / speed), True
+    elif eta > fix_time - timedelta(seconds=-gap_m / V_MAX_MS):
+        return fix_time - timedelta(seconds=-gap_m / speed), True
     return eta, False
+
+
+def line_name(agency: str, route_name: str | None) -> str | None:
+    """'MARC Camden' from 'CAMDEN - WASHINGTON', 'VRE Manassas' from 'Manassas Line'; Amtrak routes are brands."""
+    if not route_name:
+        return None
+    base = route_name.split(" - ")[0].strip().title().removesuffix(" Line")
+    return base if agency == "Amtrak" else f"{agency} {base}"
+
+
+def route_label(first: tuple[float, float], last: tuple[float, float]) -> str | None:
+    """NB/SB/EB/WB for a whole trip, from its origin to its terminal: a train keeps one label along its route (a
+    Camden Line train is northbound at Halethorpe and at BWI), as the operators name directions. A route is
+    north-south unless it runs within about 70 degrees of east-west."""
+    bearing = initial_bearing(*first, *last)
+    if bearing is None:
+        return None
+    north, east = cos(radians(bearing)), sin(radians(bearing))
+    if abs(north) >= 0.35:
+        return "NB" if north > 0 else "SB"
+    return "EB" if east > 0 else "WB"
 
 
 def state_of(eta_in_s: float) -> State:
@@ -220,18 +247,29 @@ def _row(provider, spot, trip_id, day, shape_id, shape, stations, by_gid) -> App
     if where is None:
         return None
     scheduled, delay = where
-    eta = scheduled + timedelta(seconds=delay) if delay is not None else scheduled
     typical = TYPICAL_MPH[provider.kind]
+    fix_time, d_v, speed = now, None, None
+    if vehicle and vehicle.position == "realtime":
+        projected, off_v = shape.path.project(vehicle.lat, vehicle.lon)
+        if off_v <= POSITION_OFF_M:  # else the position and the trip disagree: trust neither
+            d_v, speed = projected, vehicle.speed_mph
+            fix_time = now - timedelta(seconds=vehicle.age_s or 0)
+    # One delay per train: how late it is now, at the stop it is heading for, carried to the spot while the spot is
+    # still ahead of it. Later stops' own forecasts (a recovery at the terminal) are not used, so the delay never
+    # jumps from one spot along the line to the next. A spot already behind the train keeps its own recorded delay.
+    current = current_delay(full, leg_states(full, provider.progress(trip_id, day, full, now)[0]))
+    ahead = d_v < shape.along if d_v is not None else scheduled + timedelta(seconds=current or 0) > now
+    if current is not None and ahead:
+        delay = current
+    eta = scheduled + timedelta(seconds=delay) if delay is not None else scheduled
     to_go, eta_basis = None, "realtime" if delay is not None else "schedule"
-    if vehicle and vehicle.position == "realtime" and not vehicle.stale:
-        d_v, off_v = shape.path.project(vehicle.lat, vehicle.lon)
-        if off_v <= POSITION_OFF_M:
-            gap = shape.along - d_v
-            eta, moved = reconcile(eta, now, gap, vehicle.speed_mph, typical)
-            if moved:
-                eta_basis = "position"
-            if gap > AT_SPOT_M:
-                to_go = gap / 1000
+    if d_v is not None:
+        gap = shape.along - d_v
+        eta, moved = reconcile(eta, fix_time, gap, speed, typical)
+        if moved:
+            eta_basis = "position"
+        if gap > AT_SPOT_M:
+            to_go = gap / 1000
     if not spot.lo <= eta <= spot.hi:
         return None
     eta = eta.astimezone(feed.timezone)
@@ -239,7 +277,8 @@ def _row(provider, spot, trip_id, day, shape_id, shape, stations, by_gid) -> App
         delay = round((eta - scheduled).total_seconds())
     eta_in_s = round((eta - now).total_seconds())
     bearing = shape.path.at(shape.along)[2]
-    cardinal, label = compass(bearing)
+    cardinal, _ = compass(bearing)
+    first, last = feed.stops[legs[0].stop_id], feed.stops[legs[-1].stop_id]
     route = provider.static.routes.get(trip.route_id)
     return ApproachingTrain(
         key=f"{provider.gid(provider.row_trip_id(trip_id, day))}@{day.isoformat()}",
@@ -250,6 +289,7 @@ def _row(provider, spot, trip_id, day, shape_id, shape, stations, by_gid) -> App
         train=trip.number,
         route_id=provider.gid(trip.route_id),
         route_name=route.name if route else None,
+        line=line_name(provider.source.agency, route.name if route else None),
         headsign=trip.headsign,
         origin=provider.station_name(legs[0].stop_id),
         destination=provider.station_name(legs[-1].stop_id),
@@ -270,7 +310,7 @@ def _row(provider, spot, trip_id, day, shape_id, shape, stations, by_gid) -> App
         direction=SpotDirection(
             bearing=round(bearing) if bearing is not None else None,
             cardinal=cardinal,
-            label=label,
+            label=route_label((first.lat, first.lon), (last.lat, last.lon)),
             toward=provider.station_name(legs[-1].stop_id),
         ),
         vehicle=_vehicle(vehicle),
@@ -300,8 +340,13 @@ def _time_at(
 
 def _basis(vehicle: Vehicle | None, delay: int | None) -> Literal["live", "estimated", "stale", "schedule"]:
     if vehicle is not None and vehicle.position == "realtime":
-        return "stale" if vehicle.stale else "live"
+        return "live" if _fresh(vehicle) else "stale"
     return "estimated" if vehicle is not None or delay is not None else "schedule"
+
+
+def _fresh(vehicle: Vehicle) -> bool:
+    """A real fix is live for 90 s whatever the source's own stale limit (a train at 110 mph covers 4.5 km in that)."""
+    return not vehicle.stale and (vehicle.age_s or 0) <= LIVE_FIX_S
 
 
 def _vehicle(vehicle: Vehicle | None) -> SpotVehicle | None:
@@ -312,7 +357,7 @@ def _vehicle(vehicle: Vehicle | None) -> SpotVehicle | None:
         lon=vehicle.lon,
         speed_mph=vehicle.speed_mph,
         age_s=vehicle.age_s,
-        stale=vehicle.stale,
+        stale=vehicle.position == "realtime" and not _fresh(vehicle),
         position=vehicle.position,
         next_stop=vehicle.next_stop.name if vehicle.next_stop else None,
     )
@@ -329,18 +374,19 @@ def _station(provider, spot, shape_id, shape, stations, legs, dists) -> SpotStat
         if (index := served.get(gid)) is not None:
             leg = legs[index]
             scheduled, delay = (leg.dep_s, leg.dep_d) if index == 0 else (leg.arr_s, leg.arr_d)
-            stops = True
+            stops, role = True, "origin" if index == 0 else "terminus" if index == len(legs) - 1 else "stop"
         else:
             placed = bracket(dists, along, slack=0)
             passed = pass_time(legs, PassPoint(gid, *placed)) if placed else None
             if passed is None:
                 continue
-            scheduled, delay, stops = passed.scheduled, passed.delay_s, False
+            scheduled, delay, stops, role = passed.scheduled, passed.delay_s, False, "pass"
         return SpotStation(
             id=gid,
             name=name,
             distance_m=round(dist),
             stops=stops,
+            role=role,
             scheduled=scheduled,
             eta=scheduled + timedelta(seconds=delay) if delay is not None else scheduled,
             delay_s=delay,
@@ -377,9 +423,11 @@ def _unmatched(provider, spot, near, vehicles: list[Vehicle]) -> list[Approachin
             state = "at_spot" if abs(gap) <= AT_SPOT_M else "approaching" if gap > 0 else "passed"
             moving = vehicle.speed_mph is None or vehicle.speed_mph >= MIN_MOVING_MPH
             eta, eta_in_s = None, None
-            if moving:
-                eta = spot.now + timedelta(seconds=gap / moving_speed_ms(vehicle.speed_mph, typical))
+            if moving:  # anchored to the fix: it was `gap` away when it was measured
+                fix_time = spot.now - timedelta(seconds=vehicle.age_s or 0)
+                eta = fix_time + timedelta(seconds=gap / moving_speed_ms(vehicle.speed_mph, typical))
                 eta_in_s = round((eta - spot.now).total_seconds())
+                state = state_of(eta_in_s)
                 eta = eta.astimezone(provider.static.timezone)
         if eta is not None and not spot.lo <= eta <= spot.hi:
             continue
@@ -397,6 +445,7 @@ def _unmatched(provider, spot, near, vehicles: list[Vehicle]) -> list[Approachin
                 train=vehicle.train,
                 route_id=vehicle.route_id,
                 route_name=vehicle.route_name,
+                line=line_name(provider.source.agency, vehicle.route_name),
                 headsign=vehicle.headsign,
                 origin=vehicle.origin,
                 destination=vehicle.destination,

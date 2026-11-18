@@ -13,8 +13,10 @@ from app.transit.approach import (
     Spot,
     bracket,
     compass,
+    line_name,
     moving_speed_ms,
     reconcile,
+    route_label,
     state_of,
 )
 from app.transit.gtfs_provider import GtfsProvider
@@ -105,11 +107,43 @@ def test_reconcile_holds_an_eta_to_the_position():
     # the feed says it passed a minute ago; the train is 20 km before the spot
     eta, moved = reconcile(NOW - timedelta(minutes=1), NOW, 20_000, None, 40)
     assert moved and eta > NOW
-    # it says due in ten minutes but the train stands at the spot
-    assert reconcile(NOW + timedelta(minutes=10), NOW, AT_SPOT_M - 1, 0, 40) == (NOW, True)
+    # it says due in ten minutes and the train stands at the spot: it leaves when the feed says
+    assert reconcile(NOW + timedelta(minutes=10), NOW, AT_SPOT_M - 1, 0, 40) == (NOW + timedelta(minutes=10), False)
+    # ...but a feed that says it left before the fix is wrong
+    assert reconcile(NOW - timedelta(minutes=2), NOW, AT_SPOT_M - 1, 0, 40) == (NOW, True)
+    # a moving train at the spot passes at the fix
+    assert reconcile(NOW + timedelta(minutes=10), NOW, AT_SPOT_M - 1, 60, 40) == (NOW, True)
     # it says it passed ten minutes ago, but the train is 10 km short of the spot... and one 10 km beyond it
     eta, moved = reconcile(NOW + timedelta(minutes=10), NOW, -10_000, 60, 40)
     assert moved and eta < NOW
+
+
+def test_reconcile_is_anchored_to_the_fix_not_to_now():
+    fix = NOW - timedelta(minutes=4)  # the position is four minutes old; the train was 10 km away then, at 112 mph
+    eta, moved = reconcile(fix + timedelta(minutes=1), fix, 10_000, 112, 60)
+    assert moved and eta == fix + timedelta(seconds=10_000 / moving_speed_ms(112, 60))
+    assert eta < NOW  # it has been and gone: the row will say passed, and the ETA will not slide with the clock
+    assert reconcile(eta, fix, 10_000, 112, 60)[0] == eta
+
+
+def test_line_names_and_route_labels():
+    assert line_name("MARC", "CAMDEN - WASHINGTON") == "MARC Camden"
+    assert line_name("VRE", "Manassas Line") == "VRE Manassas"
+    assert line_name("Amtrak", "Northeast Regional") == "Northeast Regional"
+    assert line_name("MARC", None) is None
+    union, baltimore, brunswick, manassas, ny = (
+        (38.897, -77.006),
+        (39.30, -76.62),
+        (39.31, -77.63),
+        (38.75, -77.47),
+        (40.75, -73.99),
+    )
+    assert (
+        route_label(union, baltimore) == "NB" and route_label(baltimore, union) == "SB"
+    )  # Camden: one label all along
+    assert route_label(union, ny) == "NB" and route_label(union, brunswick) == "NB"
+    assert route_label(union, manassas) == "SB"
+    assert route_label((39.0, -77.0), (39.0, -76.0)) == "EB" and route_label((39.0, -76.0), (39.0, -77.0)) == "WB"
 
 
 # --- the engine over a straight line ------------------------------------------------------------
@@ -211,14 +245,14 @@ def test_a_cancelled_trip_is_not_listed(provider):
 
 
 def test_a_live_position_beats_a_delay_that_cannot_be_true(provider):
-    # 28 minutes early at C puts the local at the spot at 07:57; its GPS says it is still at stop B, 3.9 km short
-    provider.trip_updates = parse_trip_updates(delayed("local", seq1=0, seq2=0, seq3=-1700, seq4=-1700))
+    # 28 minutes early (its delay now) puts the local at the spot at 07:57; its GPS says it is still at B, 3.9 km short
+    provider.trip_updates = parse_trip_updates(delayed("local", seq1=-1700, seq2=-1700, seq3=-1700, seq4=-1700))
     provider.positions = parse_vehicle_positions(position("local", 39.05, speed=20))
     local = next(r for r in rows(provider) if r.train == "100")
     assert local.eta_basis == "position" and local.basis == "live"
     gap = local.to_go_km * 1000
     assert 3_800 < gap < 4_000
-    assert abs((local.eta - NOW).total_seconds() - gap / 20) <= 4  # at its own 20 m/s
+    assert abs((local.eta - NOW).total_seconds() + 10 - gap / 20) <= 4  # from the 10 s old fix, at its own 20 m/s
     assert local.delay_s == round((local.eta - local.scheduled).total_seconds())  # the delay follows the ETA
     assert local.vehicle.speed_mph == pytest.approx(44.7, abs=0.1) and local.vehicle.position == "realtime"
 
@@ -230,12 +264,43 @@ def test_a_delay_that_the_position_allows_is_kept(provider):
     assert (local.eta_basis, local.delay_s, local.eta) == ("realtime", 0, at(8, 17))
 
 
-def test_a_stale_position_is_flagged_and_does_not_move_the_eta(provider):
-    provider.trip_updates = parse_trip_updates(delayed("local", seq1=0, seq2=0, seq3=-1700, seq4=-1700))
-    provider.positions = parse_vehicle_positions(position("local", 39.05, age=700))
+def test_a_stale_fix_is_anchored_to_when_it_was_taken(provider):
+    provider.trip_updates = parse_trip_updates(delayed("local", seq1=-1700, seq2=-1700, seq3=-1700, seq4=-1700))
+    provider.positions = parse_vehicle_positions(position("local", 39.05, age=700, speed=20))
     [local] = [r for r in rows(provider, back=30) if r.train == "100"]
-    assert (local.basis, local.vehicle.stale, local.eta_basis) == ("stale", True, "realtime")
-    assert local.to_go_km is None
+    assert (local.basis, local.vehicle.stale, local.eta_basis, local.vehicle.age_s) == ("stale", True, "position", 700)
+    gap = local.to_go_km * 1000
+    assert abs((local.eta - NOW).total_seconds() - (gap / 20 - 700)) <= 4  # from the fix, so already behind us
+    assert local.state == "passed" and local.eta_in_s < -60  # never "at the spot" on the strength of an old fix
+
+
+def test_a_fix_is_live_for_90_seconds(provider):
+    provider.trip_updates = parse_trip_updates(delayed("local", seq1=0, seq2=0, seq3=0, seq4=0))
+    for age, basis in ((20, "live"), (90, "live"), (91, "stale"), (200, "stale")):
+        provider.positions = parse_vehicle_positions(position("local", 39.05, age=age))
+        local = next(r for r in rows(provider) if r.train == "100")
+        assert (local.basis, local.vehicle.stale) == (basis, basis == "stale"), age
+
+
+def test_one_delay_is_carried_along_the_train(provider):
+    # late 300 s now (at the stop it is heading for); the feed also forecasts a recovery to on time at D
+    provider.trip_updates = parse_trip_updates(delayed("local", seq1=300, seq2=300, seq3=300, seq4=0))
+    provider.positions = parse_vehicle_positions(position("local", 39.02, speed=40))
+    for spot in ((39.07, -77.0), (39.12, -77.0), (39.14, -77.0)):
+        local = next(
+            r for r in provider.approaching(stations_for(provider, spot_at(near=spot, ahead=90))) if r.train == "100"
+        )
+        assert local.delay_s == 300, spot  # no +300 at one spot and 0 at the next
+
+
+def test_the_station_role_says_departs_or_terminates(provider):
+    first = next(r for r in rows(provider, near=(39.0, -77.0)) if r.train == "100")
+    assert (first.station.name, first.station.role, first.station.stops) == ("Stop A", "origin", True)
+    last = next(r for r in rows(provider, near=(39.15, -77.0), ahead=80) if r.train == "100")
+    assert (last.station.name, last.station.role) == ("Stop D", "terminus")
+    mid = next(r for r in rows(provider) if r.train == "100")
+    assert mid.station.role == "stop"
+    assert next(r for r in rows(provider) if r.train == "171").station.role == "pass"
 
 
 def test_a_train_behind_the_spot_by_position_is_passed(provider):
@@ -250,7 +315,7 @@ def test_a_live_train_with_no_timetable_is_placed_by_position(provider):
     [ghost] = [r for r in rows(provider) if r.trip_id is None]
     assert (ghost.eta_basis, ghost.state, ghost.scheduled, ghost.delay_s) == ("position", "approaching", None, None)
     assert ghost.direction.label == "NB" and ghost.basis == "live"
-    assert abs((ghost.eta - NOW).total_seconds() - ghost.to_go_km * 1000 / 20) <= 4  # to_go is rounded
+    assert abs((ghost.eta - NOW).total_seconds() + 10 - ghost.to_go_km * 1000 / 20) <= 4  # from the fix, 10 s old
     # heading south it has already left the spot behind it
     provider.positions = parse_vehicle_positions(position("", 39.04, bearing=180, speed=20))
     [ghost] = [r for r in rows(provider, back=30) if r.trip_id is None]
@@ -304,7 +369,9 @@ def test_an_amtraker_train_is_matched_to_its_timetable_row(tmp_path):
     found = {r.train: r for r in rows(p)}
     live = found["100"]
     assert (live.vehicle_id, live.trip_id, live.basis) == ("amtrak:100-13", "amtrak:100-13", "live")
-    assert live.key == f"amtrak:100-13@{NOW.date()}" and 0 < live.delay_s < 300
+    assert (
+        live.key == f"amtrak:100-13@{NOW.date()}" and live.delay_s == 300
+    )  # its delay at C, the stop it is heading for
     assert live.delay_s == round((live.eta - live.scheduled).total_seconds())
     assert found["171"].vehicle is None  # the express is only on the timetable
     assert [r for r in p.vehicles(NOW) if not p.tracked(r)] == []
@@ -375,9 +442,10 @@ def test_the_endpoint_returns_the_documented_shape(client, live, frozen):
     first = body["trains"][0]
     assert first["eta"] == "2026-11-13T08:17:00-05:00" and first["eta_in_s"] == 1020
     assert set(first) == {
-        "key", "trip_id", "vehicle_id", "source", "agency", "train", "route_id", "route_name", "headsign", "origin",
-        "destination", "state", "eta", "eta_in_s", "scheduled", "delay_s", "status", "delay_suspect", "basis",
-        "eta_basis", "pass_distance_m", "to_go_km", "station", "between", "direction", "vehicle",
+        "key", "trip_id", "vehicle_id", "source", "agency", "train", "route_id", "route_name", "line",
+        "headsign", "origin", "destination", "state", "eta", "eta_in_s", "scheduled", "delay_s", "status",
+        "delay_suspect", "basis", "eta_basis", "pass_distance_m", "to_go_km", "station", "between", "direction",
+        "vehicle",
     }  # fmt: skip
     assert client.get("/api/transit/approaching?lat=39.085&lon=-77.0&agency=nobody").json()["trains"] == []
 
@@ -390,3 +458,12 @@ def test_the_endpoint_checks_its_parameters(client, live):
 
 def test_the_endpoint_is_503_when_transit_is_off(client):
     assert client.get("/api/transit/approaching?lat=39&lon=-77").status_code == 503
+
+
+def test_the_vehicle_chip_is_the_next_stops_delay(provider):
+    # the feed lists a stop the train has left (+20 s) before the one it is heading for (+300 s): the chip says +300
+    provider.trip_updates = parse_trip_updates(delayed("local", seq1=20, seq2=300, seq3=300, seq4=300))
+    provider.positions = parse_vehicle_positions(position("local", 39.03, speed=40, now=at(8, 5)))
+    [vehicle] = [v for v in provider.vehicles(at(8, 5)) if v.position == "realtime"]
+    assert vehicle.next_stop.name == "Stop B"
+    assert vehicle.delay_s == round((vehicle.next_stop.eta - vehicle.next_stop.scheduled).total_seconds()) == 300

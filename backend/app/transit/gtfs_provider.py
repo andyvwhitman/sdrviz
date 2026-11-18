@@ -13,7 +13,17 @@ from datetime import UTC, date, datetime, timedelta
 import httpx
 
 from . import approach
-from .estimates import Leg, Progress, StateBasis, clock_progress, departure_delay, leg_states, next_leg, no_next_stop
+from .estimates import (
+    Leg,
+    Progress,
+    StateBasis,
+    clock_progress,
+    current_delay,
+    departure_delay,
+    leg_states,
+    next_leg,
+    no_next_stop,
+)
 from .geometry import Bbox, Path, bounds, follow_shapes
 from .gtfs_rt import AlertInfo, TripUpdate, VehiclePosition, parse_alerts, parse_trip_updates, parse_vehicle_positions
 from .gtfs_static import Trip as StaticTrip
@@ -558,9 +568,9 @@ class GtfsProvider(Provider):
         if trip and trip.id in feed.stop_times:
             day = self.trip_day(trip, now)
             legs = self.legs(trip.id, day)
-            next_stop = self._next_stop(legs, leg_states(legs, self.progress(trip.id, day, legs, now)[0]))
-            if update := self.update_for(trip.id, day):
-                delay = update.current_delay(self._schedule_of(trip.id, feed.midnight(day)))
+            states = leg_states(legs, self.progress(trip.id, day, legs, now)[0])
+            next_stop = self._next_stop(legs, states)
+            delay = current_delay(legs, states)  # the next stop's delay, so the chip agrees with its ETA
         key = self._key(p)
         updated = p.timestamp or self.state.realtime_updated
         return Vehicle(
@@ -688,7 +698,7 @@ class GtfsProvider(Provider):
         lat, lon, bearing = path.at(position[0])
         next_stop = self._next_stop(full, leg_states(full, clock_progress(full, now)))
         route = self._route_of(trip)
-        delay = next((leg.delay for leg in legs if leg.leave and leg.leave > now and leg.delay is not None), None)
+        delay = current_delay(full, leg_states(full, clock_progress(full, now)))
         updated = self.state.realtime_updated or now
         return Vehicle(
             id=self.gid(trip.id),

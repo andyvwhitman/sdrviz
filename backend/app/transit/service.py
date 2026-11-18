@@ -344,7 +344,7 @@ class TransitService:
         self,
         lat: float,
         lon: float,
-        radius_m: float = 2000,
+        radius_m: float = 1000,
         ahead_min: int = 60,
         back_min: int = 10,
         agency: str | None = None,

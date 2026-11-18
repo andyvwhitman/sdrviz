@@ -12,7 +12,17 @@ from datetime import UTC, date, datetime, timedelta
 
 import httpx
 
-from .estimates import Leg, Progress, StateBasis, clock_progress, departure_delay, leg_states, next_leg, no_next_stop
+from .estimates import (
+    Leg,
+    Progress,
+    StateBasis,
+    clock_progress,
+    current_delay,
+    departure_delay,
+    leg_states,
+    next_leg,
+    no_next_stop,
+)
 from .gtfs_provider import GtfsProvider, interleave
 from .gtfs_rt import StopUpdate, TripUpdate
 from .models import (
@@ -260,7 +270,7 @@ class AmtrakerProvider(GtfsProvider):
             legs = self._live_legs(t)
             progress, _ = self._live_progress(t, legs, now)
             states = leg_states(legs, progress)
-            delay = self._current_delay(legs, states)
+            delay = current_delay(legs, states)
             next_stop = self._live_next_stop(t, legs, states)
             route_id = self._route_by_name.get((t.get("routeName") or "").lower())
             out.append(
@@ -302,12 +312,6 @@ class AmtrakerProvider(GtfsProvider):
             eta=_time(stop.get("arr") or stop.get("dep")),
             scheduled=leg.arr_s,
         )
-
-    @staticmethod
-    def _current_delay(legs: list[Leg], states: list[str]) -> int | None:
-        """Lateness at the next stop the train has not yet left."""
-        leg = next_leg(legs, states)
-        return leg.arr_d if leg else None
 
     def trip(self, trip_id: str, now: datetime, day: date | None = None, passes: bool = False) -> Trip | None:
         train = self._train(trip_id)

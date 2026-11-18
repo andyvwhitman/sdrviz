@@ -12,7 +12,8 @@
   import { live } from "$lib/stores/live.svelte";
   import { shell } from "$lib/stores/shell.svelte";
   import { ui } from "$lib/stores/ui.svelte";
-  import { NAV, type Route } from "../../routes";
+  import { session } from "$lib/stores/session.svelte";
+  import { navFor, type Route } from "../../routes";
   import AudioToggle from "./AudioToggle.svelte";
   import HeaderNav from "./HeaderNav.svelte";
 
@@ -54,7 +55,7 @@
 
   {#if menuOpen}
     <nav class="pg__sheet" aria-label="Screens">
-      {#each NAV as item (item.id)}
+      {#each navFor(session.isAdmin) as item (item.id)}
         <a href={hrefOf(item.path)} onclick={followLink} aria-current={item.id === route.id ? "page" : undefined}>{item.name}</a>
       {/each}
     </nav>

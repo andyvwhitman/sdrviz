@@ -1,6 +1,7 @@
 <script lang="ts">
   /** Bank tabs (spec 5.24) and the tile-count readout. A click activates the bank (POST /banks/{id}/activate). */
   import { api } from "$lib/api/client";
+  import { session } from "$lib/stores/session.svelte";
   import Tabs from "$lib/components/Tabs.svelte";
   import type { Bank } from "$lib/types/live";
 
@@ -19,6 +20,6 @@
 </script>
 
 <div class="lo-tabs">
-  <Tabs {items} selected={active} onselect={activate} />
+  <Tabs {items} selected={active} onselect={session.isAdmin ? activate : undefined} />
   <span class="t-micro"><span class="mono">{tileCount}</span> TILES · {variant.toUpperCase()}</span>
 </div>

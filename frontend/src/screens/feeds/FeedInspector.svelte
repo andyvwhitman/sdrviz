@@ -1,6 +1,7 @@
 <script lang="ts">
   /** Feed inspector, a HUD within the HUD: spectrum, LOFAR waterfall, sample rate, coverage, telemetry. */
   import { onDestroy, onMount } from "svelte";
+  import { session } from "$lib/stores/session.svelte";
   import Button from "$lib/components/Button.svelte";
   import Chip from "$lib/components/Chip.svelte";
   import KeyValue from "$lib/components/KeyValue.svelte";
@@ -136,7 +137,7 @@
       <span class="t-panel">{feed.short} · {siteName(feed)}</span>
       {#if feed.sim}<SimTag />{/if}
       <span class="grow"></span>
-      <Button sm onclick={onedit}>EDIT</Button>
+      {#if session.isAdmin}<Button sm onclick={onedit}>EDIT</Button>{/if}
       {#if unacked}
         <Button primary sm onclick={onack}>ACK</Button>
       {:else if feed.state === "fault" && feed.acked}
@@ -230,7 +231,7 @@
 
     <div class="fb-sec" style="bottom:12px">
       <div class="fb-disc">
-        <button class="disclosure" aria-expanded="false" onclick={onedit}>RECEIVER PARAMETERS</button>
+        <button class="disclosure" aria-expanded="false" disabled={!session.isAdmin} onclick={onedit}>RECEIVER PARAMETERS</button>
         <span class="t-micro">GAIN · SQUELCH DEFAULTS · FFT SIZE · PPM CORRECTION</span>
       </div>
     </div>

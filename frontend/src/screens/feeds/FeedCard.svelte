@@ -1,6 +1,7 @@
 <script lang="ts">
   /** One receiver in the feed list: state line, five measured values, telemetry line, live receptions. */
   import PositionGlyph from "$lib/components/PositionGlyph.svelte";
+  import { session } from "$lib/stores/session.svelte";
   import SimTag from "$lib/components/SimTag.svelte";
   import Toggle from "$lib/components/Toggle.svelte";
   import * as fmt from "$lib/hud/fmt";
@@ -57,7 +58,7 @@
     <span class="fb-card__id">{feed.short}</span><span class="fb-card__site">{siteName(feed)}</span>
     {#if feed.sim}<SimTag />{/if}
     <span class="fb-card__drv is-slot" title={driverName(feed)}>{driverName(feed)}</span>
-    <Toggle label="ENABLED" checked={feed.enabled} onchange={onenable} />
+    {#if session.isAdmin}<Toggle label="ENABLED" checked={feed.enabled} onchange={onenable} />{/if}
   </header>
 
   <div class="fb-card__state">

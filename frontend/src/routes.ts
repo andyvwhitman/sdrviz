@@ -27,6 +27,8 @@ export interface Route {
    * "plate" shows a "needs a wider screen" notice instead. A route with layout "page" is already phone-ready.
    */
   phone?: "page" | "plate";
+  /** hidden from viewers and closed to them (they are sent to the default screen) */
+  adminOnly?: boolean;
 }
 
 /** How a route is laid out in a window of this kind: its own layout, or the phone version of a stage route. */
@@ -40,7 +42,7 @@ export const ROUTES: Route[] = [
   { id: "live-ops", path: "/live", name: "LIVE OPS", dir: "live-ops", shell: true, phone: "plate" },
   { id: "feeds", path: "/feeds", name: "FEEDS & BANKS", dir: "feeds", shell: true, phone: "plate" },
   { id: "map", path: "/map", name: "MAP", dir: "map", shell: true, phone: "page" },
-  { id: "settings", path: "/settings", name: "SETTINGS", dir: "settings", shell: true, phone: "plate" },
+  { id: "settings", path: "/settings", name: "SETTINGS", dir: "settings", shell: true, phone: "plate", adminOnly: true },
   { id: "spot", path: "/spot", name: "SPOT", dir: "spot", shell: true, layout: "page" },
   { id: "login", path: "/login", name: "LOGIN", dir: "system", shell: false, phone: "page" },
   ...(import.meta.env.DEV ? [{ id: "kit", path: "/kit", name: "KIT", dir: "kit", shell: true } as const] : []),
@@ -49,6 +51,9 @@ export const ROUTES: Route[] = [
 /** The header tabs, in order. History and Stats still answer at their paths but are off the nav for now. */
 const NAV_ORDER: ScreenId[] = ["map", "live-ops", "feeds", "settings", "spot"];
 export const NAV = NAV_ORDER.map((id) => ROUTES.find((r) => r.id === id)!);
+
+/** The tabs this session may use. */
+export const navFor = (isAdmin: boolean): Route[] => NAV.filter((r) => isAdmin || !r.adminOnly);
 
 /** The keyboard's top letter row: Q opens the first tab, W the second, and so on. */
 export const NAV_KEYS = "qwertyuiop";

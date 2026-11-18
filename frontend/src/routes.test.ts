@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
-import { layoutFor, routeFor, type Route } from "./routes";
+import { layoutFor, navFor, routeFor, type Route } from "./routes";
 
 const route = (path: string): Route => routeFor(path)!;
 
@@ -17,5 +17,13 @@ describe("layoutFor", () => {
 
   it("gives a phone the wider-screen plate for Live Ops, Feeds & Banks and Settings", () => {
     for (const path of ["/live", "/feeds", "/settings"]) expect(layoutFor(route(path), true)).toBe("plate");
+  });
+});
+
+describe("navFor", () => {
+  it("shows an admin every tab and a viewer all but Settings", () => {
+    expect(navFor(true).map((r) => r.id)).toContain("settings");
+    expect(navFor(false).map((r) => r.id)).not.toContain("settings");
+    expect(navFor(false).length).toBe(navFor(true).length - 1);
   });
 });

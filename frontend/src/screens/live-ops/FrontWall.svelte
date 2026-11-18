@@ -5,6 +5,7 @@
    * (FrontWallMessage); a dropped link voids the rows it never delivered.
    */
   import { onDestroy } from "svelte";
+  import { session } from "$lib/stores/session.svelte";
   import { live } from "$lib/stores/live.svelte";
   import { spectrum } from "$lib/stores/spectrum.svelte";
   import * as fmt from "$lib/hud/fmt";
@@ -84,7 +85,7 @@
   /** click: listen to the channel (it joins the live bank, which becomes active); alt-click: drop it */
   let busy = false; // one request at a time: a double click must not add and activate twice
   async function listen(event: MouseEvent) {
-    if (blank || busy) return;
+    if (blank || busy || !session.isAdmin) return; // changing the live bank is an admin action
     const ch = channelAt(layoutX(event)); // from the click itself: a touch tap has no hover first
     if (ch === null) return;
     busy = true;
@@ -143,7 +144,7 @@
 {/if}
 
 {#if hoverX !== null && !blank}
-  <FrequencyCursor x={hoverX} spectrum={geometry.spectrum} ruler={geometry.ruler} waterfall={geometry.waterfall} channels={snapshot.channels} flash={listenFlash.text} />
+  <FrequencyCursor listenable={session.isAdmin} x={hoverX} spectrum={geometry.spectrum} ruler={geometry.ruler} waterfall={geometry.waterfall} channels={snapshot.channels} flash={listenFlash.text} />
 {:else if listenFlash.text}
   <!-- the confirmation outlives the pointer: a tap or a mouse that moved away still sees what happened -->
   <div class="lo-box lo-flash" style="left:{geometry.spectrum[0] + FLASH_X}px;top:{geometry.ruler[1] + geometry.ruler[3] + 4}px" role="status">{listenFlash.text}</div>

@@ -4,6 +4,7 @@
    * frequency catalogue (cols 8-12). Live state comes from the live store; configuration is edited over REST.
    */
   import { onMount, untrack } from "svelte";
+  import { session } from "$lib/stores/session.svelte";
   import Button from "$lib/components/Button.svelte";
   import Chip from "$lib/components/Chip.svelte";
   import * as fmt from "$lib/hud/fmt";
@@ -129,7 +130,7 @@
     catalogue
       .load()
       .then(() => {
-        editingBank ??= (catalogue.banks.find((b) => b.id === "bank-harbor") ?? catalogue.banks.at(-1))?.id ?? null;
+        if (session.isAdmin) editingBank ??= (catalogue.banks.find((b) => b.id === "bank-harbor") ?? catalogue.banks.at(-1))?.id ?? null;
       })
       .catch(report);
   });
@@ -143,7 +144,7 @@
     {#each snapshot.feeds as feed (feed.id)}
       <FeedCard {feed} keyed={snapshot.active_transmissions ?? []} zone={snapshot.tz.name} nowS={snapshot.t_offset_s} selected={feed.id === selectedFeed?.id} onselect={() => selectFeed(feed.id)} onenable={(enabled) => enableFeed(feed.id, enabled)} />
     {/each}
-    <div class="fb-card__add"><Button sm onclick={() => ((receiverForm = false), (feedForm = { config: null }))}>+ NEW FEED</Button></div>
+    {#if session.isAdmin}<div class="fb-card__add"><Button sm onclick={() => ((receiverForm = false), (feedForm = { config: null }))}>+ NEW FEED</Button></div>{/if}
   </div>
 
   <!-- on a narrow stage the inspector and the banks stack in one scrolling column; on a wide one the wrappers vanish -->
@@ -165,7 +166,7 @@
     <div class="fb-banks">
       <div class="fb-ph">
         <span class="t-panel">BANKS</span><span class="mono">{banks.length}</span><span class="t-micro">ONE LEVER PER CHANNEL · M = MUTE, GLOBAL</span>
-        <Button sm onclick={() => ((editingBank = "new"), (view = "membership"))}>+ NEW BANK</Button>
+        {#if session.isAdmin}<Button sm onclick={() => ((editingBank = "new"), (view = "membership"))}>+ NEW BANK</Button>{/if}
       </div>
       <div style="margin-top:8px">
         <BankLeverRows {banks} {channels} keyed={keyedIds} {activeId} selectedId={bankBeingEdited?.id ?? null} onselect={(id) => ((editingBank = id), (view = "membership"))} />
@@ -175,7 +176,7 @@
         <span class="t-panel">CHANNELS</span>
         <Chip button kind="filter" text="BANK MEMBERSHIP" pressed={view === "membership"} onclick={() => showView("membership")} />
         <Chip button kind="filter" text="CATALOGUE" pressed={view === "catalogue"} onclick={() => showView("catalogue")} />
-        <span class="t-micro">{view === "membership" ? "CLICK TO TOGGLE · TILE ORDER IN THE BANK EDITOR" : "CLICK A ROW TO EDIT"}</span>
+        <span class="t-micro">{!session.isAdmin ? "READ ONLY" : view === "membership" ? "CLICK TO TOGGLE · TILE ORDER IN THE BANK EDITOR" : "CLICK A ROW TO EDIT"}</span>
       </div>
       {#if notice}<p class="fb-form__fail fb-notice" role="alert" style="top:{sectionTop + 28}px">{notice}</p>{/if}
       <div class="fb-scroll" class:has-editor={view === "catalogue" && editingFrequency} style="top:{sectionTop + 32}px">
@@ -190,7 +191,7 @@
         {#if editingBank}
           <BankEditor bank={bankBeingEdited} feeds={snapshot.feeds} {activeId} {largest} ondone={(id) => (editingBank = id)} onactivate={activate} />
         {:else}
-          <div class="fb-edit"><div class="fb-ph"><span class="t-panel">BANK EDITOR</span><span class="t-micro">PICK A BANK ABOVE, OR + NEW BANK</span></div>
+          <div class="fb-edit"><div class="fb-ph"><span class="t-panel">BANK EDITOR</span><span class="t-micro">{session.isAdmin ? "PICK A BANK ABOVE, OR + NEW BANK" : "READ ONLY"}</span></div>
             <div class="fb-cap">LIVE OPS CAPACITY<span class="sep"></span>STANDARD <span class="mono">20</span> AT <span class="mono">1920 × 1080</span><span class="sep"></span>COMPACT <span class="mono">15</span> AT <span class="mono">1440 × 900</span><span class="sep"></span>LARGEST BANK <span class="mono">{largest}</span></div>
           </div>
         {/if}

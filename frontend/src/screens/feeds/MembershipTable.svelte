@@ -1,6 +1,7 @@
 <script lang="ts">
   /** Channel x bank membership: one checkbox per channel and bank, two columns of 24 px rows. */
   import PositionGlyph from "$lib/components/PositionGlyph.svelte";
+  import { session } from "$lib/stores/session.svelte";
   import * as fmt from "$lib/hud/fmt";
   import type { GlyphState } from "$lib/hud/tile";
   import type { Channel, Feed } from "$lib/types/live";
@@ -28,6 +29,7 @@
   const glyphFor = (c: Channel): GlyphState => (keyed.has(c.id) ? "tx" : unheard(c) ? "offline" : c.coverage.state === "stale" ? "stale" : "idle");
 
   async function setMember(bank: BankRecord, channel: Channel, member: boolean): Promise<void> {
+    if (!session.isAdmin) return;
     try {
       await catalogue.setMember(bank, channel.id, member);
     } catch (error) {
@@ -64,7 +66,8 @@
         <span
           class="check"
           role="checkbox"
-          tabindex="0"
+          tabindex={session.isAdmin ? 0 : -1}
+          style:pointer-events={session.isAdmin ? undefined : "none"}
           aria-checked={member}
           aria-label={b.name}
           onclick={() => setMember(b, c, !member)}

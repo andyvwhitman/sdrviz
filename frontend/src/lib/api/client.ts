@@ -84,6 +84,8 @@ export const api = {
   prefs: {
     get: () => get<Prefs>("/prefs"),
     put: (prefs: Prefs) => put<Prefs>("/prefs", prefs),
+    /** Only the fields sent change on the server (a stale copy cannot undo another tab's settings). */
+    patch: (fields: Partial<Prefs>) => patch<Prefs>("/prefs", fields),
   },
   sim: {
     get: () => get<SimStatus>("/sim"),

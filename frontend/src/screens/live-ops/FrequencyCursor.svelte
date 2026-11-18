@@ -10,6 +10,8 @@
   import { boxStyle, type Box } from "./geometry";
 
   interface Props {
+    /** false for a viewer: the hint that a click listens is not shown */
+    listenable?: boolean;
     /** pointer x inside the plots, in pixels */
     x: number;
     spectrum: Box;
@@ -19,7 +21,7 @@
     /** the result of the last click, if recent */
     flash?: string | null;
   }
-  let { x, spectrum, ruler, waterfall, channels, flash = null }: Props = $props();
+  let { x, spectrum, ruler, waterfall, channels, flash = null, listenable = true }: Props = $props();
 
   const [left, top, width] = $derived(spectrum);
   const height = $derived(waterfall[1] + waterfall[3] - top);
@@ -52,7 +54,7 @@
       : "CLICK TO LISTEN \u00b7 SWITCHES TO LIVE BANK",
   );
   /** the confirmation of the last click wins over the instruction */
-  const hint = $derived(flash ?? (dwelled ? instruction : null));
+  const hint = $derived(flash ?? (dwelled && listenable ? instruction : null));
 
   /* keep the readout inside the plot near either edge, and clear of the waterfall's time-axis labels */
   const AXIS_GUTTER = 56;

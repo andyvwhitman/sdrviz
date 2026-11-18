@@ -2,8 +2,10 @@
   /** The screen tabs. The top letter row is a hotkey for each, in order: Q, W, E... */
   import { router, followLink } from "$lib/router.svelte";
   import { carryGlobals } from "$lib/params";
-  import { NAV, NAV_KEYS } from "../../routes";
+  import { session } from "$lib/stores/session.svelte";
+  import { navFor, NAV_KEYS } from "../../routes";
 
+  const NAV = $derived(navFor(session.isAdmin));
   const globals = $derived(carryGlobals(router.search));
   const hrefOf = (path: string): string => path + (globals ? `?${globals}` : "");
 

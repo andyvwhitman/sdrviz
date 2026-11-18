@@ -1,6 +1,7 @@
 <script lang="ts">
   /** One row per bank: name, home feed, one M21 mute lever per channel, and the bank's coverage notes. */
   import BankLever from "$lib/components/BankLever.svelte";
+  import { session } from "$lib/stores/session.svelte";
   import Chip from "$lib/components/Chip.svelte";
   import SimTag from "$lib/components/SimTag.svelte";
   import * as fmt from "$lib/hud/fmt";
@@ -45,7 +46,7 @@
   {@const s = summary(bank)}
   <div class="fb-bank" class:is-selected={bank.id === selectedId}>
     <div class="fb-bank__meta">
-      <button class="fb-bank__name" aria-label="Edit bank {bank.name}" onclick={() => onselect(bank.id)}>
+      <button class="fb-bank__name" aria-label="Edit bank {bank.name}" disabled={!session.isAdmin} onclick={() => onselect(bank.id)}>
         <span class="mono">{bankAbbr(bank)}</span>{bank.name}{#if bank.sim}<SimTag />{/if}
       </button>
       <span class="fb-bank__sub">{bank.frequency_ids.length} <span class="label">CH · HOME</span> {feedName(bank.home_feed)}</span>

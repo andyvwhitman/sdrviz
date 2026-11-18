@@ -24,6 +24,7 @@
   // The guard: no session means /login; a session on /login means in.
   $effect(() => {
     if (session.authenticated === false && route && route.id !== "login") router.go("/login", { replace: true });
+    if (session.authenticated && route?.adminOnly && !session.isAdmin) router.go(DEFAULT_PATH, { replace: true });
     if (session.authenticated && route?.id === "login") router.go(DEFAULT_PATH, { replace: true });
   });
 

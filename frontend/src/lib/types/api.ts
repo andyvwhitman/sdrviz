@@ -3,6 +3,8 @@
 export interface SessionInfo {
   authenticated: boolean;
   sim: boolean;
+  /** absent on a backend without roles: treated as admin */
+  role?: "admin" | "viewer";
 }
 
 export interface SimStatus {

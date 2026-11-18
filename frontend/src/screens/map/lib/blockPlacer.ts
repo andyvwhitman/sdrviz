@@ -103,14 +103,18 @@ export class BlockPlacer {
    * Place one block. Pass 1 treats names claimed earlier as hard; pass 2 (only if pass 1 found nothing) lets a
    * block cover one at a cost, and the name is re-placed around it afterwards. `soft(box)` adds a cost per rail line.
    */
+  place(base: Omit<BlockOptions, "dir">, dirs?: Direction[], soft?: (box: Rect) => number): BlockGeometry;
+  /** `cleanOnly`: only a slot that covers no name and clashes with nothing; when there is none, null (nothing is claimed). */
+  place(base: Omit<BlockOptions, "dir">, dirs: Direction[] | undefined, soft: ((box: Rect) => number) | undefined, cleanOnly: true): BlockGeometry | null;
   place(
     base: Omit<BlockOptions, "dir">,
     dirs: Direction[] = ALL_DIRECTIONS,
     soft?: (box: Rect) => number,
-  ): BlockGeometry {
+    cleanOnly = false,
+  ): BlockGeometry | null {
     const { boxes, measure } = this.ctx;
     let best: { g: BlockGeometry; cost: number } | null = null;
-    for (const strictNames of [true, false]) {
+    for (const strictNames of cleanOnly ? [true] : [true, false]) {
       if (best) break;
       LENGTHS.forEach((len, li) =>
         dirs.forEach((dir) => {
@@ -125,6 +129,7 @@ export class BlockPlacer {
         }),
       );
     }
+    if (!best && cleanOnly) return null;
     const g = best ? (best as { g: BlockGeometry }).g : measuredBlock(measure, { ...base, dir: dirs[0], len: LENGTHS[0] });
     this.claim(g);
     return g;

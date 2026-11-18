@@ -438,6 +438,7 @@
     if (!wantGeo) return null;
     const { kmW, miW } = scaleSpec(pxPerKm);
     const input: GeoInput = {
+      phone: viewport.phone,
       width, height, project, invert: projection.invert, data, lines,
       feeds: JSON.parse(feedsKey),
       trains: placed,

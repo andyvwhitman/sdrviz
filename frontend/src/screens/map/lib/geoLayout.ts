@@ -56,6 +56,8 @@ export interface ActiveInput {
 }
 
 export interface GeoInput {
+  /** a phone: a feed block with no clean slot is not drawn (the feed is its point marker; tapping it opens the sheet) */
+  phone?: boolean;
   width: number;
   height: number;
   project: (p: LonLat) => Pt;
@@ -396,11 +398,10 @@ export function layoutGeo(input: GeoInput): GeoLayout {
   const feedBlocks: Record<string, BlockChoice> = {};
   for (const f of feeds) {
     const c = project([f.lon, f.lat]);
-    const placed = blocks.place(
-      { x: c[0], y: c[1], from: 10, l1: f.short, sim: f.sim, l2: f.l2, l2Class: f.l2Class, glyph: "tx" },
-      ["sw", "se", "nw", "ne", "w", "e", "s", "n"],
-      through,
-    );
+    const options = { x: c[0], y: c[1], from: 10, l1: f.short, sim: f.sim, l2: f.l2, l2Class: f.l2Class, glyph: "tx" } as const;
+    const dirs: Direction[] = ["sw", "se", "nw", "ne", "w", "e", "s", "n"];
+    const placed = input.phone ? blocks.place(options, dirs, through, true) : blocks.place(options, dirs, through);
+    if (!placed) continue;
     feedBlocks[f.id] = { x: c[0], y: c[1], dir: placed.dir, len: placed.len!, from: 10 };
   }
 

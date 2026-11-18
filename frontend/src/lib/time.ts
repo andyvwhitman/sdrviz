@@ -11,9 +11,16 @@ export const DAY_S = 86400;
 /** Wrap any number of seconds into [0, 86400). */
 export const wrapDay = (seconds: number): number => ((seconds % DAY_S) + DAY_S) % DAY_S;
 
+/**
+ * A small negative age (this clock a moment ahead of the server's) must not wrap to almost a day: that showed as
+ * "keyed 1440 min". A wrapped age within this many seconds of a full day is such a negative age and counts as 0.
+ */
+const CLOCK_SKEW_S = 120;
+
 /** Seconds elapsed from `then` to `now` on the cyclic day. */
 export function cyclicAge(now: number, then: number): number {
-  return wrapDay(now - then);
+  const age = wrapDay(now - then);
+  return age > DAY_S - CLOCK_SKEW_S ? 0 : age;
 }
 
 /** "14:07:30" or "14:07" -> 50850; null when the text has no clock in it. */

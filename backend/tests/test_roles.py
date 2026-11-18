@@ -180,6 +180,7 @@ def production(**over) -> Settings:
 def test_production_with_real_settings_starts():
     assert production().production_problems() == []
     assert production(admin_password="another-long-pass").production_problems() == []
+    assert production(admin_password="").production_problems() == []  # compose passes an unset variable as ""
 
 
 @pytest.mark.parametrize(

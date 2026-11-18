@@ -68,7 +68,7 @@ class Settings(BaseSettings):
             problems.append(f"SDRVIZ_PASSWORD is a default or shorter than {MIN_PASSWORD_LENGTH} characters")
         if self.secret in DEFAULT_SECRETS or len(self.secret) < MIN_SECRET_LENGTH:
             problems.append(f"SDRVIZ_SECRET is a default or shorter than {MIN_SECRET_LENGTH} characters")
-        if self.admin_password is not None:
+        if self.admin_password:  # unset or empty (compose passes "") means single-password mode
             if self.admin_password in DEFAULT_PASSWORDS or len(self.admin_password) < MIN_PASSWORD_LENGTH:
                 problems.append(f"SDRVIZ_ADMIN_PASSWORD is a default or shorter than {MIN_PASSWORD_LENGTH} characters")
             if self.admin_password == self.password:

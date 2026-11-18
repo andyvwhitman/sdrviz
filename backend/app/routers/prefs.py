@@ -1,7 +1,9 @@
 from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
 
 from ..deps import RT
 from ..models import Prefs
+from ..runtime import Runtime
 from ..schemas import PrefsModel
 
 router = APIRouter(prefix="/prefs", tags=["prefs"])
@@ -16,8 +18,29 @@ def get_prefs(rt: RT) -> PrefsModel:
     return _out(rt.prefs)
 
 
+class PrefsPatch(BaseModel):
+    """Only the fields sent change, so two tabs or devices cannot undo each other's other settings."""
+
+    active_bank: str | None = None
+    displayed_feed: str | None = None
+    muted: list[str] | None = None
+    solo: list[str] | None = None
+    record: list[str] | None = None
+    volume: dict[str, float] | None = None
+
+
 @router.put("")
 async def put_prefs(body: PrefsModel, rt: RT) -> PrefsModel:
+    return _save(body, rt)
+
+
+@router.patch("")
+async def patch_prefs(body: PrefsPatch, rt: RT) -> PrefsModel:
+    merged = {**_out(rt.prefs).model_dump(), **body.model_dump(exclude_unset=True)}
+    return _save(PrefsModel(**merged), rt)
+
+
+def _save(body: PrefsModel, rt: Runtime) -> PrefsModel:
     if not rt.world.has_bank(body.active_bank):
         raise HTTPException(status_code=422, detail=f"Unknown bank {body.active_bank!r}")
     if body.displayed_feed is not None and body.displayed_feed not in rt.world.feeds:

@@ -254,3 +254,13 @@ class TestOther:
             "/api/sim/jump",
         ):
             assert path in paths
+
+
+def test_prefs_patch_changes_only_the_fields_sent(client):
+    start = client.get("/api/prefs").json()
+    client.post("/api/banks/bank-commuter/activate")
+    saved = client.patch("/api/prefs", json={"muted": ["amtk-nec-road"]}).json()
+    assert saved["muted"] == ["amtk-nec-road"]
+    assert saved["active_bank"] == "bank-commuter"  # a stale copy of the bank is not re-sent
+    assert saved["solo"] == start["solo"]
+    assert client.patch("/api/prefs", json={"active_bank": "bank-x"}).status_code == 422

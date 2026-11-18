@@ -371,3 +371,168 @@ Two new `Vehicle` fields; `delay_s` is never clamped.
   it); an update without one applies as before. A vehicle position likewise applies only to the run
   it is on. Before this, yesterday's and tomorrow's runs of the same trip took today's realtime and showed on
   boards as duplicate rows "+24 H" late or early.
+
+## Approaching (v1.5)
+
+`GET /api/transit/approaching`: every train that passes a point on the map, and when. One endpoint for the
+trainspotting page; it replaces the `/trains/eta` and `/spot` sketches in the review notes.
+
+```
+GET /api/transit/approaching?lat=39.0849&lon=-76.7064
+    &radius_km=2        0.1..25   how far the track may pass from the point to count (default 2)
+    &ahead_min=60       1..360    trains due within this many minutes (default 60)
+    &back_min=10        0..60     trains that passed within this many minutes (default 10)
+    &agency=MARC                  one operator, any case (default: all operators)
+    &include_scheduled=true       also trains with no realtime at all, from the timetable (default true)
+    &limit=100          1..500    rows kept after sorting (default 100)
+```
+
+`503` when transit is off, `422` for out-of-range values, `200` with `trains: []` when nothing passes (never 404).
+The route is a plain `def` like `/vehicles`. Sources that are `warming` are skipped and say so in `meta.sources`.
+
+### What the ETA means
+
+- **ETA is to the closest point on the line**, not to a station. The point is projected on each train's own shape
+  (the same shape the trip page and the estimated positions use), so direction, "already passed" and the distance to
+  go fall out of the geometry. A train's `eta` is the scheduled time at that point (interpolated by distance between
+  the two bracketing stops, or the stop's own arrival if the point is within 250 m of a stop) plus the delay the feed
+  gives at that point (the bracketing stops' delays blended the same way).
+- **`delay_s` always equals `eta - scheduled`.** It is not the vehicle's raw `delay_s`. See "Where the existing code
+  disagrees" below.
+- **A position can overrule the clock, never the other way round.** When the train has a fresh real position
+  (`vehicle.position == "realtime"`, not stale, within 1 km of its shape), the ETA is held to it: a train cannot reach
+  the point sooner than the distance allows at 130 mph, nor have passed it more recently than that. When the feed's
+  ETA is impossible it is replaced by distance over the train's speed (a typical 60 mph intercity / 40 mph commuter if
+  it is crawling at the fix), `eta_basis` becomes `"position"` and `delay_s` follows. The replacement is a lower
+  bound. Estimated, stale or absent positions never change the ETA.
+- **Window.** A row is listed when `eta` lies from `back_min` ago to `ahead_min` ahead. Trains with a live
+  update or position are considered whatever their schedule says (a train four hours late still shows); trains
+  without realtime only when their timetable overlaps the window.
+
+### Response
+
+```jsonc
+{
+  "generated": "2026-11-17T19:40:19Z",            // UTC
+  "position": {
+    "lat": 39.0849, "lon": -76.7064, "radius_km": 2.0,
+    "nearest_line": {                              // the nearest line of any source within 25 km, else null
+      "id": "amtrak:36923", "name": "Crescent", "agency": "Amtrak", "source": "amtrak",
+      "distance_m": 87, "lat": 39.08518, "lon": -76.70733     // the nearest point on it
+    }
+  },
+  "trains": [ /* ApproachingTrain, below */ ],
+  "meta": {
+    "sources": [{"id": "marc", "agency": "MARC", "state": "ok", "rt_age_s": 2, "trains": 3}],
+    "window_from": "2026-11-17T19:30:19Z", "window_to": "2026-11-17T20:40:19Z",   // UTC
+    "truncated": false                             // more rows matched than `limit`
+  }
+}
+```
+
+`meta.sources[].state` is `ok`, `warming` (skipped), `error` (the feed's last load failed; rows may be stale) or
+`lines` (a map-only source: it has no trains). `rt_age_s` is the age of its last good realtime fetch.
+
+Each element of `trains`:
+
+| field | meaning |
+|---|---|
+| `key` | trip plus service day, stable for a list (`"marc:Train446@2026-11-17"`); a train with no timetable uses its vehicle id |
+| `trip_id` | open it with `/transit/trips/{id}`; null only for a live vehicle that names no trip |
+| `vehicle_id` | null while the train is not running yet |
+| `source`, `agency` | the operator (`"marc"`, `"MARC"`) |
+| `train`, `route_id`, `route_name`, `headsign`, `origin`, `destination` | as on `Vehicle`; `origin`/`destination` are station names |
+| `state` | `approaching`, `at_spot` (ETA within 60 s either side), `passed`, or `unknown` (a live train with no timetable and no heading) |
+| `eta` | when the train is nearest the point (passed: when it was). Local time of the operator with offset. null: not computable (stopped train with no timetable) |
+| `eta_in_s` | seconds from `generated`; negative once passed; null with `eta` |
+| `scheduled` | the timetable time at the point; null for trains with no timetable |
+| `delay_s`, `status`, `delay_suspect` | `eta - scheduled`; `on_time`/`late`/`early`/`unknown`; as `Vehicle`. null / `unknown` when there is nothing to compare |
+| `basis` | **how good the data is**: `live` (a fresh real GPS fix), `stale` (a real fix older than the source's `stale_after_s`), `estimated` (a position interpolated from the schedule, or a trip update with no position), `schedule` (timetable only) |
+| `eta_basis` | **how `eta` was worked out**: `realtime` (timetable plus the feed's delay), `schedule` (timetable only), `position` (replaced by the train's position, or a train with no timetable) |
+| `pass_distance_m` | how far the track passes from the point |
+| `to_go_km` | along the track to the point; only for approaching trains with a usable live fix |
+| `station` | the nearest station to the point (any source's, within 25 km) that this train calls at or runs through; null if none: `{id, name, distance_m, stops, scheduled, eta, delay_s}`. `stops: false` is "PASSES", `true` is "STOPS" at `eta`. `id` is the usual API id (a group such as `st:was` where one exists) |
+| `between` | `{previous, next}`: the stops the point lies between on this trip |
+| `direction` | `{bearing, cardinal, label, toward}`: travel direction at the point in degrees, `N`..`NW`, `NB`/`SB`/`EB`/`WB` (north-south when the line is within 60 degrees of north, so the Northeast Corridor is NB/SB), and the station the trip ends at |
+| `vehicle` | `{lat, lon, speed_mph, age_s, stale, position, next_stop}` for a "where is it now" dot; null when not running |
+
+Sorting: by `eta` ascending, so passed trains lead and the next train is the first row with `eta_in_s > 0`. Rows with
+`eta: null` follow all the timed ones. The page derives `MEET` (opposite directions within 90 s) and the next NB/SB
+strip from this list.
+
+### Trains with no timetable
+
+A live vehicle that matches no scheduled trip (an extra section, a reroute, an unmatched Amtraker train) cannot be
+timed from a schedule. If it runs within 300 m of a shape that passes the point, it is listed with `eta_basis:
+"position"`, `scheduled: null`, `delay_s: null`: direction from its heading, distance along the shape, and speed (its
+own if moving, a typical one only when the feed gives none). A stopped train has `eta: null`, and is listed if it
+is within 5 km of the point; a train with no heading has `state: "unknown"`.
+
+### Example
+
+`GET /api/transit/approaching?lat=39.0849&lon=-76.7064&agency=MARC&limit=1`, with `meta.sources` cut to the MARC source:
+
+```json
+{
+  "generated": "2026-11-18T00:40:18.596469Z",
+  "position": {
+    "lat": 39.0849, "lon": -76.7064, "radius_km": 2.0,
+    "nearest_line": {"id": "amtrak:36923", "name": "Crescent", "agency": "Amtrak", "source": "amtrak",
+                     "distance_m": 87, "lat": 39.08518737962721, "lon": -76.70733477295946}
+  },
+  "trains": [{
+    "key": "marc:Train446@2026-11-17", "trip_id": "marc:Train446", "vehicle_id": "marc:000012",
+    "source": "marc", "agency": "MARC", "train": "446", "route_id": "marc:11705", "route_name": "PENN - WASHINGTON",
+    "headsign": "BALTIMORE", "origin": "UNION STATION MARC Washington", "destination": "PENN STATION MARC",
+    "state": "approaching", "eta": "2026-11-17T19:44:46-05:00", "eta_in_s": 267,
+    "scheduled": "2026-11-17T19:43:00-05:00", "delay_s": 106, "status": "on_time", "delay_suspect": false,
+    "basis": "live", "eta_basis": "realtime", "pass_distance_m": 86, "to_go_km": 8.9,
+    "station": {"id": "marc:11985", "name": "ODENTON MARC", "distance_m": 223, "stops": true,
+                "scheduled": "2026-11-17T19:43:00-05:00", "eta": "2026-11-17T19:44:46-05:00", "delay_s": 106},
+    "between": {"previous": "ODENTON MARC", "next": "BWI RAIL STATION MARC"},
+    "direction": {"bearing": 24.0, "cardinal": "NE", "label": "NB", "toward": "PENN STATION MARC"},
+    "vehicle": {"lat": 39.01963, "lon": -76.76295, "speed_mph": 18.6, "age_s": 16, "stale": false,
+                "position": "realtime", "next_stop": "ODENTON MARC"}
+  }],
+  "meta": {
+    "sources": [{"id": "marc", "agency": "MARC", "state": "ok", "rt_age_s": 2, "trains": 3}],
+    "window_from": "2026-11-18T00:30:18.596469Z", "window_to": "2026-11-18T01:40:18.596469Z", "truncated": true
+  }
+}
+```
+
+An Amtrak train passing the same point without stopping has `station: {"id": "marc:11985", "name": "ODENTON MARC",
+"stops": false, ...}` (the station is taken from any source, so the Amtrak row can name the MARC station it runs
+through) and `between: {"previous": "Bwi Thurgood Marshall Airport Station", "next": "Washington Union Station"}`.
+
+### Where the existing code disagrees
+
+- `Vehicle.delay_s` for GTFS-RT sources (MARC, VRE, MBTA, Brightline) is `TripUpdate.current_delay`: the delay of the
+  first stop update in the feed that carries one. Feeds keep stops the train has already left, so that is often a
+  stale value. The `next_stop.eta` on the same vehicle comes from the legs (`delay_at` plus the departure floor). On
+  the review data MARC 858 showed `delay_s: 20` beside a next stop (Dorsey) whose ETA was 178 s late, and MARC 446
+  `delay_s: 63` beside a next stop 124 s late. Amtrak's `_current_delay` is already the next stop's arrival delay, so
+  Amtrak chips agree with their ETAs. This endpoint derives `delay_s` from its own `eta` and leaves `Vehicle`
+  unchanged; making `GtfsProvider._vehicle` use the next leg's delay would remove the disagreement everywhere.
+- `Leg.delay` (and so the blended pass delay) floors an unreported departure delay at zero (a train cannot leave
+  early). A train running early between two stops therefore shows a smaller negative delay at a point than at the
+  stop it is heading for. This is the same convention as the non-stop pass rows on station boards.
+- Amtraker stop times are only for the stops Amtraker lists, so a stop the train skips carries the last earlier delay
+  forward (`delay_at`).
+
+### Cost
+
+About 30 ms warm for the DC area with all five realtime sources (of which about 17 ms is building every source's
+vehicles, the same work as `/vehicles`); 8 ms when no line is near; the first request after a static load is slower
+(around 100 ms) while stop distances along each stopping pattern are computed and cached (`GtfsProvider._stop_dists`,
+replaced on static load). No new background job or database.
+
+### Limits
+
+- The nearest-station name is the station's own source name, which differs by operator ("ODENTON MARC" against
+  "Odenton"). Stations of grouped sources use the group's id.
+- Time between two stops is linear in distance. Trains accelerate, so inside a long leg the error can be a minute or two.
+- A path that passes the point twice (a loop) is projected once, at the nearest approach.
+- Only sources with trips and realtime appear (`amtrak`, `marc`, `vre`, `mbta`, `brightline`); map-only sources are
+  `state: "lines"` in `meta.sources`.
+- Radio-only freight is not here; the page lists it from the radio side.

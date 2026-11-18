@@ -8,7 +8,20 @@ import json
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from .geometry import Bbox, bbox_width_km, bounds, clip, expand, follow_shapes, intersects, simplify
+import numpy as np
+
+from .geometry import (
+    M_PER_DEG,
+    Bbox,
+    _nearest,
+    bbox_width_km,
+    bounds,
+    clip,
+    expand,
+    follow_shapes,
+    intersects,
+    simplify,
+)
 from .gtfs_static import GtfsStatic, Point
 
 CACHE_VERSION = 2
@@ -46,6 +59,7 @@ class StationRec:
 class LineIndex:
     lines: list[RouteLine] = field(default_factory=list)
     stations: list[StationRec] = field(default_factory=list)
+    _arrays: dict = field(default_factory=dict, repr=False, compare=False)  # (route, polyline) -> [lat, lon] array
 
     # --- building ----------------------------------------------------------
 
@@ -85,6 +99,23 @@ class LineIndex:
     def stations_in(self, bbox: Bbox) -> list[StationRec]:
         w, s, e, n = bbox
         return [st for st in self.stations if w <= st.lon <= e and s <= st.lat <= n]
+
+    def nearest(self, lat: float, lon: float, max_m: float) -> tuple[RouteLine, float, float, float] | None:
+        """(line, lat, lon, metres) of the point on any line nearest (lat, lon), within `max_m`."""
+        pad = max_m / M_PER_DEG * 1.5
+        best = None
+        for line in self.lines:
+            west, south, east, north = line.bounds
+            if not (south - pad <= lat <= north + pad and west - pad <= lon <= east + pad):
+                continue
+            for n, polyline in enumerate(line.levels[0]):
+                key = (line.route_id, n)
+                if key not in self._arrays:
+                    self._arrays[key] = np.asarray([(y, x) for x, y in polyline], dtype=float)
+                _, (near_lat, near_lon), dist = _nearest(self._arrays[key], (lat, lon))
+                if dist <= max_m and (best is None or dist < best[3]):
+                    best = line, near_lat, near_lon, dist
+        return best
 
     @property
     def points(self) -> int:

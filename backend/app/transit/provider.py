@@ -13,13 +13,15 @@ from pathlib import Path
 
 import httpx
 
-from .geometry import Bbox, simplify
+from .geometry import M_PER_DEG, Bbox, simplify
 from .gtfs_static import GtfsStatic
 from .lines import LineIndex
 from .models import (
     Alert,
+    ApproachingTrain,
     BoardEntry,
     Line,
+    NearestLine,
     RouteBrief,
     RouteInfo,
     StationBoard,
@@ -28,7 +30,7 @@ from .models import (
     Trip,
     Vehicle,
 )
-from .places import Place
+from .places import Place, distance_m
 from .sources import SourceConfig, SourceCounts, SourceStatus, SourceTimings
 from .stations import StationGroups
 
@@ -321,6 +323,38 @@ class Provider:
 
     def alerts(self, now: datetime) -> list[Alert]:
         return []
+
+    def approaching(self, spot) -> list[ApproachingTrain]:
+        return []
+
+    def stations_near(self, lat: float, lon: float, max_m: float) -> list[tuple[float, str, str, float, float]]:
+        """(metres, api id, name, lat, lon) of this source's served stations within `max_m` of a point."""
+        if self.index is None:
+            return []
+        pad = max_m / M_PER_DEG * 1.5
+        found = []
+        for st in self.index.stations:
+            if abs(st.lat - lat) <= pad and abs(st.lon - lon) <= pad * 1.4:  # cheap box before the real distance
+                dist = distance_m(lat, lon, st.lat, st.lon)
+                if dist <= max_m:
+                    found.append((dist, self.station_gid(st.id), st.name, st.lat, st.lon))
+        return found
+
+    def nearest_line(self, lat: float, lon: float, max_m: float) -> NearestLine | None:
+        """The closest of this source's lines to a point, within `max_m`."""
+        hit = self.index.nearest(lat, lon, max_m) if self.index else None
+        if hit is None:
+            return None
+        line, near_lat, near_lon, dist = hit
+        return NearestLine(
+            id=self.gid(line.route_id),
+            name=line.name,
+            agency=self.source.agency,
+            source=self.source.id,
+            distance_m=round(dist),
+            lat=near_lat,
+            lon=near_lon,
+        )
 
     def trip(self, trip_id: str, now: datetime, day: date | None = None, passes: bool = False) -> Trip | None:
         return None

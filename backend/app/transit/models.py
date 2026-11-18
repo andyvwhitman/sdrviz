@@ -292,3 +292,114 @@ class Board(BaseModel):
     departed: list[BoardEntry]
     sources: list[str]  # source ids that serve this place
     attribution: list[str] = []
+
+
+# --- trains passing a spot (/transit/approaching, docs/transit-api.md "Approaching") -----------------------------
+
+
+class SpotStation(BaseModel):
+    """The station on the train's line nearest the spot, and what this train does there."""
+
+    id: str
+    name: str
+    distance_m: int  # straight line from the spot
+    stops: bool  # the train calls here (false: it runs through)
+    scheduled: datetime | None = None
+    eta: datetime | None = None  # scheduled plus the delay known at that point
+    delay_s: int | None = None
+
+
+class SpotDirection(BaseModel):
+    bearing: float | None = None  # degrees clockwise from north, the train's travel direction at the spot
+    cardinal: str | None = None  # N, NE, E ... NW
+    label: str | None = None  # NB, SB, EB or WB
+    toward: str | None = None  # the station the trip ends at
+
+
+class SpotVehicle(BaseModel):
+    lat: float
+    lon: float
+    speed_mph: float | None = None
+    age_s: int | None = None
+    stale: bool = False
+    position: Literal["realtime", "estimated"] = "realtime"
+    next_stop: str | None = None
+
+
+class SpotBetween(BaseModel):
+    """The two stops the spot lies between on this trip."""
+
+    previous: str
+    next: str
+
+
+class ApproachingTrain(BaseModel):
+    key: str  # trip + service day: a stable list key
+    trip_id: str | None = None  # works with /transit/trips/{id}
+    vehicle_id: str | None = None  # null while the train is not running yet
+    source: str
+    agency: str
+    train: str | None = None
+    route_id: str | None = None
+    route_name: str | None = None
+    headsign: str | None = None
+    origin: str | None = None
+    destination: str | None = None
+    state: Literal["approaching", "at_spot", "passed", "unknown"]
+    eta: datetime | None = None  # when the train is nearest the spot (passed: when it was); null: not computable
+    eta_in_s: int | None = None  # negative once passed
+    scheduled: datetime | None = None  # the timetable time at the spot; null for trains that have no timetable
+    delay_s: int | None = None  # eta minus scheduled: always agrees with `eta`
+    status: Literal["on_time", "late", "early", "unknown"] = "unknown"
+    basis: Literal["live", "estimated", "stale", "schedule"]  # how good the data behind the row is
+    eta_basis: Literal["realtime", "schedule", "position"]  # how `eta` was worked out
+    pass_distance_m: int  # how far the track passes from the spot
+    to_go_km: float | None = None  # along the track, approaching trains with a usable position
+    station: SpotStation | None = None
+    between: SpotBetween | None = None
+    direction: SpotDirection
+    vehicle: SpotVehicle | None = None
+
+    @computed_field
+    @property
+    def delay_suspect(self) -> bool:
+        return is_suspect(self.delay_s)
+
+
+class NearestLine(BaseModel):
+    id: str
+    name: str
+    agency: str
+    source: str
+    distance_m: int
+    lat: float  # the nearest point on the line
+    lon: float
+
+
+class ApproachSource(BaseModel):
+    id: str
+    agency: str
+    state: Literal["ok", "warming", "error", "lines"]
+    rt_age_s: int | None = None
+    trains: int = 0  # rows this source contributed
+
+
+class ApproachMeta(BaseModel):
+    sources: list[ApproachSource]
+    window_from: datetime
+    window_to: datetime
+    truncated: bool = False  # more rows matched than `limit`
+
+
+class ApproachPosition(BaseModel):
+    lat: float
+    lon: float
+    radius_km: float
+    nearest_line: NearestLine | None = None  # within 25 km, else null
+
+
+class Approaching(BaseModel):
+    generated: datetime
+    position: ApproachPosition
+    trains: list[ApproachingTrain]
+    meta: ApproachMeta

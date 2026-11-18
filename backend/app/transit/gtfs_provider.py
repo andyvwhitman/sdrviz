@@ -12,12 +12,14 @@ from datetime import UTC, date, datetime, timedelta
 
 import httpx
 
+from . import approach
 from .estimates import Leg, Progress, StateBasis, clock_progress, departure_delay, leg_states, next_leg, no_next_stop
 from .geometry import Bbox, Path, bounds, follow_shapes
 from .gtfs_rt import AlertInfo, TripUpdate, VehiclePosition, parse_alerts, parse_trip_updates, parse_vehicle_positions
 from .gtfs_static import Trip as StaticTrip
 from .models import (
     Alert,
+    ApproachingTrain,
     BoardEntry,
     BoardRow,
     NextStop,
@@ -95,6 +97,8 @@ class GtfsProvider(Provider):
         self._station_points: dict[str, tuple[float, float]] = {}
         self._passing_at: dict[str, list[tuple[str, PassPoint]]] = {}
         self._shape_boxes: dict[str, Bbox] = {}
+        self._shape_trips: dict[str, list[str]] | None = None
+        self._stop_dists: dict[tuple, list[float]] = {}
         self._by_trip: dict[str, VehiclePosition] = {}
         self._by_trip_of: list[VehiclePosition] | None = None
 
@@ -291,7 +295,7 @@ class GtfsProvider(Provider):
         feed = self.static
         return feed.stations.get(feed.station_of.get(stop_id, stop_id)) or feed.stops.get(stop_id)
 
-    def _station_name(self, stop_id: str) -> str:
+    def station_name(self, stop_id: str) -> str:
         station = self._station(stop_id)
         return station.name if station else stop_id
 
@@ -339,7 +343,7 @@ class GtfsProvider(Provider):
             stops.append(
                 TripStop(
                     stop_id=self.station_gid(u.stop_id or ""),
-                    name=self._station_name(u.stop_id or "") if stop else (u.stop_id or ""),
+                    name=self.station_name(u.stop_id or "") if stop else (u.stop_id or ""),
                     seq=seq,
                     arr_estimated=arr,
                     dep_estimated=dep,
@@ -376,7 +380,7 @@ class GtfsProvider(Provider):
         stops = [
             TripStop(
                 stop_id=self.station_gid(leg.stop_id),
-                name=self._station_name(leg.stop_id),
+                name=self.station_name(leg.stop_id),
                 seq=leg.seq,
                 arr_scheduled=leg.arr_s,
                 arr_estimated=leg.arr_e,
@@ -451,7 +455,7 @@ class GtfsProvider(Provider):
             estimated = pass_estimated(time)
             entry = TripStop(
                 stop_id=gid,
-                name=self._station_name(point.station_id),
+                name=self.station_name(point.station_id),
                 seq=0,
                 kind="pass",
                 pass_scheduled=time.scheduled,
@@ -474,7 +478,7 @@ class GtfsProvider(Provider):
                 times = feed.stop_times.get(trip_id)
                 if not times or trip.shape_id not in feed.shapes:
                     continue
-                west, south, east, north = self._shape_box(trip.shape_id)
+                west, south, east, north = self.shape_box(trip.shape_id)
                 if not (south <= lat <= north and west <= lon <= east):
                     continue
                 if station_id in {feed.station_of.get(t.stop_id, t.stop_id) for t in times}:
@@ -483,7 +487,7 @@ class GtfsProvider(Provider):
             self._passing_at[station_id] = found
         return self._passing_at[station_id]
 
-    def _shape_box(self, shape_id: str) -> Bbox:
+    def shape_box(self, shape_id: str) -> Bbox:
         if shape_id not in self._shape_boxes:
             self._shape_boxes[shape_id] = _pad(bounds(self.static.shapes[shape_id]))
         return self._shape_boxes[shape_id]
@@ -513,9 +517,9 @@ class GtfsProvider(Provider):
                         train=trip.number,
                         route_name=route.name if route else None,
                         agency=self.source.agency,
-                        headsign=self._station_name(legs[-1].stop_id),
-                        origin=self._station_name(legs[0].stop_id),
-                        destination=self._station_name(legs[-1].stop_id),
+                        headsign=self.station_name(legs[-1].stop_id),
+                        origin=self.station_name(legs[0].stop_id),
+                        destination=self.station_name(legs[-1].stop_id),
                         scheduled=time.scheduled,
                         estimated=estimated,
                         delay_s=time.delay_s,
@@ -568,8 +572,8 @@ class GtfsProvider(Provider):
             route_name=route.name if route else route_id,
             train=trip.number if trip else (p.trip_id or "").removeprefix("Train") or None,
             headsign=trip.headsign if trip else None,
-            origin=self._station_name(legs[0].stop_id) if legs else None,
-            destination=self._station_name(legs[-1].stop_id) if legs else None,
+            origin=self.station_name(legs[0].stop_id) if legs else None,
+            destination=self.station_name(legs[-1].stop_id) if legs else None,
             lat=p.lat,
             lon=p.lon,
             bearing=p.bearing if p.bearing is not None else self.motion.bearing(key),
@@ -583,6 +587,47 @@ class GtfsProvider(Provider):
             age_s=max(0, round((now - updated).total_seconds())) if updated else None,
             stale_after_s=self.source.stale_after_s,
         )
+
+    # --- trains passing a spot ---------------------------------------------------
+
+    def shape_trips(self) -> dict[str, list[str]]:
+        """Shape id -> the scheduled trips that run on it (trips with stop times and a shape the feed kept)."""
+        if self._shape_trips is None:
+            feed, found = self.static, {}
+            for trip_id, trip in feed.trips.items():
+                if trip.shape_id in feed.shapes and trip_id in feed.stop_times:
+                    found.setdefault(trip.shape_id, []).append(trip_id)
+            self._shape_trips = found
+        return self._shape_trips
+
+    def shape_path(self, shape_id: str) -> Path:
+        if shape_id not in self._paths:
+            self._paths[shape_id] = Path(self.static.shapes[shape_id])
+        return self._paths[shape_id]
+
+    def stop_distances(self, trip: StaticTrip, legs: list[Leg]) -> list[float]:
+        """Distance along the trip's shape of each leg's stop, cached per stopping pattern."""
+        key = (trip.shape_id, tuple(leg.stop_id for leg in legs))
+        if key not in self._stop_dists:
+            path, feed, dists, after = self.shape_path(trip.shape_id), self.static, [], 0.0
+            for leg in legs:
+                stop = feed.stops[leg.stop_id]
+                after = path.locate(stop.lat, stop.lon, after)
+                dists.append(after)
+            self._stop_dists[key] = dists
+        return self._stop_dists[key]
+
+    def vehicle_for(self, trip_id: str, day: date, by_gid: dict[str, Vehicle], now: datetime) -> Vehicle | None:
+        """The vehicle running this trip on this service day, from the vehicles keyed by their trip's API id."""
+        vehicle = by_gid.get(self.gid(trip_id))
+        return vehicle if vehicle and self.trip_day(self.static.trips[trip_id], now) == day else None
+
+    def tracked(self, vehicle: Vehicle) -> bool:
+        """Whether a vehicle runs a trip of the schedule (else it is an extra train, placed by position alone)."""
+        return (vehicle.trip_id or "").partition(":")[2] in self.static.trips
+
+    def approaching(self, spot: approach.Spot) -> list[ApproachingTrain]:
+        return approach.trains_near(self, spot) if self.static and self.static.stop_times else []
 
     # --- positions estimated from the schedule ---------------------------------
 
@@ -654,8 +699,8 @@ class GtfsProvider(Provider):
             route_name=route.name if route else None,
             train=trip.number,
             headsign=trip.headsign,
-            origin=self._station_name(legs[0].stop_id),
-            destination=self._station_name(legs[-1].stop_id),
+            origin=self.station_name(legs[0].stop_id),
+            destination=self.station_name(legs[-1].stop_id),
             lat=lat,
             lon=lon,
             bearing=bearing,
@@ -745,9 +790,9 @@ class GtfsProvider(Provider):
                                 source=self.source.id,
                                 train=trip_id.removeprefix("Train"),
                                 agency=self.source.agency,
-                                headsign=self._station_name(other.stop_id),
-                                origin=self._station_name(ends[0].stop_id),
-                                destination=self._station_name(ends[-1].stop_id),
+                                headsign=self.station_name(other.stop_id),
+                                origin=self.station_name(ends[0].stop_id),
+                                destination=self.station_name(ends[-1].stop_id),
                                 scheduled=at,
                                 estimated=at,
                                 state="cancelled" if u.skipped else ("passed" if at <= now else "upcoming"),
@@ -799,9 +844,9 @@ class GtfsProvider(Provider):
                     train=trip.number,
                     route_name=route.name if route else None,
                     agency=self.source.agency,
-                    headsign=self._station_name(other.stop_id),
-                    origin=self._station_name(times[0].stop_id),
-                    destination=self._station_name(times[-1].stop_id),
+                    headsign=self.station_name(other.stop_id),
+                    origin=self.station_name(times[0].stop_id),
+                    destination=self.station_name(times[-1].stop_id),
                     scheduled=scheduled,
                     estimated=estimated,
                     delay_s=delay,
@@ -836,13 +881,13 @@ class GtfsProvider(Provider):
         for direction, trips in sorted(by_direction.items()):
             order = merge_order([stations for _, stations, _ in trips])
             heads = Counter(t.headsign for t, _, _ in trips if t.headsign)
-            headsign = heads.most_common(1)[0][0] if heads else self._station_name(order[-1])
+            headsign = heads.most_common(1)[0][0] if heads else self.station_name(order[-1])
             trips.sort(key=lambda item: min(item[2].values()))
             directions.append(
                 TimetableDirection(
                     id=direction,
                     headsign=headsign,
-                    stops=[TimetableStop(stop_id=self.station_gid(sid), name=self._station_name(sid)) for sid in order],
+                    stops=[TimetableStop(stop_id=self.station_gid(sid), name=self.station_name(sid)) for sid in order],
                     trips=[
                         TimetableTrip(trip_id=self.gid(t.id), train=t.number, times=[times.get(sid) for sid in order])
                         for t, _, times in trips
@@ -859,6 +904,8 @@ class GtfsProvider(Provider):
         self._station_points = {}
         self._passing_at.clear()
         self._shape_boxes.clear()
+        self._shape_trips = None  # replaced, not cleared: request threads may be reading the old ones
+        self._stop_dists = {}
         self.remap_places()
 
     def remap_places(self) -> None:

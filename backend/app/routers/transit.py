@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException, Query, Response
 
 from ..deps import RT
 from ..transit.geometry import Bbox
-from ..transit.models import Alert, Board, Line, Merges, StationBoard, Stop, Timetable, Trip, Vehicle
+from ..transit.models import Alert, Approaching, Board, Line, Merges, StationBoard, Stop, Timetable, Trip, Vehicle
 from ..transit.sources import SourceConfig, TransitSource
 
 router = APIRouter(prefix="/transit", tags=["transit"])
@@ -99,6 +99,31 @@ def vehicles(rt: RT, bbox: OptionalBBox = None, agency: str | None = None) -> li
     if not rt.transit:
         return []
     return rt.transit.vehicles(agency=agency, bbox=parse_bbox(bbox) if bbox else None)
+
+
+@router.get("/approaching")
+def approaching(
+    rt: RT,
+    lat: Annotated[float, Query(ge=-90, le=90)],
+    lon: Annotated[float, Query(ge=-180, le=180)],
+    radius_km: Annotated[float, Query(ge=0.1, le=25, description="how far the track may pass from the point")] = 2,
+    ahead_min: Annotated[int, Query(ge=1, le=360, description="trains due within this many minutes")] = 60,
+    back_min: Annotated[int, Query(ge=0, le=60, description="trains that passed within this many minutes")] = 10,
+    agency: str | None = None,
+    include_scheduled: Annotated[bool, Query(description="also trains with no realtime, from the timetable")] = True,
+    limit: Annotated[int, Query(ge=1, le=500)] = 100,
+) -> Approaching:
+    """Every train that passes a point, with its ETA at the closest point on its line (see docs/transit-api.md)."""
+    return _service(rt).approaching(
+        lat,
+        lon,
+        radius_m=radius_km * 1000,
+        ahead_min=ahead_min,
+        back_min=back_min,
+        agency=agency,
+        include_scheduled=include_scheduled,
+        limit=limit,
+    )
 
 
 @router.get("/alerts")

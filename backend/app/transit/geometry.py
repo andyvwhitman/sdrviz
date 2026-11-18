@@ -105,23 +105,24 @@ class Path:
     def total(self) -> float:
         return self.cum[-1]
 
+    def _points(self) -> np.ndarray:
+        if self._array is None:
+            self._array = np.asarray(self.points, dtype=float)
+        return self._array
+
     def locate(self, lat: float, lon: float, after: float = 0.0) -> float:
         """Distance along the path of the vertex nearest (lat, lon), not before `after` (stops come in order)."""
-        best, best_d = after, float("inf")
-        for (plat, plon), dist in zip(self.points, self.cum, strict=True):
-            if dist < after:
-                continue
-            d = (plat - lat) ** 2 + ((plon - lon) * cos(radians(lat))) ** 2
-            if d < best_d:
-                best, best_d = dist, d
-        return best
+        points = self._points()
+        cum = np.asarray(self.cum)
+        d = (points[:, 0] - lat) ** 2 + ((points[:, 1] - lon) * cos(radians(lat))) ** 2
+        d[cum < after] = np.inf
+        best = int(d.argmin())
+        return float(cum[best]) if np.isfinite(d[best]) else after
 
     def project(self, lat: float, lon: float) -> tuple[float, float]:
         """(distance along the path, metres off it) of the point on the path nearest (lat, lon). Whole segments, not
         vertices: some feeds put their vertices kilometres apart."""
-        if self._array is None:
-            self._array = np.asarray(self.points, dtype=float)
-        i, (near_lat, near_lon), off = _nearest(self._array, (lat, lon))
+        i, (near_lat, near_lon), off = _nearest(self._points(), (lat, lon))
         span = self.cum[i + 1] - self.cum[i]
         a, b = self.points[i], self.points[i + 1]
         seg_lat, seg_lon = b[0] - a[0], b[1] - a[1]

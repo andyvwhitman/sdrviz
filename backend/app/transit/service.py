@@ -15,10 +15,15 @@ import httpx
 from sqlalchemy.engine import Engine
 
 from .amtraker import AmtrakerProvider
+from .approach import STATION_RADIUS_M, Spot
 from .geometry import Bbox, bbox_width_km
 from .gtfs_provider import GtfsProvider
 from .models import (
     Alert,
+    Approaching,
+    ApproachMeta,
+    ApproachPosition,
+    ApproachSource,
     Board,
     BoardEntry,
     BoardRow,
@@ -124,6 +129,20 @@ def filter_board(board: StationBoard, agency: str | None, source: str | None) ->
 
 def _row_time(row: BoardRow | PassRow) -> datetime:
     return row.estimated or row.scheduled
+
+
+NEAREST_LINE_M = 25_000
+
+
+def _source_state(provider: Provider) -> str:
+    if provider.source.kind == "lines":
+        return "lines"
+    return "error" if provider.state.static_error or provider.state.realtime_error else "ok"
+
+
+def _rt_age_s(provider: Provider, now: datetime) -> int | None:
+    updated = provider.state.realtime_updated
+    return max(0, round((now - updated).total_seconds())) if updated else None
 
 
 def make_provider(source: SourceConfig, cache_dir: Path) -> Provider:
@@ -320,6 +339,54 @@ class TransitService:
             west, south, east, north = bbox
             found = [v for v in found if south <= v.lat <= north and west <= v.lon <= east]
         return found
+
+    def approaching(
+        self,
+        lat: float,
+        lon: float,
+        radius_m: float = 2000,
+        ahead_min: int = 60,
+        back_min: int = 10,
+        agency: str | None = None,
+        include_scheduled: bool = True,
+        limit: int = 100,
+        now: datetime | None = None,
+    ) -> Approaching:
+        """Every train that passes within `radius_m` of a point, when it is nearest to it: the window runs from
+        `back_min` ago to `ahead_min` ahead. Rows with an ETA come first, by ETA; trains we could not time follow."""
+        now = now or datetime.now(UTC)
+        lo, hi = now - timedelta(minutes=back_min), now + timedelta(minutes=ahead_min)
+        near = (s for p in self.providers.values() for s in p.stations_near(lat, lon, STATION_RADIUS_M))
+        stations = sorted(near)  # one station can appear once per source (each with its own coordinates)
+        spot = Spot(lat, lon, radius_m, now, lo, hi, include_scheduled, tuple(stations))
+        rows, sources = [], []
+        for provider in self.providers.values():
+            if agency and provider.source.agency.lower() != agency.lower():
+                continue
+            found = [] if provider.warming else provider.approaching(spot)
+            rows += found
+            sources.append(
+                ApproachSource(
+                    id=provider.source.id,
+                    agency=provider.source.agency,
+                    state="warming" if provider.warming else _source_state(provider),
+                    rt_age_s=_rt_age_s(provider, now),
+                    trains=len(found),
+                )
+            )
+        rows.sort(key=lambda r: (r.eta is None, r.eta or now))
+        lines = [hit for p in self.providers.values() if (hit := p.nearest_line(lat, lon, NEAREST_LINE_M))]
+        return Approaching(
+            generated=now,
+            position=ApproachPosition(
+                lat=lat,
+                lon=lon,
+                radius_km=radius_m / 1000,
+                nearest_line=min(lines, key=lambda line: line.distance_m, default=None),
+            ),
+            trains=rows[:limit],
+            meta=ApproachMeta(sources=sources, window_from=spot.lo, window_to=spot.hi, truncated=len(rows) > limit),
+        )
 
     def _split(self, gid: str) -> tuple[Provider, str] | None:
         source_id, _, local = gid.partition(":")

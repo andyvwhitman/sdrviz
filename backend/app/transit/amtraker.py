@@ -187,6 +187,14 @@ class AmtrakerProvider(GtfsProvider):
             return (stop.get("platform") or None) if stop else None
         return None
 
+    def vehicle_for(self, trip_id: str, day: date, by_gid: dict[str, Vehicle], now: datetime) -> Vehicle | None:
+        match = self._matched.get((trip_id, day))
+        return by_gid.get(self.gid(match[0]["trainID"])) if match else None
+
+    def tracked(self, vehicle: Vehicle) -> bool:
+        matched = {train["trainID"] for train, _ in self._matched.values()}
+        return (vehicle.trip_id or "").partition(":")[2] in matched
+
     # --- stops, as Amtraker lists them -----------------------------------------
 
     @staticmethod

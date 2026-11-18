@@ -31,6 +31,10 @@
   const clock = $derived(snapshot ? fmt.clock(snapshot.clock, ui.utc ? "UTC" : zone, utcShift) : fmt.BLANK);
   const short = $derived(clock.slice(0, 5));
 
+  // the menu leads with what works on a phone; the screens that show a plate follow under their own label
+  const tabs = $derived(navFor(session.isAdmin));
+  const phoneReady = $derived(tabs.filter((r) => r.layout === "page" || r.phone === "page").sort((a, b) => Number(b.layout === "page") - Number(a.layout === "page")));
+  const needsWider = $derived(tabs.filter((r) => !phoneReady.includes(r)));
   let menuOpen = $state(false);
   const globals = $derived(carryGlobals(router.search));
   const hrefOf = (path: string): string => path + (globals ? `?${globals}` : "");
@@ -57,8 +61,12 @@
 
   {#if menuOpen}
     <nav class="pg__sheet" aria-label="Screens">
-      {#each navFor(session.isAdmin) as item (item.id)}
+      {#each phoneReady as item (item.id)}
         <a href={hrefOf(item.path)} onclick={followLink} aria-current={item.id === route.id ? "page" : undefined}>{item.name}</a>
+      {/each}
+      {#if needsWider.length}<span class="pg__sheet-k">WIDER SCREEN</span>{/if}
+      {#each needsWider as item (item.id)}
+        <a class="is-plate" href={hrefOf(item.path)} onclick={followLink} aria-current={item.id === route.id ? "page" : undefined}>{item.name}</a>
       {/each}
     </nav>
   {/if}
@@ -70,7 +78,8 @@
   {#if viewport.phone}<PhoneOnAir />{/if}
 
   <footer class="pg__status">
-    <span class="pg__status-text">{shell.statusFallback ?? ""}</span>
+    <!-- whole fields drop off the right when the line is too narrow: the wrapped ones are clipped, never cut mid-word -->
+    <span class="pg__status-text">{#each (shell.statusFallback ?? "").split(" · ") as field, i (i)}<span>{i ? "· " : ""}{field}</span>{/each}</span>
     <span class="pg__status-tb">WLT-1 · {route.name} · {clock}</span>
     <AudioToggle />
   </footer>
@@ -94,6 +103,8 @@
     display: block; padding: 0 16px; line-height: 48px; border: 0; color: var(--ink);
     font: 500 var(--fs-13)/48px var(--font-label); letter-spacing: var(--track-label); text-transform: uppercase;
   }
+  .pg__sheet-k { padding: 12px 16px 0; font: 500 var(--fs-13)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink-2); }
+  .pg__sheet a.is-plate { color: var(--ink-2); }
   .pg__sheet a[aria-current="page"] { color: var(--state-select); box-shadow: inset 2px 0 0 var(--state-select); }
   .pg__main { flex: 1; min-width: 0; }
   /* the map fills the window between the header and the status line */
@@ -102,7 +113,8 @@
     display: flex; align-items: center; gap: 16px; min-height: var(--status-h); padding: 6px 16px;
     border-top: 1px solid var(--grid); font: 400 var(--fs-11)/1.2 var(--font-data); color: var(--ink-2);
   }
-  .pg__status-text { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pg__status-text { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; column-gap: 0.6em; height: 1.2em; overflow: hidden; }
+  .pg__status-text span { white-space: nowrap; }
   .pg__status-tb { display: none; white-space: nowrap; color: var(--ink-3); }
 
   @media (min-width: 900px) {

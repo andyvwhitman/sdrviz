@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { viewport } from "$lib/stores/viewport.svelte";
   /**
    * Map inspector (brief 8.3, 9.5): overlays the right 480 px of the canvas. The selected item's data block is the
    * Map hero: its ID at 48 px, line 2 at 13 px. Three kinds: a tracked train, a feed site (a faulted one carries
@@ -74,7 +75,7 @@
     {#if glyph}<PositionGlyph state={glyph} />{/if}
     <span class="t-panel">{title}</span>
     {#if sim}<SimTag />{/if}
-    <Chip text="ESC" button onclick={onclose} />
+    <Chip text={viewport.phone ? "CLOSE" : "ESC"} button onclick={onclose} />
   </div>
   <div class="inspector__kind">{kind}</div>
   {@render lead()}

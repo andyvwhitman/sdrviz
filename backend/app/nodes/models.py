@@ -37,5 +37,5 @@ class NodeEvent(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     node_id: str = Field(index=True, foreign_key="node.id")
     t: datetime
-    kind: str  # enrolled | online | offline | reconnect | rekeyed | revoked | command | error
+    kind: str  # enrolled | online | offline | reconnect | rekeyed | revoked | command | gain | error
     detail: str = ""

@@ -20,8 +20,9 @@ from pydantic import ValidationError
 from ..live import node_protocol as wire
 from ..live import protocol
 from ..live.opus import OpusDecoder
+from .gain_guard import OVERLOAD_DBFS, GainGuard
 from .link import LinkStats
-from .schemas import ChannelsIn, CommandError, CommandIn, CommandResult
+from .schemas import ChannelsIn, CommandError, CommandIn, CommandResult, GainIn
 from .service import BANKS_PRESET, AuthError, NodeLive, node_feed_id
 
 if TYPE_CHECKING:
@@ -63,6 +64,8 @@ class NodeSession:
         self.number = 0
         self.feed_id = ""
         self.link = LinkStats()
+        self.gain_guard = GainGuard()
+        self._tasks: set[asyncio.Task] = set()  # fire-and-forget work, cancelled with the session
         self.live = NodeLive(online=True)
         self.pending: dict[str, asyncio.Future[wire.Ack]] = {}
         self.transmissions: dict[int, Transmission] = {}  # by AAR channel
@@ -117,7 +120,7 @@ class NodeSession:
         except _Protocol as error:
             await self.close(wire.CLOSE_BAD_MESSAGE, str(error))
         finally:
-            for task in background:
+            for task in [*background, *self._tasks]:
                 task.cancel()
             self._end_all_transmissions()
             for future in self.pending.values():
@@ -155,6 +158,11 @@ class NodeSession:
     def _refresh_live(self) -> None:
         self.live.link_quality = self.link.quality()
         self.live.lag_ms = self.link.lag_ms()
+        self._publish_peak()
+
+    def _publish_peak(self) -> None:
+        if self.live.health is not None:
+            self.live.health["peak_dbfs"] = self.gain_guard.peak_dbfs()
 
     # --- messages from the node -------------------------------------------------------------------------------------
 
@@ -183,6 +191,7 @@ class NodeSession:
             case wire.Health():
                 self.link.audio_age_ms = message.audio_age_ms
                 self.live.health = message.model_dump(exclude={"type"})
+                self.gain_guard.gain_db = message.tune.gain_db
                 self._refresh_live()
             case wire.Ack():
                 if (future := self.pending.get(message.id)) and not future.done():
@@ -194,6 +203,7 @@ class NodeSession:
         return next((cid for cid, freq in self.rt.world.freqs.items() if freq.aar_channel == aar_channel), None)
 
     def _on_key_up(self, message: wire.KeyUp) -> None:
+        self._guard_gain(message.power_db)
         self._end_transmission(message.ch)  # a key-up without a key-down first: close the old one
         self.refused.discard(message.ch)
         channel_id = self._channel_id(message.ch)
@@ -220,10 +230,33 @@ class NodeSession:
 
     def _on_levels(self, message: wire.Levels) -> None:
         readings = {}
+        if message.open:
+            self._guard_gain(max(level.power_db for level in message.open))
         for level in message.open:
             if tx := self.transmissions.get(level.ch):
                 readings[tx.channel_id] = (level.power_db, level.snr_db)
         self.events.levels(readings, self.feed_id)
+
+    # --- gain guard ---------------------------------------------------------------------------------------------------
+
+    def _guard_gain(self, power_db: float) -> None:
+        """Step the node's gain down when its input is close to full scale (see gain_guard.py)."""
+        old = self.gain_guard.gain_db
+        target = self.gain_guard.observe(power_db)
+        self._publish_peak()
+        if target is None:
+            return
+        detail = f"input at {power_db:.1f} dBFS (limit {OVERLOAD_DBFS:.0f}): gain {old:.1f} -> {target:.1f} dB"
+        log.info("node %s: %s", self.node_id, detail)
+        self.rt.nodes.add_event(self.node_id, "gain", detail)
+        task = asyncio.create_task(self._step_gain(target))
+        self._tasks.add(task)
+        task.add_done_callback(self._tasks.discard)
+
+    async def _step_gain(self, target: float) -> None:
+        result = await self.command(GainIn(type="gain", gain_db=target))
+        if result.status == "acked":
+            self.gain_guard.gain_db = target
 
     # --- binary frames ----------------------------------------------------------------------------------------------
 

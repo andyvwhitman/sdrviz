@@ -117,14 +117,19 @@ Node {
   lag_ms: number | null         // only ONLINE
   last_seen: string | null      // last message from the node
   agent_version: string | null  // from the last hello
-  health: { cpu_pct, temp_c, rtl_tcp, dropped_blocks, audio_age_ms, uptime_s, channels, tune } | null
-                                // the last health message (fields as in Part 1); null until the first one since the server started
+  health: { cpu_pct, temp_c, rtl_tcp, dropped_blocks, audio_age_ms, uptime_s, channels, tune, peak_dbfs, fault } | null
+                                // the last health message (fields as in Part 1); null until the first one since the server started.
+                                // Server-added: peak_dbfs = highest key-up or level in the last minute (null if none), and
+                                // fault (see A-4) when the server judges the dongle dead
   key_expires_at: string | null // while a node key is outstanding (new node, or after a re-key): when it stops working
   created_at: string
 }
 NodeEvent { t: string, kind: "enrolled" | "online" | "offline" | "reconnect" | "rekeyed"
-                              | "revoked" | "command" | "error", detail: string }
+                              | "revoked" | "command" | "gain" | "fault" | "error", detail: string }
 ```
+
+Gain guard (A-2): when a key-up or level arrives above -4 dBFS and the node's gain (from its health) is known, the
+server sends a `gain` command one R820T step lower (floor 20 dB, at most one step a minute) and records a `gain` event.
 
 ```
 GET    /nodes                      -> Node[]                          (ordered by number)

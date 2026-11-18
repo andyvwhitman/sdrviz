@@ -8,6 +8,8 @@
   import { live } from "$lib/stores/live.svelte";
   import { spectrum } from "$lib/stores/spectrum.svelte";
   import * as fmt from "$lib/hud/fmt";
+  import { api } from "$lib/api/client";
+  import { BAND, mhzToCh, chToMhz } from "$lib/hud/band";
   import type { Channel, Feed, LiveState } from "$lib/types/live";
   import { boxStyle, type Geometry } from "./geometry";
   import FrequencyCursor from "./FrequencyCursor.svelte";
@@ -62,7 +64,46 @@
       hoverX = ((event.clientX - rect.left) * box.offsetWidth) / rect.width;
     },
     onpointerleave: () => (hoverX = null),
+    onclick: (event: MouseEvent) => listen(event),
   };
+
+  /** the AAR channel under the pointer, or null between channel slots and outside the band */
+  function channelAt(x: number): number | null {
+    const width = geometry.spectrum[2];
+    const mhz = BAND.lo + (Math.min(width - 1, Math.max(0, x)) / (width - 1)) * (BAND.hi - BAND.lo);
+    const ch = mhzToCh(mhz);
+    const onSlot = ch >= BAND.first && ch <= BAND.last && Math.abs(mhz - chToMhz(ch)) <= BAND.step / 2;
+    return onSlot ? ch : null;
+  }
+
+  /** what the last click did, shown under the readout for a few seconds */
+  let flash = $state<string | null>(null);
+  let flashTimer: ReturnType<typeof setTimeout> | undefined;
+  const say = (text: string) => {
+    flash = text;
+    clearTimeout(flashTimer);
+    flashTimer = setTimeout(() => (flash = null), 4000);
+  };
+
+  /** click: listen to the channel (it joins the live bank, which becomes active); alt-click: drop it */
+  async function listen(event: MouseEvent) {
+    if (blank || hoverX === null) return;
+    const ch = channelAt(hoverX);
+    if (ch === null) return;
+    const name = `CH${String(ch).padStart(2, "0")}`;
+    try {
+      if (event.altKey) {
+        await api.banks.removeLive(ch);
+        say(`${name} REMOVED FROM LIVE`);
+      } else {
+        await api.banks.addLive(ch, feed.id);
+        await api.banks.activate("bank-live");
+        say(`LISTENING ${name} · LIVE BANK`);
+      }
+    } catch (error) {
+      say(`${name}: ${error instanceof Error ? error.message : "failed"}`.toUpperCase());
+    }
+  }
 </script>
 
 <div class="lo-box" style={boxStyle(geometry.spectrum)} {...hover} role="presentation">
@@ -102,5 +143,5 @@
 {/if}
 
 {#if hoverX !== null && !blank}
-  <FrequencyCursor x={hoverX} spectrum={geometry.spectrum} ruler={geometry.ruler} waterfall={geometry.waterfall} channels={snapshot.channels} />
+  <FrequencyCursor x={hoverX} spectrum={geometry.spectrum} ruler={geometry.ruler} waterfall={geometry.waterfall} channels={snapshot.channels} {flash} />
 {/if}

@@ -18,13 +18,15 @@ from sqlmodel import Session, col, func, select
 from ..auth import LoginLimiter
 from ..db import open_session
 from ..live import node_protocol as wire
-from ..models import Feed, Frequency
+from ..models import Bank, Feed, Frequency
 from .models import Node, NodeCredential, NodeEvent
 from .schemas import CommandIn, CommandResult, Location, NodeDetail, NodeEventOut, NodeOut
 
 ENROLLMENT_TTL = timedelta(hours=24)
-PRESETS = {"aar": list(range(7, 98))}  # preset name → AAR channel numbers
-DEFAULT_PRESET = "aar"
+BANKS_PRESET = "banks"  # every AAR channel used by a frequency in any bank; follows bank edits
+PRESETS = {"aar": list(range(7, 98))}  # fixed presets: name → AAR channel numbers
+PRESET_NAMES = (BANKS_PRESET, *PRESETS)
+DEFAULT_PRESET = BANKS_PRESET
 EVENTS_SHOWN = 50
 ID_ALPHABET = string.ascii_lowercase + string.digits
 
@@ -117,7 +119,14 @@ class NodeRegistry:
             return NodeDetail(**self._view(session, node).model_dump(), events=shown)
 
     def channels_for(self, preset: str) -> list[int]:
-        return PRESETS[preset]
+        return self.bank_channels() if preset == BANKS_PRESET else PRESETS[preset]
+
+    def bank_channels(self) -> list[int]:
+        """The AAR channels of every frequency in any bank, sorted: what a node on the banks preset decodes."""
+        with open_session(self.engine) as session:
+            ids = {freq_id for bank in session.exec(select(Bank)) for freq_id in bank.frequency_ids}
+            freqs = session.exec(select(Frequency).where(col(Frequency.id).in_(ids))).all() if ids else []
+        return sorted({freq.aar_channel for freq in freqs if freq.aar_channel})
 
     def feeds(self, freqs: dict[str, Frequency]) -> list[Feed]:
         """Enrolled nodes as feeds (driver sdrviz-agent) that hear the channels of their preset."""
@@ -125,7 +134,7 @@ class NodeRegistry:
             nodes = session.exec(select(Node).where(Node.status == "OFFLINE").order_by(Node.number)).all()
         feeds = []
         for node in nodes:
-            wanted = set(PRESETS[node.preset])
+            wanted = set(self.channels_for(node.preset))
             hears = [cid for cid, freq in freqs.items() if freq.aar_channel in wanted]
             feeds.append(
                 Feed(
@@ -277,7 +286,7 @@ class NodeRegistry:
             self._finish_enrollment(session, node, credential)
             session.commit()
             self.on_feeds_changed()
-        return Authenticated(node, PRESETS[node.preset], None)
+        return Authenticated(node, self.channels_for(node.preset), None)
 
     def _enroll(
         self, session: Session, node: Node, credential: NodeCredential, secret: str, client: str, now: datetime
@@ -293,7 +302,7 @@ class NodeRegistry:
         credential.pending_secret_hash = hash_secret(node_secret)  # replaces an earlier unacknowledged one
         session.add(credential)
         session.commit()
-        return Authenticated(node, PRESETS[node.preset], node_secret)
+        return Authenticated(node, self.channels_for(node.preset), node_secret)
 
     def _finish_enrollment(self, session: Session, node: Node, credential: NodeCredential) -> None:
         credential.node_secret_hash, credential.pending_secret_hash = credential.pending_secret_hash, None
@@ -318,8 +327,8 @@ class NodeRegistry:
     @staticmethod
     def _preset(preset: str | None) -> str:
         preset = preset or DEFAULT_PRESET
-        if preset not in PRESETS:
-            raise ValueError(f"unknown preset {preset!r}; known: {', '.join(PRESETS)}")
+        if preset not in PRESET_NAMES:
+            raise ValueError(f"unknown preset {preset!r}; known: {', '.join(PRESET_NAMES)}")
         return preset
 
     @staticmethod

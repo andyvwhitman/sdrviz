@@ -21,8 +21,8 @@ from ..live import node_protocol as wire
 from ..live import protocol
 from ..live.opus import OpusDecoder
 from .link import LinkStats
-from .schemas import CommandError, CommandIn, CommandResult
-from .service import AuthError, NodeLive, node_feed_id
+from .schemas import ChannelsIn, CommandError, CommandIn, CommandResult
+from .service import BANKS_PRESET, AuthError, NodeLive, node_feed_id
 
 if TYPE_CHECKING:
     from ..runtime import Runtime
@@ -97,6 +97,11 @@ class NodeSession:
             registry.add_event(node.id, "reconnect", "node reconnected")
         registry.add_event(node.id, "online", f"connected, agent {hello.agent_version}")
         background = [asyncio.create_task(self._heartbeat()), asyncio.create_task(self._watchdog())]
+        if node.preset == BANKS_PRESET and auth.channels:
+            # Also as a command: a node keeps the last `channels` command over the welcome's list, so a bank edit
+            # made while it was offline would otherwise never reach it.
+            channels = ChannelsIn(type="channels", channels=auth.channels)
+            background.append(asyncio.create_task(self.command(channels)))
         try:
             while True:
                 message = await self.websocket.receive()

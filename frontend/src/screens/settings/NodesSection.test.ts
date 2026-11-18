@@ -101,7 +101,7 @@ describe("add node", () => {
     set("LONGITUDE", "-76.7");
     flushSync();
     await click("CREATE NODE");
-    expect(nodesApi.create).toHaveBeenCalledWith({ name: "Shed", location: { lat: 39.1, lon: -76.7 }, preset: "aar" });
+    expect(nodesApi.create).toHaveBeenCalledWith({ name: "Shed", location: { lat: 39.1, lon: -76.7 }, preset: "banks" });
     expect((document.querySelector(".nk-key") as HTMLInputElement).value).toBe(KEY);
   });
 });

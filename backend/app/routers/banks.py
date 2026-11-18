@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, Response
+from pydantic import BaseModel, Field
 from sqlalchemy import literal_column
 from sqlmodel import select
 
@@ -39,6 +40,69 @@ def create_bank(body: BankBase, session: DB, rt: RT) -> Bank:
     session.add(bank)
     session.commit()
     rt.reload_world()
+    return bank
+
+
+LIVE_BANK_ID = "bank-live"  # the bank the operator builds by clicking the waterfall
+AAR_FIRST_MHZ, AAR_STEP_MHZ = 160.110, 0.015
+
+
+class LiveChannelIn(BaseModel):
+    aar_channel: int = Field(ge=1, le=255)
+    feed_id: str | None = None  # the feed whose waterfall was clicked: the live bank's home feed
+
+
+def live_frequency(session: DB, aar_channel: int) -> Frequency:
+    """The table's frequency on this AAR channel, or a new placeholder row for it."""
+    if existing := session.exec(select(Frequency).where(Frequency.aar_channel == aar_channel)).first():
+        return existing
+    freq = Frequency(
+        id=f"live-ch{aar_channel:02d}",
+        label=f"CH{aar_channel:02d}",
+        freq_mhz=round(AAR_FIRST_MHZ + AAR_STEP_MHZ * aar_channel, 3),
+        aar_channel=aar_channel,
+        railroad="UNKNOWN",
+        use="live",
+        confidence="low",
+        notes="added from the waterfall",
+    )
+    session.add(freq)
+    return freq
+
+
+@router.post("/live/channels")
+def add_live_channel(body: LiveChannelIn, session: DB, rt: RT) -> Bank:
+    """Listen to a channel: put it in the live bank (made on first use). Nodes on the banks preset start decoding it."""
+    freq = live_frequency(session, body.aar_channel)
+    bank = session.get(Bank, LIVE_BANK_ID)
+    if bank is None:
+        home = body.feed_id or next(iter(rt.world.feeds), None)
+        if home is None:
+            raise HTTPException(status_code=409, detail="No feed to listen with")
+        bank = Bank(
+            id=LIVE_BANK_ID, name="Live", short="LIVE", home_feed=home, description="Channels picked on the waterfall"
+        )
+    if freq.id not in bank.frequency_ids:
+        bank.frequency_ids = [*bank.frequency_ids, freq.id]  # a new list, so the JSON column is saved
+    session.add(bank)
+    session.commit()
+    session.refresh(bank)
+    rt.reload_world()
+    rt.publish_snapshot()
+    return bank
+
+
+@router.delete("/live/channels/{aar_channel}")
+def remove_live_channel(aar_channel: int, session: DB, rt: RT) -> Bank:
+    """Stop listening: take the channel out of the live bank (the frequency row stays)."""
+    bank = get_or_404(session, LIVE_BANK_ID)
+    ids = {f.id for f in session.exec(select(Frequency).where(Frequency.aar_channel == aar_channel))}
+    bank.frequency_ids = [f for f in bank.frequency_ids if f not in ids]
+    session.add(bank)
+    session.commit()
+    session.refresh(bank)
+    rt.reload_world()
+    rt.publish_snapshot()
     return bank
 
 

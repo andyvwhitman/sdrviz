@@ -29,7 +29,7 @@ export interface NodeDraft {
 
 export type NodeDraftErrors = Partial<Record<"name" | "lat" | "lon", string>>;
 
-export const emptyNodeDraft = (): NodeDraft => ({ name: "", lat: "", lon: "", preset: "aar" });
+export const emptyNodeDraft = (): NodeDraft => ({ name: "", lat: "", lon: "", preset: "banks" });
 
 const inRange = (text: string, limit: number): boolean => text.trim() !== "" && Number.isFinite(Number(text)) && Math.abs(Number(text)) <= limit;
 

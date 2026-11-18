@@ -134,7 +134,9 @@ class Api:
         assert (await self.http.post("/api/auth/login", json={"password": PASSWORD})).status_code == 204
 
     async def create_node(self) -> tuple[str, str]:
-        created = (await self.http.post("/api/nodes", json={"name": "Roof", "location": LOCATION})).json()
+        created = (
+            await self.http.post("/api/nodes", json={"name": "Roof", "location": LOCATION, "preset": "aar"})
+        ).json()
         return created["node"]["id"], created["key"]
 
     async def node(self, node_id) -> dict:

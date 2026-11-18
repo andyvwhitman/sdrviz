@@ -54,7 +54,7 @@ describe("new node form", () => {
   const valid = { ...emptyNodeDraft(), name: " Roof ", lat: "38.9", lon: "-77" };
   it("accepts a good draft and trims and converts it", () => {
     expect(validateNodeDraft(valid)).toEqual({});
-    expect(toNewNode(valid)).toEqual({ name: "Roof", location: { lat: 38.9, lon: -77 }, preset: "aar" });
+    expect(toNewNode(valid)).toEqual({ name: "Roof", location: { lat: 38.9, lon: -77 }, preset: "banks" });
   });
   it("names each bad field, with the API's limits", () => {
     expect(Object.keys(validateNodeDraft(emptyNodeDraft())).sort()).toEqual(["lat", "lon", "name"]);

@@ -1,6 +1,7 @@
 """Application runtime: the long-lived objects the routers and the replay engine share."""
 
 import asyncio
+import contextlib
 import logging
 
 from sqlalchemy.engine import Engine
@@ -14,7 +15,8 @@ from .db import create_schema, make_engine, open_session, seed_if_empty
 from .live import protocol
 from .live.hub import Hub
 from .models import Bank, FeedAck, Prefs, Receiver
-from .nodes.service import NodeRegistry
+from .nodes.schemas import ChannelsIn
+from .nodes.service import BANKS_PRESET, NodeOffline, NodeRegistry
 from .nodes.session import NodeConnections
 from .radio.receiver import load_receiver, save_receiver
 from .radio.source import RadioSource
@@ -47,6 +49,9 @@ class Runtime:
 
         self.nodes = NodeRegistry(self.db, settings.public_url)  # remote receiver nodes (docs/node-protocol.md)
         self.nodes.on_feeds_changed = self.reload_node_feeds
+        self.loop: asyncio.AbstractEventLoop | None = None  # set by start(); bank edits arrive on worker threads
+        self._bank_channels = self.nodes.bank_channels()  # last list pushed to nodes on the banks preset
+        self._tasks: set[asyncio.Task] = set()
         self.data: SimData = load_sim_data(self.db, settings)
         self.receiver: Receiver = load_receiver(self.db, settings)
         self.world: World = load_world(self.db, settings, self.receiver, self.nodes)
@@ -85,7 +90,8 @@ class Runtime:
     # --- lifecycle ---------------------------------------------------------
 
     def start(self) -> None:
-        self.hub.bind(asyncio.get_running_loop())
+        self.loop = asyncio.get_running_loop()
+        self.hub.bind(self.loop)
         if self.settings.sim:
             self.engine.start(self.hub)
         self.radio.start()
@@ -139,6 +145,36 @@ class Runtime:
         """Re-read frequencies, banks and feeds after a CRUD change and tell the clients."""
         self.world = load_world(self.db, self.settings, self.receiver, self.nodes)
         self.engine.resync()
+        self._push_bank_channels()
+
+    def _push_bank_channels(self) -> None:
+        """Banks or frequencies changed: online nodes on the banks preset get the new channel list."""
+        channels = self.nodes.bank_channels()
+        if channels == self._bank_channels:
+            return
+        self._bank_channels = channels
+        if not channels or self.loop is None:  # a node cannot be told to decode nothing; it keeps its last list
+            return
+        node_ids = [n.id for n in self.nodes.list() if n.preset == BANKS_PRESET and n.status == "ONLINE"]
+        if not node_ids:
+            return
+        log.info("bank channels changed (%d channels): telling %d node(s)", len(channels), len(node_ids))
+        coro = self._send_channels(node_ids, channels)
+        try:
+            on_loop = asyncio.get_running_loop() is self.loop
+        except RuntimeError:
+            on_loop = False
+        if on_loop:
+            task = self.loop.create_task(coro)
+            self._tasks.add(task)
+            task.add_done_callback(self._tasks.discard)
+        else:  # a sync route handler, on a worker thread
+            asyncio.run_coroutine_threadsafe(coro, self.loop)
+
+    async def _send_channels(self, node_ids: list[str], channels: list[int]) -> None:
+        for node_id in node_ids:
+            with contextlib.suppress(NodeOffline):
+                await self.nodes.send_command(node_id, ChannelsIn(type="channels", channels=channels))
 
     def reload_node_feeds(self) -> None:
         """A node was enrolled, changed or revoked: its feed row appears, changes or goes."""

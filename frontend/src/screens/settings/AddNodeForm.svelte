@@ -15,8 +15,11 @@
   }
   let { onsave, oncancel }: Props = $props();
 
-  /** the preset list is the API's: AAR 07-97 is the only one in v1 */
-  const PRESETS = [{ value: "aar", text: "AAR 07-97" }];
+  /** the preset list is the API's: the channels in any bank (follows bank edits), or the whole AAR band */
+  const PRESETS = [
+    { value: "banks", text: "BANK CHANNELS" },
+    { value: "aar", text: "AAR 07-97" },
+  ];
   const MANUAL = "";
 
   let draft = $state<NodeDraft>(emptyNodeDraft());

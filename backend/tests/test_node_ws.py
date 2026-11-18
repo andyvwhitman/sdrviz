@@ -38,8 +38,8 @@ def load_fake_node():
     return module
 
 
-def create_node(client, name="Roof") -> dict:
-    return client.post("/api/nodes", json={"name": name, "location": LOCATION}).json()
+def create_node(client, name="Roof", preset="aar") -> dict:
+    return client.post("/api/nodes", json={"name": name, "location": LOCATION, "preset": preset}).json()
 
 
 def node_status(client, node_id) -> str:
@@ -480,3 +480,53 @@ def test_fake_node_end_to_end(server, tmp_path):
             assert closed.value.rcvd.code == wire.CLOSE_REVOKED
 
     asyncio.run(scenario())
+
+
+# --- the banks preset and the live bank ------------------------------------------------------------------------------
+
+
+def next_command(node: HandNode):
+    message = node.receive()
+    while isinstance(message, wire.Ping):
+        message = node.receive()
+    return message
+
+
+def test_banks_preset_node_follows_the_live_bank(client):
+    created = create_node(client, preset="banks")
+    node_id = created["node"]["id"]
+    node = HandNode(client, created["key"])
+    welcome = node.welcome()
+    in_banks = welcome.config.channels
+    assert in_banks and 33 not in in_banks
+    node.send(wire.EnrolledAck())
+    first = next_command(node)  # on connect: the bank channels again, as a command the node keeps
+    assert first.type == "channels" and first.channels == in_banks
+    node.send(wire.Ack(id=first.id, ok=True))
+    wait_for(lambda: node_status(client, node_id) == "ONLINE")
+
+    added = client.post("/api/banks/live/channels", json={"aar_channel": 33, "feed_id": "node-1"})
+    assert added.status_code == 200, added.text
+    assert added.json()["id"] == "bank-live" and added.json()["frequency_ids"] == ["live-ch33"]
+    pushed = next_command(node)
+    assert pushed.type == "channels" and pushed.channels == sorted([*in_banks, 33])
+    node.send(wire.Ack(id=pushed.id, ok=True))
+    freq = client.get("/api/frequencies/live-ch33").json()
+    assert freq["freq_mhz"] == 160.605 and freq["aar_channel"] == 33
+
+    again = client.post("/api/banks/live/channels", json={"aar_channel": 33})  # already there: no change, no push
+    assert again.json()["frequency_ids"] == ["live-ch33"]
+
+    removed = client.delete("/api/banks/live/channels/33")
+    assert removed.json()["frequency_ids"] == []
+    pushed = next_command(node)
+    assert pushed.type == "channels" and pushed.channels == in_banks
+    node.send(wire.Ack(id=pushed.id, ok=True))
+    node.close()
+
+
+def test_live_channel_reuses_a_known_frequency(client):
+    known = client.get("/api/frequencies").json()[0]
+    added = client.post("/api/banks/live/channels", json={"aar_channel": known["aar_channel"]})
+    assert added.status_code == 200 and added.json()["frequency_ids"] == [known["id"]]
+    assert client.post("/api/banks/live/channels", json={"aar_channel": 0}).status_code == 422

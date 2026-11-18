@@ -55,7 +55,7 @@ def test_created_node_is_pending_and_its_key_decodes(client):
     created = create(client)
     node, key = created["node"], wire.NodeKey.decode(created["key"])
     assert node["status"] == "PENDING" and node["number"] == 1 and node["feed_id"] == "node-1"
-    assert node["preset"] == "aar" and node["location"] == LOCATION and node["link_quality"] is None
+    assert node["preset"] == "banks" and node["location"] == LOCATION and node["link_quality"] is None
     assert key.node == node["id"] and key.url == "http://localhost:8100" and len(key.secret) == 43
     assert node["key_expires_at"] is not None
     assert create(client, "Second")["node"]["number"] == 2
@@ -67,7 +67,8 @@ def test_enrollment_then_connect_with_the_node_secret(client, registry):
     assert client.get("/api/nodes").json()[0]["status"] == "OFFLINE"
     assert client.get("/api/nodes").json()[0]["key_expires_at"] is None
     auth = registry.authenticate(hello(key, "connect", node_secret), "10.0.0.1")
-    assert auth.node_secret is None and auth.channels == list(range(7, 98))
+    assert auth.node_secret is None and auth.channels == registry.bank_channels()
+    assert auth.channels and auth.channels == sorted(set(auth.channels))
 
 
 def test_expired_key_is_rejected(client, registry):

@@ -15,8 +15,10 @@
     ruler: Box;
     waterfall: Box;
     channels: Channel[];
+    /** the result of the last click, if recent */
+    flash?: string | null;
   }
-  let { x, spectrum, ruler, waterfall, channels }: Props = $props();
+  let { x, spectrum, ruler, waterfall, channels, flash = null }: Props = $props();
 
   const [left, top, width] = $derived(spectrum);
   const height = $derived(waterfall[1] + waterfall[3] - top);
@@ -46,6 +48,9 @@
     <path class="s-hair k-select" d="M{px - 4} {rulerBottom - 4}L{px} {rulerBottom}L{px + 4} {rulerBottom - 4}" />
     <rect class="f-void lo-cursor__back" x={backX} y={textY - 12} width={backW} height="17" />
     <text class="tx-data lo-cursor__text" x={textX} y={textY} text-anchor={anchor}>{text}</text>
+    {#if flash || onSlot}
+      <text class="tx-data lo-cursor__hint" x={textX} y={textY + 16} text-anchor={anchor}>{flash ?? "CLICK TO LISTEN · ALT-CLICK TO DROP"}</text>
+    {/if}
   </svg>
 </div>
 
@@ -54,4 +59,5 @@
   .lo-cursor svg { position: absolute; left: 0; top: 0; overflow: visible; }
   .lo-cursor__back { fill-opacity: 0.85; }
   .hud .lo-cursor__text { font-weight: 500; fill: var(--ink); letter-spacing: 0.04em; }
+  .hud .lo-cursor__hint { fill: var(--ink-dim, var(--ink)); opacity: 0.7; letter-spacing: 0.08em; font-size: 10px; }
 </style>

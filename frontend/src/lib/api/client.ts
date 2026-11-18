@@ -99,6 +99,9 @@ export const api = {
     update: (id: string, bank: Json) => put(`/banks/${id}`, bank),
     remove: (id: string) => del(`/banks/${id}`),
     activate: (id: string) => post<Prefs>(`/banks/${id}/activate`),
+    /** listen to an AAR channel: it joins the live bank, and nodes on the banks preset start decoding it */
+    addLive: (aarChannel: number, feedId: string) => post<Json>("/banks/live/channels", { aar_channel: aarChannel, feed_id: feedId }),
+    removeLive: (aarChannel: number) => del(`/banks/live/channels/${aarChannel}`),
   },
   feeds: {
     list: () => get<Json[]>("/feeds"),

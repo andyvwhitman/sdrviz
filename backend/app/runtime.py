@@ -20,7 +20,7 @@ from .nodes.session import NodeConnections
 from .radio.receiver import load_receiver, save_receiver
 from .radio.source import RadioSource
 from .recordings.recorder import Recorder
-from .recordings.transcription import Transcription
+from .recordings.transcription import Transcription, make_transcriber, vocabulary_prompt
 from .sim import live_state
 from .sim.clock import SimClock, WallClock, local_time_of_day
 from .sim.data import SimData, load_health, load_sim_data
@@ -66,7 +66,7 @@ class Runtime:
         self.clock = WallClock() if wall else SimClock(start, settings.sim_speed)
         self.hub = Hub()
         self.audio = AudioStore(settings.audio_path)
-        self.transcription = Transcription()
+        self.transcription = Transcription(self, make_transcriber(settings, lambda: vocabulary_prompt(self)))
         self.recorder = Recorder(self)
         self.engine = ReplayEngine(self)
         self.prefetcher: Prefetcher | None = None
@@ -100,6 +100,7 @@ class Runtime:
         if self.settings.sim:
             self.engine.start(self.hub)
         self.radio.start()
+        self.transcription.start()
         if self.transit:
             self.transit.start()
         if missing := missing_tools():
@@ -114,6 +115,7 @@ class Runtime:
         await self.engine.stop()
         await self.radio.stop()
         await asyncio.to_thread(self.recorder.stop)
+        await asyncio.to_thread(self.transcription.stop)
         if self.transit:
             await self.transit.stop()
         self.hub.close_all()

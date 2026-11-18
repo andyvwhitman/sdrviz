@@ -109,6 +109,7 @@ def approaching(
     radius_km: Annotated[float, Query(ge=0.1, le=25, description="how far the track may pass from the point")] = 1,
     ahead_min: Annotated[int, Query(ge=1, le=360, description="trains due within this many minutes")] = 60,
     back_min: Annotated[int, Query(ge=0, le=60, description="trains that passed within this many minutes")] = 10,
+    offset_min: Annotated[int, Query(ge=-360, le=720, description="the window's moment, minutes from now")] = 0,
     agency: str | None = None,
     include_scheduled: Annotated[bool, Query(description="also trains with no realtime, from the timetable")] = True,
     limit: Annotated[int, Query(ge=1, le=500)] = 100,
@@ -123,6 +124,7 @@ def approaching(
         agency=agency,
         include_scheduled=include_scheduled,
         limit=limit,
+        offset_min=offset_min,
     )
 
 

@@ -31,7 +31,18 @@ const base: ApproachingTrain = {
   vehicle: { lat: 39.03, lon: -76.74, speed_mph: 62, age_s: 18, stale: false, position: "realtime", next_stop: "ODENTON" },
 };
 
-const train = (over: Partial<ApproachingTrain>): ApproachingTrain => ({ ...base, ...over });
+/** "2026-11-17T19:34:00-05:00": the fixture's clock, 19:30 Eastern plus `seconds` */
+function local(seconds: number): string {
+  const total = 19 * 3600 + 30 * 60 + seconds;
+  const two = (n: number) => String(Math.floor(n)).padStart(2, "0");
+  return `2026-11-17T${two(total / 3600)}:${two((total % 3600) / 60)}:${two(total % 60)}-05:00`;
+}
+
+/** a train whose clock ETA agrees with its countdown, unless the override says otherwise */
+const train = (over: Partial<ApproachingTrain>): ApproachingTrain => {
+  const eta = over.eta_in_s === undefined || over.eta_in_s === null ? base.eta : local(over.eta_in_s);
+  return { ...base, eta, ...over };
+};
 
 export const APPROACHING: Approaching = {
   generated: "2026-11-17T19:30:00Z",

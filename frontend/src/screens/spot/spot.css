@@ -25,18 +25,16 @@
 /* the pinned block: spot bar, hero and ladder stay in view while the table scrolls beneath */
 .sp__top { position: sticky; top: var(--header-h); z-index: 10; background: var(--bg-void); border-bottom: 1px solid var(--grid); }
 .sp__bar { position: relative; }
-.sp__ladder { padding: 4px 16px 6px; }
 
 .sp__filters {
-  display: flex; align-items: center; gap: 8px; padding: 10px 16px;
+  display: flex; align-items: center; gap: 8px; padding: 6px 16px; min-height: 40px;
   border-bottom: 1px solid var(--grid);
 }
-.sp__filters .chip { height: 36px; }
-.sp__sep { flex: 1; }
+.sp__count { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink-2); }
 .sp__opr { display: flex; align-items: center; gap: 8px; }
 .sp__opr-k { display: none; font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink-2); }
 .sp__opr select {
-  min-height: 36px; max-width: 160px; padding: 0 12px; border: 0; border-radius: 0; background: var(--bg-void); color: var(--ink);
+  min-height: 30px; max-width: 160px; padding: 0 12px; border: 0; border-radius: 0; background: var(--bg-void); color: var(--ink);
   box-shadow: inset 0 0 0 1px var(--line-faint); font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label);
   appearance: none; padding-right: 30px;
   background:
@@ -54,11 +52,11 @@
 
 @media (min-width: 900px) {
   .sp__opr-k { display: inline; }
-  .sp__top { display: grid; grid-template-columns: minmax(0, 1fr) 460px; grid-template-areas: "hero bar" "ladder ladder"; align-items: start; }
+  .sp__top { display: grid; grid-template-columns: minmax(0, 1fr) 460px; grid-template-areas: "hero bar" "timeline timeline"; align-items: start; }
   .sp__hero { grid-area: hero; }
   .sp__bar { grid-area: bar; border-left: 1px solid var(--grid); height: 100%; display: flex; flex-direction: column; justify-content: center; }
   .sp__bar :global(.sb__main) { padding-left: 24px; padding-right: var(--margin-x); }
-  .sp__ladder { grid-area: ladder; padding: 4px var(--margin-x) 8px; border-top: 1px solid var(--grid); }
+  .sp__timeline { grid-area: timeline; }
   .sp__filters { padding: 10px var(--margin-x); }
   .sp__note, .sp__empty { padding-left: var(--margin-x); padding-right: var(--margin-x); }
 }

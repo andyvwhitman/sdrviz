@@ -412,6 +412,14 @@ def test_service_merges_sources_and_names_the_nearest_line(live, provider):
     assert live.approaching(*SPOT, now=NOW, limit=1).meta.truncated
 
 
+def test_offset_moves_the_window_but_not_now(live, provider):
+    later = live.approaching(*SPOT, now=NOW, offset_min=600, ahead_min=30, back_min=0)
+    assert later.generated == NOW
+    assert later.meta.window_from == NOW + timedelta(minutes=600)
+    assert later.meta.window_to == NOW + timedelta(minutes=630)
+    assert [r.train for r in later.trains] == []  # the fixture's trains are all within the hour
+
+
 def test_untimed_trains_follow_the_timed_ones(live, provider):
     provider.positions = parse_vehicle_positions(position("", 39.08, bearing=0, speed=0))
     result = live.approaching(*SPOT, now=NOW)
@@ -452,7 +460,8 @@ def test_the_endpoint_returns_the_documented_shape(client, live, frozen):
 
 def test_the_endpoint_checks_its_parameters(client, live):
     for query in ("lat=91&lon=0", "lat=0&lon=181", "lat=0", "lat=0&lon=0&radius_km=0", "lat=0&lon=0&radius_km=26",
-                  "lat=0&lon=0&ahead_min=0", "lat=0&lon=0&back_min=61", "lat=0&lon=0&limit=501"):  # fmt: skip
+                  "lat=0&lon=0&ahead_min=0", "lat=0&lon=0&back_min=61", "lat=0&lon=0&limit=501",
+                  "lat=0&lon=0&offset_min=-361", "lat=0&lon=0&offset_min=721"):  # fmt: skip
         assert client.get(f"/api/transit/approaching?{query}").status_code == 422, query
 
 

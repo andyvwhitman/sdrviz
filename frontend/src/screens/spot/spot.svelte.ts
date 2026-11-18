@@ -2,6 +2,7 @@ import { api } from "$lib/api/client";
 import { TRANSIT_POLL_MS } from "$lib/hud/transitChips";
 import type { Approaching, Stop } from "$lib/types/transit";
 import { type LatLon, validLatLon } from "./spot";
+import { RANGE_AHEAD_MIN, RANGE_BACK_MIN, clampOffset } from "./timeline";
 
 /** Where a spot came from; the spot bar says so. */
 export type SpotSource = "gps" | "station" | "typed" | "link";
@@ -16,8 +17,8 @@ export interface Spot extends LatLon {
 
 export type LocateStatus = "idle" | "locating" | "ok" | "denied" | "unavailable";
 
-export const HORIZONS = [30, 60, 120] as const;
-const BACK_MIN = 10;
+/** one request covers the whole timeline, so scrolling it filters on the device */
+const LIMIT = 500;
 const STORAGE_KEY = "sdrviz.spot";
 const RECENT_MAX = 5;
 /** where the picker looks before there is a spot: Washington */
@@ -48,6 +49,8 @@ export class SpotStore {
   failed = $state(false);
   loading = $state(false);
   horizonMin = $state<number>(60);
+  /** where the timeline is scrolled: minutes from now to the start of the window; 0 follows now */
+  offsetMin = $state(0);
   /** operator filter, an agency name; null shows all */
   agency = $state<string | null>(null);
   now = $state(Date.now());
@@ -122,9 +125,10 @@ export class SpotStore {
     void this.#loadStops(spot.lat, spot.lon);
   }
 
+  /** A new window length; the start stays put (inside the loaded range). No request: the data covers it. */
   setHorizon(minutes: number): void {
     this.horizonMin = minutes;
-    void this.refresh();
+    this.offsetMin = this.offsetMin && clampOffset(this.offsetMin, minutes);
   }
 
   /** Ask the browser where the user is; denial and absence are states, not errors. */
@@ -153,7 +157,7 @@ export class SpotStore {
       this.loading = this.data === null;
       try {
         const data = await api.transit.approaching(
-          { lat: spot.lat, lon: spot.lon, ahead_min: this.horizonMin, back_min: BACK_MIN, limit: 100 },
+          { lat: spot.lat, lon: spot.lon, ahead_min: RANGE_AHEAD_MIN, back_min: RANGE_BACK_MIN, limit: LIMIT },
           abort.signal,
         );
         this.data = data;

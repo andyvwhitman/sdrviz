@@ -13,6 +13,7 @@
   import { shell } from "$lib/stores/shell.svelte";
   import { ui } from "$lib/stores/ui.svelte";
   import { NAV, type Route } from "../../routes";
+  import AudioToggle from "./AudioToggle.svelte";
   import HeaderNav from "./HeaderNav.svelte";
 
   interface Props {
@@ -66,6 +67,7 @@
   <footer class="pg__status">
     <span class="pg__status-text">{shell.statusFallback ?? ""}</span>
     <span class="pg__status-tb">WLT-1 · {route.name} · {clock}</span>
+    <AudioToggle />
   </footer>
 </div>
 

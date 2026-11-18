@@ -62,6 +62,6 @@
     <Toggle label="RECORD" checked={prefs.record.has(channelId)} onchange={() => toggle("record")} />
   </div>
   <span class="t-micro">
-    {#if !audio.enabled}AUDIO OFF · ENABLE IT FROM THE HEADER CHIP{:else if gainOf(mix, channelId) === 0}NOT AUDIBLE · {prefs.solo.size ? "ANOTHER CHANNEL IS SOLOED" : "MUTED"}{:else}OUTPUT GAIN <span class="mono">{Math.round(gainOf(mix, channelId) * 100)}</span>{/if}
+    {#if !audio.enabled}{audio.muted ? 'AUDIO MUTED · UNMUTE AT THE BOTTOM RIGHT' : 'AUDIO STARTS ON YOUR FIRST CLICK'}{:else if gainOf(mix, channelId) === 0}NOT AUDIBLE · {prefs.solo.size ? "ANOTHER CHANNEL IS SOLOED" : "MUTED"}{:else}OUTPUT GAIN <span class="mono">{Math.round(gainOf(mix, channelId) * 100)}</span>{/if}
   </span>
 </div>

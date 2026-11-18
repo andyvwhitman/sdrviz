@@ -18,6 +18,7 @@
   import { ui } from "$lib/stores/ui.svelte";
   import { FIRST_DATA_WAIT_S, retryInfo } from "$lib/ws/link";
   import type { Route } from "../../routes";
+  import AudioToggle from "./AudioToggle.svelte";
   import HeaderChips from "./HeaderChips.svelte";
   import HeaderNav from "./HeaderNav.svelte";
   import StatusLine from "./StatusLine.svelte";
@@ -90,4 +91,5 @@
   <StatusLine {status}>
     <TitleBlock screen={route.name} {scope} {clock} sim={state?.sim ?? session.sim} osm={route.id === "map"} />
   </StatusLine>
+  <AudioToggle />
 </footer>

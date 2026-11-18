@@ -1,6 +1,6 @@
 /**
  * Pure helpers for the SPOT page: what a train's ETA is made of (basis), how it reads, how rows sort and group,
- * which side of the ladder a train approaches from, and how a typed position is parsed. No DOM, no stores.
+ * which lane of the timeline a train runs in, and how a typed position is parsed. No DOM, no stores.
  */
 
 import type { ApproachingTrain } from "$lib/types/transit";
@@ -21,8 +21,6 @@ export const BASIS_WORD: Record<Basis, string> = {
 export const OVERDUE_LIMIT_S = 600;
 /** A train this close (seconds) reads DUE. */
 export const DUE_S = 30;
-/** The ladder shows this many minutes each side of the spot. */
-export const LADDER_MIN = 30;
 /** Opposite-direction trains this close in time (seconds) are a meet. */
 export const MEET_WINDOW_S = 120;
 
@@ -65,9 +63,6 @@ export function sideOf(bearing: number): Side {
 
 const COMPASS = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
 const compass = (bearing: number): string => COMPASS[Math.round((((bearing % 360) + 360) % 360) / 45) % 8];
-
-/** "FROM SW": the side a train comes from, named by the compass point behind it. */
-export const fromLabel = (bearing: number): string => `FROM ${compass(bearing + 180)}`;
 
 export type Group = "passed" | "coming" | "overdue";
 
@@ -214,14 +209,6 @@ export function armNames(rows: readonly Row[], bearing: number | null): { left: 
     return { name: b === null ? "" : compass(b + 180), tag, compass: true };
   };
   return { left: arm("left"), right: arm("right") };
-}
-
-/** Position of a row on the ladder axis, 0 (far left) to 1 (far right), or null beyond the scale. */
-export function ladderFraction(row: Pick<Row, "remainingS" | "side">): number | null {
-  const min = Math.max(0, row.remainingS) / 60;
-  if (min > LADDER_MIN) return null;
-  const offset = (min / LADDER_MIN) * 0.5;
-  return row.side === "left" ? 0.5 - offset : 0.5 + offset;
 }
 
 // ---- position input

@@ -1,5 +1,5 @@
 <script lang="ts">
-  /** System chips, audio chip, clock and the fullscreen button: the right side of the header. */
+  /** System chips, the solo count, clock and the fullscreen button: the right side of the header. */
   import { audio } from "$lib/stores/audio.svelte";
   import { ui } from "$lib/stores/ui.svelte";
   import type { ChipSpec } from "$lib/hud/chips";
@@ -31,11 +31,6 @@
 {/each}
 {#if reconnecting}<Chip text="RECONNECTING" kind="offline" />{/if}
 {#if audio.soloCount}<Chip text="SOLO {audio.soloCount}" kind="active" />{/if}
-{#if audio.enabled}
-  <Chip button text="AUDIO ON" kind="active" onclick={() => audio.toggle()} />
-{:else}
-  <Chip button text="AUDIO · ENABLE" kind="armed" onclick={() => audio.enable()} />
-{/if}
 <button class="hud-clock" title="Toggle UTC" onclick={() => ui.toggleUtc()}>{clock}</button>
 <button
   class="chip chip--icon"

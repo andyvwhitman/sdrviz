@@ -351,11 +351,14 @@ class TransitService:
         include_scheduled: bool = True,
         limit: int = 100,
         now: datetime | None = None,
+        offset_min: int = 0,
     ) -> Approaching:
         """Every train that passes within `radius_m` of a point, when it is nearest to it: the window runs from
-        `back_min` ago to `ahead_min` ahead. Rows with an ETA come first, by ETA; trains we could not time follow."""
+        `back_min` before to `ahead_min` after a moment `offset_min` from now (0: now; the page's time scrubber moves
+        it). Positions and states stay relative to the real now. Rows with an ETA come first, by ETA."""
         now = now or datetime.now(UTC)
-        lo, hi = now - timedelta(minutes=back_min), now + timedelta(minutes=ahead_min)
+        at = now + timedelta(minutes=offset_min)
+        lo, hi = at - timedelta(minutes=back_min), at + timedelta(minutes=ahead_min)
         near = (s for p in self.providers.values() for s in p.stations_near(lat, lon, STATION_RADIUS_M))
         stations = sorted(near)  # one station can appear once per source (each with its own coordinates)
         spot = Spot(lat, lon, radius_m, now, lo, hi, include_scheduled, tuple(stations))

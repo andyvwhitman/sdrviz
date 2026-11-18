@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  armNames, basisLine, basisOf, etaText, fromLabel, ladderFraction, meets, parseLatLon, passedText, rowEta, rowOf, searchStops, sideOf, sortRows, stopWord,
+  armNames, basisLine, basisOf, etaText, meets, parseLatLon, passedText, rowEta, rowOf, searchStops, sideOf, sortRows, stopWord,
 } from "./spot";
 import { APPROACHING } from "./fixture";
 
@@ -80,16 +80,6 @@ describe("ladder", () => {
     expect(sideOf(225)).toBe("right");
     expect(sideOf(0)).toBe("left");
     expect(sideOf(180)).toBe("right");
-  });
-  it("names the arm by where the train comes from", () => {
-    expect(fromLabel(41)).toBe("FROM SW");
-    expect(fromLabel(225)).toBe("FROM NE");
-  });
-  it("scales minutes to a fraction, with the spot at the middle and nothing past 30 minutes", () => {
-    expect(ladderFraction({ remainingS: 0, side: "left" })).toBe(0.5);
-    expect(ladderFraction({ remainingS: 900, side: "left" })).toBeCloseTo(0.25);
-    expect(ladderFraction({ remainingS: 900, side: "right" })).toBeCloseTo(0.75);
-    expect(ladderFraction({ remainingS: 31 * 60, side: "right" })).toBeNull();
   });
   it("finds meets between opposite directions within two minutes", () => {
     // 537 (right, 240 s) and 448 (left, 300 s); 537 runs through, so the pair is worth watching

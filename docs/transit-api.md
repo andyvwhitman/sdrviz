@@ -382,12 +382,15 @@ GET /api/transit/approaching?lat=39.0849&lon=-76.7064
     &radius_km=1        0.1..25   how far the track may pass from the point to count (default 1)
     &ahead_min=60       1..360    trains due within this many minutes (default 60)
     &back_min=10        0..60     trains that passed within this many minutes (default 10)
+    &offset_min=0       -360..720 the window's moment, minutes from now (default 0); states and positions stay relative to now
     &agency=MARC                  one operator, any case (default: all operators)
     &include_scheduled=true       also trains with no realtime at all, from the timetable (default true)
     &limit=100          1..500    rows kept after sorting (default 100)
 ```
 
 `503` when transit is off, `422` for out-of-range values, `200` with `trains: []` when nothing passes (never 404).
+The SPOT page asks once for `back_min=60&ahead_min=360&limit=500` and filters its timeline window on the device;
+`offset_min` is there for a window further out than that.
 The route is a plain `def` like `/vehicles`. Sources that are `warming` are skipped and say so in `meta.sources`.
 
 ### What the ETA means

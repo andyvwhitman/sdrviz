@@ -175,7 +175,7 @@
   .tr__id { grid-area: id; display: flex; align-items: baseline; gap: 10px; min-width: 0; }
   .tr__dir, .tr__stops { font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--ink); white-space: nowrap; }
   .tr.is-dim .tr__dir, .tr.is-dim .tr__stops { color: var(--ink-3); }
-  .tr__train { font: 400 var(--fs-15)/1.2 var(--font-data); color: var(--ink); }
+  .tr__train { font: 400 var(--fs-15)/1.2 var(--font-data); color: var(--ink); white-space: nowrap; }
   .tr__mark { grid-area: mark; }
   .tr__route { grid-area: route; display: flex; gap: 8px; min-width: 0; font: 400 var(--fs-11)/1.3 var(--font-label); color: var(--ink-2); }
   .tr__path { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-transform: uppercase; letter-spacing: 0.04em; }

@@ -48,8 +48,8 @@ describe("SpotStore", () => {
     await vi.advanceTimersByTimeAsync(0);
     const query = approachingCalls().at(-1)!.searchParams;
     expect(query.get("lat")).toBe("39.0869");
-    expect(query.get("ahead_min")).toBe("60");
-    expect(query.get("back_min")).toBe("10");
+    expect(query.get("ahead_min")).toBe("360"); // the whole timeline at once
+    expect(query.get("back_min")).toBe("60");
     expect(store.data?.trains).toHaveLength(APPROACHING.trains.length);
     stop();
   });
@@ -70,13 +70,21 @@ describe("SpotStore", () => {
     expect(approachingCalls().length).toBe(before + 1);
   });
 
-  it("asks again with the new horizon", async () => {
+  it("changes the window without asking again, keeping its start inside the loaded range", async () => {
     const store = new SpotStore();
     const stop = store.start();
     store.setSpot({ lat: 39, lon: -76, source: "typed" });
-    store.setHorizon(120);
     await vi.advanceTimersByTimeAsync(0);
-    expect(approachingCalls().at(-1)!.searchParams.get("ahead_min")).toBe("120");
+    const before = approachingCalls().length;
+    store.offsetMin = 300;
+    store.setHorizon(120);
+    expect(store.horizonMin).toBe(120);
+    expect(store.offsetMin).toBe(240); // 360 loaded minus a 2 h window
+    store.offsetMin = 0;
+    store.setHorizon(30);
+    expect(store.offsetMin).toBe(0);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(approachingCalls().length).toBe(before);
     stop();
   });
 

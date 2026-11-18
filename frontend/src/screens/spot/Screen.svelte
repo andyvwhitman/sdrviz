@@ -1,23 +1,24 @@
 <script lang="ts">
   /**
    * SPOT: what is coming past where I am standing, when, and how sure are we. A responsive page (layout: "page"),
-   * phone first: the spot bar, the next-train hero and the approach ladder stay pinned while the table scrolls.
+   * phone first: the spot bar, the next-train hero and the timeline stay pinned while the table scrolls. Scrolling
+   * the timeline moves the window (30 min, 1 h, 2 h) the hero and the table show; the data covers it all already.
    * Position: the device, a station, or typed coordinates; the spot is kept in the address and on the device.
    * No radio on this page (decision 25).
    */
   import { onMount } from "svelte";
-  import Chip from "$lib/components/Chip.svelte";
   import { displayName } from "$lib/displayName";
   import { router } from "$lib/router.svelte";
   import { shell } from "$lib/stores/shell.svelte";
   import { nearestStop } from "../map/lib/transitView";
   import Hero from "./Hero.svelte";
-  import Ladder from "./Ladder.svelte";
+  import Timeline from "./Timeline.svelte";
   import SpotBar from "./SpotBar.svelte";
   import SpotPicker from "./SpotPicker.svelte";
   import TrainRows from "./TrainRows.svelte";
   import { armNames, bearingOf, parseLatLon, sortRows, type Row } from "./spot";
-  import { HORIZONS, spotStore as store, type Spot } from "./spot.svelte";
+  import { spotStore as store, type Spot } from "./spot.svelte";
+  import { clockAt, horizonText, inWindow, windowOf } from "./timeline";
   import "./spot.css";
 
   const NEAR_STATION_KM = 3;
@@ -100,13 +101,19 @@
 
   // ---- what the table shows
   const trains = $derived((store.data?.trains ?? []).filter((t) => !store.agency || t.agency === store.agency));
-  const rows = $derived(sortRows(trains, store.elapsedS));
-  const next = $derived<Row | null>(rows.coming.find((r) => r.group === "coming") ?? null);
+  /** every loaded train (the timeline draws them all) */
+  const all = $derived(sortRows(trains, store.elapsedS));
+  const win = $derived(windowOf(store.offsetMin, store.horizonMin));
+  /** the trains inside the window (the hero and the table) */
+  const rows = $derived({ passed: all.passed.filter((r) => inWindow(r, win)), coming: all.coming.filter((r) => inWindow(r, win)) });
+  const next = $derived<Row | null>(rows.coming.find((r) => r.group === "coming" && r.remainingS >= win.fromS) ?? null);
+  const fromClock = $derived(win.live ? null : clockAt(store.now, store.offsetMin));
+  const windowText = $derived(win.live ? `NEXT ${horizonText(store.horizonMin)}` : `${fromClock}–${clockAt(store.now, store.offsetMin + store.horizonMin)}`);
   const agencies = $derived([...new Set((store.data?.trains ?? []).map((t) => t.agency))].sort());
   const line = $derived(store.data?.position.nearest_line ?? null);
   /** the way trains travel here, which decides what each arm of the ladder is called */
   const bearing = $derived(trains.length ? bearingOf(trains[0]) : null);
-  const arms = $derived(armNames([...rows.passed, ...rows.coming], bearing));
+  const arms = $derived(armNames([...all.passed, ...all.coming], bearing));
   const radiusKm = $derived(store.data?.position.radius_km ?? 1);
   const near = $derived(store.spot ? nearestStop(store.stops, store.spot.lon, store.spot.lat, NEAR_STATION_KM) : null);
   const nearName = $derived(near ? displayName(near) : null);
@@ -114,12 +121,12 @@
 
   const pending = $derived(!!store.spot && !store.data && !store.failed);
   const emptyText = $derived(
-    !store.spot ? "PICK WHERE YOU ARE STANDING" : store.failed ? "NO LINK TO TRAIN DATA" : `NO TRAINS IN THE NEXT ${store.horizonMin} MIN`,
+    !store.spot ? "PICK WHERE YOU ARE STANDING" : store.failed ? "NO LINK TO TRAIN DATA" : win.live ? `NO TRAINS IN THE ${windowText}` : `NO TRAINS ${windowText}`,
   );
 
   $effect(() => {
     const parts = ["SPOT"];
-    if (store.spot) parts.push(spotLabel, `${rows.coming.length} TRAINS NEXT ${store.horizonMin} MIN`);
+    if (store.spot) parts.push(spotLabel, `${rows.coming.length} TRAINS ${windowText}`);
     if (store.failed) parts.push("NO LINK · LAST TABLE");
     if (awake) parts.push("AWAKE");
     shell.statusFallback = parts.join(" · ").toUpperCase();
@@ -129,8 +136,9 @@
     store.setSpot(spot);
     pickerOpen = false;
   }
-  /** a tap on the ladder opens that train's row in the table, and brings it into view */
+  /** a tap on the timeline opens that train's row in the table (moving the window to it first), and brings it into view */
   function openRow(row: Row): void {
+    if (!inWindow(row, win)) store.offsetMin = Math.max(-60, Math.round(row.remainingS / 60) - 5);
     expanded = expanded === row.train.key ? null : row.train.key;
     if (expanded) requestAnimationFrame(() => document.querySelector(`[data-key="${CSS.escape(row.train.key)}"]`)?.scrollIntoView({ block: "center", behavior: "smooth" }));
   }
@@ -156,17 +164,23 @@
         />
       {/if}
     </div>
-    <div class="sp__hero"><Hero {next} empty={emptyText} {pending} /></div>
-    <div class="sp__ladder">
-      <Ladder rows={rows.coming} leftArm={arms.left} rightArm={arms.right} {spotLabel} {selected} onselect={(key) => (selected = key)} onopen={openRow} />
+    <div class="sp__hero"><Hero {next} empty={emptyText} {pending} after={fromClock} /></div>
+    <div class="sp__timeline">
+      <Timeline
+        rows={[...all.passed, ...all.coming]}
+        bind:offsetMin={store.offsetMin}
+        horizonMin={store.horizonMin}
+        nowMs={store.now}
+        leftArm={arms.left}
+        rightArm={arms.right}
+        onhorizon={(minutes) => store.setHorizon(minutes)}
+        onopen={openRow}
+      />
     </div>
   </div>
 
   <div class="sp__filters">
-    {#each HORIZONS as minutes (minutes)}
-      <Chip button kind="filter" text={minutes === 120 ? "2 H" : `${minutes} MIN`} pressed={store.horizonMin === minutes} onclick={() => store.setHorizon(minutes)} />
-    {/each}
-    <span class="sp__sep"></span>
+    <span class="sp__count">{rows.coming.length} {rows.coming.length === 1 ? "TRAIN" : "TRAINS"} · {windowText}</span>
     {#if agencies.length > 1}
       <label class="sp__opr">
         <span class="sp__opr-k">OPERATOR</span>

@@ -60,6 +60,9 @@ export const NAV_KEYS = "qwertyuiop";
 
 export const DEFAULT_PATH = "/live";
 
+/** Where a session lands: SPOT on a phone (a plate is never a destination), Live Ops otherwise. */
+export const homePath = (phone: boolean): string => (phone ? "/spot" : DEFAULT_PATH);
+
 export const routeFor = (path: string): Route | undefined => ROUTES.find((r) => r.path === path);
 
 type ScreenModule = { default: Component };

@@ -11,21 +11,21 @@
   import { shell } from "$lib/stores/shell.svelte";
   import { viewport } from "$lib/stores/viewport.svelte";
   import WiderScreen from "$lib/components/WiderScreen.svelte";
-  import { DEFAULT_PATH, layoutFor, loadScreen, routeFor } from "./routes";
+  import { homePath, layoutFor, loadScreen, routeFor } from "./routes";
 
   const route = $derived(routeFor(router.path));
   const layout = $derived(route ? layoutFor(route, viewport.phone) : "stage");
 
   // Unknown paths and "/" go to Live Ops (query kept).
   $effect(() => {
-    if (!route) router.go(DEFAULT_PATH, { replace: true, keepGlobals: false });
+    if (!route) router.go(homePath(viewport.phone), { replace: true, keepGlobals: false });
   });
 
   // The guard: no session means /login; a session on /login means in.
   $effect(() => {
     if (session.authenticated === false && route && route.id !== "login") router.go("/login", { replace: true });
-    if (session.authenticated && route?.adminOnly && !session.isAdmin) router.go(DEFAULT_PATH, { replace: true });
-    if (session.authenticated && route?.id === "login") router.go(DEFAULT_PATH, { replace: true });
+    if (session.authenticated && route?.adminOnly && !session.isAdmin) router.go(homePath(viewport.phone), { replace: true });
+    if (session.authenticated && route?.id === "login") router.go(homePath(viewport.phone), { replace: true });
   });
 
   // Live data runs exactly while a session exists.

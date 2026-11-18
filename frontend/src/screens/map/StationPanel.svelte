@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { viewport } from "$lib/stores/viewport.svelte";
   /**
    * A station in the side panel: what left in the last hour and what leaves or arrives in the next four
    * (GET /transit/stations/{id}), scheduled against realtime. A station group is one board merged across agencies,
@@ -114,9 +115,13 @@
   {/if}
 {/snippet}
 
+{#snippet routeChips(routes: StationBoard["routes"])}
+  {#each routes as r (r.id)}<Chip text={r.name} kind="filter" button title="{r.agency} · {r.name}: timetable" onclick={() => onroute(r.id)} />{/each}
+{/snippet}
+
 <Panel title={board?.stop.name ?? name ?? stopId} kind="STATION · {board?.stop.kind ?? 'STOP'}" label="Station {board?.stop.name ?? name}" {...controls}>
-  {#if board?.routes.length}
-    <div class="sw-chips sw-routes" class:is-wide={controls.full}>{#each board.routes as r (r.id)}<Chip text={r.name} kind="filter" button title="{r.agency} · {r.name}: timetable" onclick={() => onroute(r.id)} />{/each}</div>
+  {#if board?.routes.length && !viewport.phone}
+    <div class="sw-chips sw-routes" class:is-wide={controls.full}>{@render routeChips(board.routes)}</div>
   {/if}
   <div class="sw-chips">
     <Chip text="DEPARTURES" kind="filter" button pressed={tab === "departures"} onclick={() => (tab = "departures")} />
@@ -144,6 +149,13 @@
       <div class="sw-none">{failed ? "BOARD UNAVAILABLE" : "LOADING BOARD"}</div>
     {/if}
   </section>
+  <!-- on a phone the board is the hero: the routes come after it and wrap -->
+  {#if board?.routes.length && viewport.phone}
+    <section class="inspector__sec">
+      <h4>ROUTES · {board.routes.length}</h4>
+      <div class="sw-chips">{@render routeChips(board.routes)}</div>
+    </section>
+  {/if}
 </Panel>
 
 <style>

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { viewport } from "$lib/stores/viewport.svelte";
   /**
    * A trip in the side panel: who and where (service, operator, next stop with its ETA, delay, speed), how fresh the
    * position is and whether it is measured or estimated, and every stop of the trip (GET /transit/trips) with the
@@ -97,6 +98,8 @@
     !vehicle ? "SCHEDULE ONLY" : gone ? "NOT REPORTING" : age == null ? "AGE —" : `${vehicle.position === "realtime" ? "LIVE" : "EST"} · ${ageText(age)} AGO`,
   );
 
+  const phone = $derived(viewport.phone);
+
   /** the list opens on the current stop, a little below the top */
   let listEl = $state<HTMLElement>();
   $effect(() => {
@@ -104,18 +107,21 @@
     const row = cur;
     if (!el || row < 0) return;
     const target = el.querySelector<HTMLElement>(".tw-stop.is-cur");
-    if (target) el.scrollTop = Math.max(0, target.offsetTop - el.offsetTop - 48);
+    if (target) el.scrollTop = Math.max(0, target.offsetTop - 48);
   });
 </script>
 
 <Panel {title} kind={service ?? agency} label="Trip {title}" {...controls}>
   {#snippet status()}<span class="tw-glance" class:tw-stale={stale} class:tw-live={!stale && vehicle?.position === "realtime"}>{glance}{stale && !gone ? " · STALE" : ""}</span>{/snippet}
-  <div class="tw-cols" class:is-wide={controls.full}>
+  <div class="tw-cols" class:is-wide={controls.full} class:is-phone={phone}>
     <section class="inspector__sec">
       <h4>STATUS</h4>
-      <KeyValue label="SERVICE">
-        <span class="tw-nm">{#if routeId && service}<button class="tw-link" title="Timetable of this route" onclick={() => onroute(routeId)}>{service}</button>{:else}{service ?? BLANK}{/if}</span>
-      </KeyValue>
+      <!-- a phone drops SERVICE, DATA AS OF and LAST REFRESH: the subtitle already says the service and the age -->
+      {#if !phone}
+        <KeyValue label="SERVICE">
+          <span class="tw-nm">{#if routeId && service}<button class="tw-link" title="Timetable of this route" onclick={() => onroute(routeId)}>{service}</button>{:else}{service ?? BLANK}{/if}</span>
+        </KeyValue>
+      {/if}
       <KeyValue label="OPERATOR"><span class="tw-nm">{agency}</span></KeyValue>
       <KeyValue label="ROUTE"><span class="tw-nm">{vehicle?.origin ? cleanName(vehicle.origin) : BLANK} → {cleanName(vehicle?.destination ?? vehicle?.headsign ?? trip?.headsign ?? BLANK)}</span></KeyValue>
       {#if vehicle}
@@ -126,11 +132,11 @@
         <KeyValue label="SPEED" value={vehicle.speed_mph == null ? BLANK : String(Math.round(vehicle.speed_mph))} unit="MPH" />
         <KeyValue label="POSITION"><span class:tw-est={vehicle.position === "estimated"}>{vehicle.position === "realtime" ? "REALTIME" : "ESTIMATED FROM SCHEDULE"}</span></KeyValue>
         <div class="tw-fresh" class:is-stale={stale}>
-          <KeyValue label="DATA AS OF" value={hhmmss(vehicle.updated)} />
+          {#if !phone}<KeyValue label="DATA AS OF" value={hhmmss(vehicle.updated)} />{/if}
           <KeyValue label="AGE">
             <span class:tw-stale={stale}>{gone ? "NO LONGER REPORTING" : age == null ? BLANK : `${ageText(age)} AGO${stale ? " · STALE" : ""}`}</span>
           </KeyValue>
-          <KeyValue label="LAST REFRESH" value={clockOf(fetchedAt)} />
+          {#if !phone}<KeyValue label="LAST REFRESH" value={clockOf(fetchedAt)} />{/if}
         </div>
       {:else}
         <KeyValue label="POSITION" value="NO LIVE POSITION" />
@@ -194,6 +200,8 @@
   .tw-stop:hover { background: var(--bg-panel); }
   .tw-mark { align-self: center; width: 7px; height: 7px; border: 1px solid var(--line); border-radius: 50%; }
   .tw-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* a phone shows every stop name in full, wrapping; the times sit on the first line */
+  .is-phone .tw-name { white-space: normal; overflow: visible; text-overflow: clip; }
   .tw-tag { font: 500 var(--fs-11)/1.2 var(--font-label); letter-spacing: 0.08em; color: var(--ink-3); white-space: nowrap; }
   .tw-t { font-variant-numeric: tabular-nums; text-align: right; }
   .tw-t:not(.tw-tag) { font: var(--type-num); }

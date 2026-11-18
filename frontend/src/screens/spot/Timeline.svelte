@@ -238,7 +238,7 @@
   .tl__axis { stroke: var(--line); stroke-width: var(--sp-hair); }
   .tl__tick { stroke: var(--line-faint); stroke-width: 1; }
   .tl__tick.is-major { stroke: var(--line); }
-  .tl__clock { font: 400 12px var(--font-data); fill: var(--ink-3); }
+  .tl__clock { font: 400 var(--fs-13) var(--font-data); fill: var(--ink-3); }
   .tl__nowline { stroke: var(--ink-2); stroke-width: 1; stroke-dasharray: 2 3; }
   .tl__meet { stroke: var(--ink-3); stroke-width: 1; stroke-dasharray: 1 2; }
 

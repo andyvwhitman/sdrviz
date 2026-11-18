@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { viewport } from "$lib/stores/viewport.svelte";
   /**
    * The map canvas: one SVG holding the geo layers (graticule, shore, coverage, rail, mileposts, stations,
    * detectors), the schematic layers, and the live layer (trains, links, feed sites, pings) that morphs between
@@ -289,7 +290,12 @@
   );
   const isTalking = (id: string, flag: boolean): boolean => (demoTx && fmt.trainId(demoTx.train_id) === id ? demoMs! >= 250 : flag);
 
-  const feedsKey = $derived(JSON.stringify(feeds.map(feedInput)));
+  /** a phone shows a feed block as its name and SIM tag; the KM and SNR line is in the feed sheet (faults and stale keep theirs) */
+  const phoneFeedInput = (f: (typeof feeds)[number]): ReturnType<typeof feedInput> => {
+    const input = feedInput(f);
+    return viewport.phone && !input.l2Class ? { ...input, l2: "" } : input;
+  };
+  const feedsKey = $derived(JSON.stringify(feeds.map(phoneFeedInput)));
   const activeKey = $derived(JSON.stringify(snap.active_transmissions.map(activeInput)));
   const liveTrains = $derived(snap.trains.positions.map(trainInput));
 
@@ -581,7 +587,7 @@
     const look = looks[f.id];
     const [x, y] = project([f.lon, f.lat]);
     return u === 0 && b && regional > 0.5
-      ? measuredBlock(measure, { x, y, dir: b.dir, len: b.len, from: 10, l1: f.short, sim: f.sim, l2: look.l2, l2Class: look.l2Class, glyph: "tx" })
+      ? measuredBlock(measure, { x, y, dir: b.dir, len: b.len, from: 10, l1: f.short, sim: f.sim, l2: viewport.phone && !look.l2Class ? "" : look.l2, l2Class: look.l2Class, glyph: "tx" })
       : null;
   };
   const north = $derived(projection.northDirection());

@@ -5,6 +5,7 @@
    * +45 degrees in line-faint; an unacknowledged fault turns it -45 degrees in state-fault-dim (spec 4.5), so a
    * faulted disc reads by pattern in grayscale. A stale or faulted feed's contour is dashed, acked or not.
    */
+  import { viewport } from "$lib/stores/viewport.svelte";
   import type { FeedLook } from "./lib/inputs";
   import type { RingLabel } from "./lib/geoLayout";
   import { dPath } from "./lib/path";
@@ -41,7 +42,8 @@
     <path class="s-hair k-faint" class:d-stale={degraded} d={ringPath(km)} />
   {/each}
   <path class="s-hair {degraded ? 'k-stale d-stale' : 'k-line d-threshold'}" d={ringPath(radiusKm)} />
-  {#each labels as label (label.km)}
+  <!-- a phone keeps the rings and drops their distance labels: eleven of them were noise -->
+  {#each viewport.phone ? [] : labels as label (label.km)}
     <text class="mp-coord" x={label.x.toFixed(1)} y={label.y.toFixed(1)}>{label.km} KM</text>
   {/each}
 </g>

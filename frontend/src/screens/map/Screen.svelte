@@ -88,7 +88,8 @@
   });
 
   // ---- mode, selection
-  const mode = $derived(router.query("mode") === "schematic" ? ("schematic" as const) : ("geo" as const));
+  // the schematic does not fit a portrait phone: the URL keeps `mode=schematic`, a desktop opening it still gets it
+  const mode = $derived(router.query("mode") === "schematic" && !phone ? ("schematic" as const) : ("geo" as const));
   const snap = $derived(live.state);
   const selection = $derived(snap && data ? resolveSelection(router.query("select"), snap, data) : null);
   const setMode = (m: "geo" | "schematic"): void => router.setQuery({ mode: m === "geo" ? null : m });
@@ -321,7 +322,7 @@
 
     <div class="mp-ctl" bind:this={ctlEl}>
       <Chip text="GEO" kind="filter" button pressed={mode === "geo"} onclick={() => setMode("geo")} />
-      <Chip text="SCHEMATIC" kind="filter" button pressed={mode === "schematic"} onclick={() => setMode("schematic")} />
+      {#if !phone}<Chip text="SCHEMATIC" kind="filter" button pressed={mode === "schematic"} onclick={() => setMode("schematic")} />{/if}
       {#if mode === "geo" && !station}
         <Chip text={locateText} kind="filter" button onclick={() => userLocation.fix && (locate = { n: (locate?.n ?? 0) + 1 })} />
       {/if}

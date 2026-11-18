@@ -16,6 +16,8 @@
   import { navFor, type Route } from "../../routes";
   import AudioToggle from "./AudioToggle.svelte";
   import HeaderNav from "./HeaderNav.svelte";
+  import PhoneOnAir from "./PhoneOnAir.svelte";
+  import { viewport } from "$lib/stores/viewport.svelte";
 
   interface Props {
     route: Route;
@@ -64,6 +66,8 @@
   <main class="pg__main" data-route={route.id}>
     {@render children()}
   </main>
+
+  {#if viewport.phone}<PhoneOnAir />{/if}
 
   <footer class="pg__status">
     <span class="pg__status-text">{shell.statusFallback ?? ""}</span>

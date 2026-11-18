@@ -25,5 +25,5 @@
   <path class="s-hair {g.tx ? 'k-tx' : 'k-ink3'}" fill="none" d={polyline(g.lead)} />
   {#if g.glyph}<PositionGlyphSvg cx={l1x - 13} cy={g.ty - 5} state={g.glyph as GlyphState} />{/if}
   <text class="tx-data" class:is-tx={g.tx} x={f1(l1x)} y={f1(g.ty)}>{g.l1}{#if g.sim}<tspan class="tx-lab" dx="6">SIM</tspan>{/if}</text>
-  <text class="tx-num2 {g.l2Class ?? ''}" x={f1(g.tx_)} y={f1(g.ty + 19)} text-anchor={g.left ? "end" : "start"}>{g.l2}</text>
+  {#if g.l2}<text class="tx-num2 {g.l2Class ?? ''}" x={f1(g.tx_)} y={f1(g.ty + 19)} text-anchor={g.left ? "end" : "start"}>{g.l2}</text>{/if}
 </g>

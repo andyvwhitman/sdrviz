@@ -121,7 +121,7 @@ export function blockGeometry(o: BlockOptions, measure: TextMeasure = estimateTe
     w2,
     w,
     lead,
-    box: { x0: x0 - 2, y0: ty - 15, x1: x0 + w + 2, y1: ty + 24 },
+    box: { x0: x0 - 2, y0: ty - 15, x1: x0 + w + 2, y1: ty + (o.l2 ? 24 : 6) }, // a one-line block (no second line) is shorter
   };
 }
 

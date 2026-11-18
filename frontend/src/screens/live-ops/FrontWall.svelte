@@ -56,13 +56,14 @@
 
   /** pointer x over the spectrum, ruler or waterfall (they share x), for the hover readout */
   let hoverX = $state<number | null>(null);
+  /** the stage is scaled to fit the window: convert screen pixels back to layout pixels */
+  function layoutX(event: MouseEvent): number {
+    const box = event.currentTarget as HTMLElement;
+    const rect = box.getBoundingClientRect();
+    return ((event.clientX - rect.left) * box.offsetWidth) / rect.width;
+  }
   const hover = {
-    onpointermove: (event: PointerEvent) => {
-      // the stage is scaled to fit the window: convert screen pixels back to layout pixels
-      const box = event.currentTarget as HTMLElement;
-      const rect = box.getBoundingClientRect();
-      hoverX = ((event.clientX - rect.left) * box.offsetWidth) / rect.width;
-    },
+    onpointermove: (event: PointerEvent) => (hoverX = layoutX(event)),
     onpointerleave: () => (hoverX = null),
     onclick: (event: MouseEvent) => listen(event),
   };
@@ -86,10 +87,12 @@
   };
 
   /** click: listen to the channel (it joins the live bank, which becomes active); alt-click: drop it */
+  let busy = false; // one request at a time: a double click must not add and activate twice
   async function listen(event: MouseEvent) {
-    if (blank || hoverX === null) return;
-    const ch = channelAt(hoverX);
+    if (blank || busy) return;
+    const ch = channelAt(layoutX(event)); // from the click itself: a touch tap has no hover first
     if (ch === null) return;
+    busy = true;
     const name = `CH${String(ch).padStart(2, "0")}`;
     try {
       if (event.altKey) {
@@ -102,6 +105,8 @@
       }
     } catch (error) {
       say(`${name}: ${error instanceof Error ? error.message : "failed"}`.toUpperCase());
+    } finally {
+      busy = false;
     }
   }
 </script>

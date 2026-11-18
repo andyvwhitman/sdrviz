@@ -8,6 +8,7 @@ numpy==2.5.4
 av==19.0.2  # Opus (libopus) for the node uplink
 websockets==17.4  # fake node and agent client; uvicorn uses it for the server side
 httpx==0.28.1
+tzdata==2025.2  # America/New_York on slim images that have no system zone files
 gtfs-realtime-bindings==3.0.0
 # Test and lint
 pytest==9.2.0

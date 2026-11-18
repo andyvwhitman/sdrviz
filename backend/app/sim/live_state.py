@@ -11,15 +11,19 @@ import shutil
 import time
 from collections import defaultdict
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from ..config import REPO_ROOT
 from .data import SimData
 from .health import Health
 from .scenarios import ScenarioSpec
-from .timefmt import DAY, SIM_DATE, TZ, aar4, age_label, hms
+from .timefmt import DAY, SIM_DATE, TZ, aar4, age_label, eastern_now, eastern_tz, hms
 from .trains import trains_at
 from .types import ROLE_TAGS, Tx
 from .world import World
+
+if TYPE_CHECKING:
+    from ..radio.events import LiveEvents
 
 CHANNEL_RANGES = {"recent": 120, "recent-dim": 600}
 LOFAR_ROW_S = 30
@@ -541,11 +545,14 @@ def build(
     displayed_feed: str | None = None,
     scenario: ScenarioSpec | None = None,
     speed: float = 1.0,
+    live: "LiveEvents | None" = None,
 ) -> dict:
-    """The LiveState at clock time `t` with `bank_id` active."""
+    """The LiveState at clock time `t` with `bank_id` active. `live` lays the live receivers' traffic over it."""
     world, data = inputs.world, inputs.data
     t %= DAY
     channels = channel_views(inputs, t)
+    if live:
+        channels = live.overlay(channels)
     views = bank_views(world, channels, bank_id, displayed_feed)
     feeds = [feed_view(inputs, fid, t) for fid in world.feeds]
     summary = health_summary(feeds)
@@ -561,8 +568,8 @@ def build(
         "scenario": scenario.name if scenario else None,
         "sim": world.sim,
         "speed": speed,
-        "date": SIM_DATE,
-        "tz": TZ,
+        "date": SIM_DATE if world.sim else eastern_now().date().isoformat(),
+        "tz": TZ if world.sim else eastern_tz(),
         "t_offset_s": t,
         "clock": hms(t),
         "clock_tenths": hms(t, True),
@@ -589,7 +596,8 @@ def build(
         "active_transmissions": [
             row_view(world, tx, t, bank_ids) | {"elapsed_s": round(t - tx.t, 1), "receptions": list(tx.receptions)}
             for tx in active
-        ],
+        ]
+        + (live.active_rows() if live else []),
         "transcript": {
             "rows": [row_view(world, tx, t, bank_ids) for tx in reversed(heard[-40:])],
             "count_today": sum(1 for tx in heard if tx.t >= 0),

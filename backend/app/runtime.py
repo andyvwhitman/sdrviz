@@ -20,7 +20,7 @@ from .nodes.session import NodeConnections
 from .radio.receiver import load_receiver, save_receiver
 from .radio.source import RadioSource
 from .sim import live_state
-from .sim.clock import SimClock, local_time_of_day
+from .sim.clock import SimClock, WallClock, local_time_of_day
 from .sim.data import SimData, load_health, load_sim_data
 from .sim.engine import ReplayEngine
 from .sim.health import Health
@@ -59,7 +59,9 @@ class Runtime:
         self.scenario: ScenarioSpec | None = None
 
         start = parse_clock(settings.sim_start) if settings.sim_start else local_time_of_day()
-        self.clock = SimClock(start, settings.sim_speed)
+        # Without the replay (a server) the clock is simply the Eastern time of day.
+        wall = not settings.sim and not settings.sim_start
+        self.clock = WallClock() if wall else SimClock(start, settings.sim_speed)
         self.hub = Hub()
         self.audio = AudioStore(settings.audio_path)
         self.engine = ReplayEngine(self)
@@ -130,6 +132,7 @@ class Runtime:
             self.inputs,
             self.clock.now(),
             self.active_bank.id,
+            live=self.radio.events,
             displayed_feed=self.prefs.displayed_feed if self.prefs.displayed_feed in self.world.feeds else None,
             scenario=self.scenario,
             speed=self.clock.speed,

@@ -2,14 +2,13 @@
 
 import time
 from collections.abc import Callable
-from datetime import datetime
 
-from .timefmt import DAY
+from .timefmt import DAY, eastern_now, seconds_since_midnight
 
 
 def local_time_of_day() -> float:
-    now = datetime.now()
-    return now.hour * 3600 + now.minute * 60 + now.second + now.microsecond / 1e6
+    """Seconds after midnight in Eastern time, whatever time zone the server runs in."""
+    return seconds_since_midnight(eastern_now())
 
 
 class SimClock:
@@ -36,3 +35,17 @@ class SimClock:
         if speed is not None:
             self.speed = speed
         self.epoch += 1
+
+
+class WallClock(SimClock):
+    """The real Eastern time of day at 1x (a server without the replay). Read from the system clock each time,
+    so it follows daylight saving changes and never drifts."""
+
+    def __init__(self) -> None:
+        super().__init__(0.0)
+
+    def now(self) -> float:
+        return local_time_of_day()
+
+    def jump(self, t: float | None = None, speed: float | None = None) -> None:
+        """The real time cannot be moved."""

@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 
 from ..live import protocol
 from ..sim.live_state import CHANNEL_RANGES
-from ..sim.timefmt import aar4, age_label, hms
+from ..sim.timefmt import DAY, aar4, age_label, hms
 from ..sim.types import ROLE_TAGS
 from ..sim.world import LIVE_FEED_ID, World
 
@@ -39,7 +39,8 @@ class LiveEvents:
         self.rt = rt
         self.hub = rt.hub
         self.on_air: dict[str, LiveTx] = {}
-        self.last_end: dict[str, float] = {}  # sim clock of each channel's last key-down
+        self.last_end: dict[str, float] = {}  # sim clock of each channel's last key-down (may pass DAY at midnight)
+        self.last_tx: dict[str, LiveTx] = {}  # each channel's last finished transmission
 
     @property
     def world(self) -> World:
@@ -98,6 +99,7 @@ class LiveEvents:
         tx = self.on_air.pop(channel_id)
         duration = round(tx.elapsed(), 1)
         self.last_end[channel_id] = tx.t + duration
+        self.last_tx[channel_id] = tx
         self.hub.broadcast(
             protocol.message("keydown", tx_id=tx.id, channel_id=channel_id, duration_s=duration, t=tx.t + duration)
         )
@@ -117,7 +119,7 @@ class LiveEvents:
         """Clock tick, plus the timers and LAST readouts of channels that moved recently."""
         t = self._now()
         self.hub.broadcast(protocol.message("tick", t=t, clock=hms(t), clock_tenths=hms(t, tenths=True), speed=1.0))
-        recent = [cid for cid, end in self.last_end.items() if t - end < CHANNEL_RANGES["recent-dim"] + 1]
+        recent = [cid for cid in self.last_end if self._since_end(cid, t) < CHANNEL_RANGES["recent-dim"] + 1]
         for cid in {*self.on_air, *recent}:
             self._send_channel(cid)
 
@@ -158,10 +160,26 @@ class LiveEvents:
             "receptions": self._receptions(tx),
         }
 
-    def _send_channel(self, channel_id: str) -> None:
+    def _since_end(self, channel_id: str, t: float) -> float:
+        """Seconds since the channel's last key-down (inf if none); wraps with the clock at midnight."""
+        end = self.last_end.get(channel_id)
+        return float("inf") if end is None else (t - end) % DAY
+
+    def channel_patch(self, channel_id: str) -> dict:
+        """The live part of a channel: its state, the transmission on air and when it was last heard."""
         t = self._now()
         tx = self.on_air.get(channel_id)
         patch: dict = {"id": channel_id, "channel_fault": None}
+        if last := self.last_tx.get(channel_id):
+            since = self._since_end(channel_id, t)
+            patch["last_heard"] = {
+                "tx_id": last.id,
+                "end_t": round(self.last_end[channel_id] % DAY, 1),
+                "clock": hms(last.t),
+                "age_s": round(since, 1),
+                "age_label": age_label(since),
+                "via": self.world.feed_short(last.feed_id),
+            }
         if tx:
             elapsed = tx.elapsed()
             patch |= {
@@ -178,7 +196,7 @@ class LiveEvents:
                 },
             }
         else:
-            since = t - self.last_end.get(channel_id, float("-inf"))
+            since = self._since_end(channel_id, t)
             if since < CHANNEL_RANGES["recent"]:
                 state = "recent"
             elif since < CHANNEL_RANGES["recent-dim"]:
@@ -187,4 +205,26 @@ class LiveEvents:
                 state = "idle"
             readout = None if state == "idle" else "LAST " + age_label(since)
             patch |= {"state": state, "status_readout": readout, "tx": None}
-        self.hub.broadcast(protocol.message("channel", **patch))
+        return patch
+
+    def _send_channel(self, channel_id: str) -> None:
+        self.hub.broadcast(protocol.message("channel", **self.channel_patch(channel_id)))
+
+    def overlay(self, channels: list[dict]) -> list[dict]:
+        """Snapshot channels with what the live receivers heard laid over them (key-ups, last heard)."""
+        known = {*self.on_air, *self.last_end}
+        out = []
+        for channel in channels:
+            if channel["id"] in known:
+                patch = self.channel_patch(channel["id"])
+                patch.pop("channel_fault")
+                channel = channel | patch
+            out.append(channel)
+        return out
+
+    def active_rows(self) -> list[dict]:
+        """The transmissions on air now, as the snapshot's active_transmissions."""
+        return [
+            self._row(tx, live=True) | {"elapsed_s": round(tx.elapsed(), 1), "receptions": self._receptions(tx)}
+            for tx in self.on_air.values()
+        ]

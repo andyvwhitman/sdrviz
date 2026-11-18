@@ -7,13 +7,37 @@ Times are seconds after local midnight (EST, UTC-05:00) on SIM_DATE. The day rep
 
 import math
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 DAY = 86_400
 SIM_DATE = "2026-11-10"
 TZ = {"name": "EST", "iana": "America/New_York", "utc_offset": "-05:00"}
 
+EASTERN = ZoneInfo(TZ["iana"])  # the railroad clock; the server's own time zone (UTC in a container) is never used
+
 _EST = timezone(timedelta(hours=-5))
 _MIDNIGHT = datetime.fromisoformat(f"{SIM_DATE}T00:00:00").replace(tzinfo=_EST)
+
+
+def eastern_now() -> datetime:
+    return datetime.now(EASTERN)
+
+
+def eastern_tz(moment: datetime | None = None) -> dict:
+    """The time zone block of a snapshot for `moment` (default now): EST or EDT, with its UTC offset."""
+    moment = moment or eastern_now()
+    offset = moment.utcoffset() or timedelta(0)
+    minutes = int(offset.total_seconds() // 60)
+    sign = "-" if minutes < 0 else "+"
+    return {
+        "name": moment.tzname(),
+        "iana": TZ["iana"],
+        "utc_offset": f"{sign}{abs(minutes) // 60:02d}:{abs(minutes) % 60:02d}",
+    }
+
+
+def seconds_since_midnight(moment: datetime) -> float:
+    return moment.hour * 3600 + moment.minute * 60 + moment.second + moment.microsecond / 1e6
 
 
 def parse_clock(text: str) -> float:

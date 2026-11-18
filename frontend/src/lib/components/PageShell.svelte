@@ -93,7 +93,7 @@
     display: flex; align-items: center; gap: 16px; min-height: var(--status-h); padding: 6px 16px;
     border-top: 1px solid var(--grid); font: 400 var(--fs-11)/1.2 var(--font-data); color: var(--ink-2);
   }
-  .pg__status-text { flex: 1; min-width: 0; }
+  .pg__status-text { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .pg__status-tb { display: none; white-space: nowrap; color: var(--ink-3); }
 
   @media (min-width: 900px) {

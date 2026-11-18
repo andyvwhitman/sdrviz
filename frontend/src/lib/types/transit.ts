@@ -239,6 +239,8 @@ export interface ApproachingTrain {
   train: string | null;
   route_id: string | null;
   route_name: string | null;
+  /** a short name that tells lines apart at a spot: "MARC Camden", "MARC Penn", "Acela" */
+  line?: string | null;
   headsign: string | null;
   origin: string | null;
   destination: string | null;
@@ -259,7 +261,17 @@ export interface ApproachingTrain {
   /** along the track, km; null when not running */
   to_go_km: number | null;
   /** the station on this train's line nearest the spot, and whether the train calls there */
-  station: { id: string; name: string; distance_m: number; stops: boolean; scheduled: string | null; eta: string | null; delay_s: number | null } | null;
+  station: {
+    id: string;
+    name: string;
+    distance_m: number;
+    stops: boolean;
+    /** the train starts (DEPARTS) or ends (TERMINATES) its trip at this station */
+    role?: "origin" | "terminus" | "stop" | "pass" | null;
+    scheduled: string | null;
+    eta: string | null;
+    delay_s: number | null;
+  } | null;
   between: { previous: string; next: string } | null;
   /** the train's travel direction at the spot */
   direction: { bearing: number | null; cardinal: string | null; label: string | null; toward: string | null };

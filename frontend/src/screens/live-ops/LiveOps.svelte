@@ -244,7 +244,7 @@
     </div>
   {:else}
     <div class="lo-box" style={boxStyle(geometry.hero)}>
-      <HeroStrip {hero} feeds={snapshot.feeds} {displayed} faults={snapshot.faults} {offBank} {elsewhere} onshowfeed={showFeed} oninspectfeed={inspectFeedId} />
+      <HeroStrip {hero} feeds={snapshot.feeds} {displayed} faults={snapshot.faults} {offBank} {elsewhere} onshowfeed={showFeed} oninspectfeed={inspectFeedId} liveBank={bank.id === "bank-live"} />
     </div>
 
     <FrontWall state={snapshot} bankChannels={bankChannelNumbers} {geometry} {dropAge} feed={displayed} />

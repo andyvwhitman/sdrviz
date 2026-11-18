@@ -153,7 +153,7 @@ export class SpotStore {
       this.loading = this.data === null;
       try {
         const data = await api.transit.approaching(
-          { lat: spot.lat, lon: spot.lon, ahead_min: this.horizonMin, back_min: BACK_MIN, radius_km: 2, limit: 100 },
+          { lat: spot.lat, lon: spot.lon, ahead_min: this.horizonMin, back_min: BACK_MIN, limit: 100 },
           abort.signal,
         );
         this.data = data;

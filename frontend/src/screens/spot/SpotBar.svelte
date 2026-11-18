@@ -23,10 +23,12 @@
     if (spot.source === "gps") return `GPS ±${Math.round(spot.accuracyM ?? 0)} M`;
     return spot.source === "station" ? "PICKED STATION" : spot.source === "link" ? "FROM LINK" : "TYPED POSITION";
   });
-  const title = $derived(spot ? (line && !far ? line.name : (spot.name ?? "SPOT")) : "NO SPOT");
-  const heading = $derived(`SPOT \u00b7 ${title}` + (nearName && !far ? ` \u00b7 NEAR ${nearName}` : ""));
+  /* no milepost to name the spot by, so the place carries it: the given name, else the nearest station, else the coordinates */
+  const heading = $derived(
+    !spot ? "NO SPOT" : `SPOT \u00b7 ${spot.name ?? (nearName ? `NEAR ${nearName}` : `${spot.lat.toFixed(4)}, ${spot.lon.toFixed(4)}`)}`,
+  );
   const sub = $derived.by(() => {
-    if (!spot) return locate === "denied" ? "LOCATION BLOCKED · PICK A STATION" : locate === "unavailable" ? "LOCATION UNAVAILABLE · PICK A STATION" : "PICK WHERE YOU ARE STANDING";
+    if (!spot) return "PICK A STATION OR USE MY LOCATION";
     const parts = [how];
     if (line && !far) parts.push(`${distanceText(line.distance_m)} FROM TRACK`);
     return parts.join(" · ");
@@ -46,7 +48,7 @@
   </button>
   {#if far && line}
     <div class="sb__far">
-      <span>NO LINE WITHIN {radiusKm} KM · NEAREST {line.name} AT {distanceText(line.distance_m)}</span>
+      <span>NO TRACK WITHIN {radiusKm} KM · NEAREST AT {distanceText(line.distance_m)}</span>
       <button type="button" onclick={onsnap}>USE IT</button>
     </div>
   {/if}

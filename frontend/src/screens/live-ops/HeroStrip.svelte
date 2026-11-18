@@ -20,8 +20,10 @@
     elsewhere: string | null;
     onshowfeed: (feedId: string) => void;
     oninspectfeed: (feedId: string) => void;
+    /** the live bank is the one on the wall: its empty state is told by the tile area, so the title is short */
+    liveBank?: boolean;
   }
-  let { hero, feeds, displayed, faults, offBank, elsewhere, onshowfeed, oninspectfeed }: Props = $props();
+  let { hero, feeds, displayed, faults, offBank, elsewhere, onshowfeed, oninspectfeed, liveBank = false }: Props = $props();
 
   const fault = $derived(faults.find((f) => f.object === displayed.id));
   const selectorKind = $derived<ChipKind>(fault ? (fault.acked ? "acked" : "fault") : displayed.state === "stale" ? "degraded" : "active");
@@ -47,7 +49,7 @@
     <span class="hero__big is-2">{fmt.age(hero.ageS)}</span>
     <span class="hero__text c-ink-2">AGO · {hero.aar} · {hero.label}</span>
   {:else if hero.mode === "empty"}
-    <span class="hero__text c-ink-2">NO CHANNELS IN THIS BANK</span>
+    <span class="hero__text c-ink-2">{liveBank ? "LIVE · 0 CHANNELS" : "NO CHANNELS IN THIS BANK"}</span>
   {:else}
     <span class="hero__text c-ink-2">NO KEY-UPS YET</span>
   {/if}

@@ -4,6 +4,7 @@
  */
 
 import type { ApproachingTrain } from "$lib/types/transit";
+import { cleanName } from "$lib/displayName";
 import { trainTag } from "../map/lib/transitView";
 
 /** How we know a train is coming (page direction 4.2): drawn four ways, never by hue. */
@@ -34,6 +35,14 @@ export const STOP_RADIUS_M = 500;
 
 export const stopsHere = (train: Pick<ApproachingTrain, "station">): boolean =>
   !!train.station && train.station.stops && train.station.distance_m <= STOP_RADIUS_M;
+
+/** What the train does at the spot's station: STOPS, PASSES, or DEPARTS / TERMINATES for a trip that starts or ends there. */
+export function stopWord(train: Pick<ApproachingTrain, "station">): string {
+  const role = train.station?.role;
+  if (stopsHere(train) && role === "origin") return "DEPARTS";
+  if (stopsHere(train) && role === "terminus") return "TERMINATES";
+  return stopsHere(train) ? "STOPS" : "PASSES";
+}
 
 const CARDINALS: Record<string, number> = { N: 0, NE: 45, E: 90, SE: 135, S: 180, SW: 225, W: 270, NW: 315 };
 
@@ -140,11 +149,18 @@ export function positionAge(ageS: number | null | undefined): string {
   return ageS < 90 ? `POS ${Math.round(ageS)}S` : `POS ${Math.round(ageS / 60)}M`;
 }
 
-/** The basis line under the hero and at the end of a row: `TRACKED · POS 18S`, `SCHEDULED`. */
-export function basisLine(row: Pick<Row, "basis" | "train" | "group">): string {
-  if (row.group === "overdue") return "DUE · NO REALTIME";
-  const age = row.basis === "tracked" || row.basis === "stale" ? positionAge(row.train.vehicle?.age_s) : "";
-  return [BASIS_WORD[row.basis], age].filter(Boolean).join(" · ");
+/** A position older than this (seconds) is worth saying so on the row itself. */
+export const OLD_FIX_S = 90;
+
+/**
+ * The basis line: `TRACKED · POS 18S`, `SCHEDULED`. Rows give the position age only when the fix is old
+ * (`alwaysAge` false); the hero always gives it.
+ */
+export function basisLine(row: Pick<Row, "basis" | "train" | "group">, alwaysAge = true): string {
+  if (row.group === "overdue") return "DUE \u00b7 NO REALTIME";
+  const ageS = row.train.vehicle?.age_s;
+  const showAge = (row.basis === "tracked" || row.basis === "stale") && (alwaysAge || (ageS ?? 0) > OLD_FIX_S);
+  return [BASIS_WORD[row.basis], showAge ? positionAge(ageS) : ""].filter(Boolean).join(" \u00b7 ");
 }
 
 /** Two opposite-direction trains due at the spot within two minutes of each other. */
@@ -158,10 +174,46 @@ export function meets(coming: readonly Row[]): Meet[] {
   const found: Meet[] = [];
   for (const left of live.filter((r) => r.side === "left")) {
     for (const right of live.filter((r) => r.side === "right")) {
+      // two trains that both call at the spot's station are not a meet a spotter can use
+      if (!left.passes && !right.passes) continue;
       if (Math.abs(left.remainingS - right.remainingS) <= MEET_WINDOW_S) found.push({ left, right });
     }
   }
-  return found;
+  return found.sort((a, b) => Math.max(a.left.remainingS, a.right.remainingS) - Math.max(b.left.remainingS, b.right.remainingS));
+}
+
+/** One arm of the ladder: the terminal trains come from (or compass point), and the timetable tag (`NB`). */
+export interface Arm {
+  name: string;
+  tag: string;
+  /** the name is a compass point, not a place */
+  compass: boolean;
+}
+
+/** The most common value, ties broken alphabetically so the label never flickers between polls. */
+function commonest(values: readonly string[]): string | null {
+  const counts = new Map<string, number>();
+  for (const v of values) counts.set(v, (counts.get(v) ?? 0) + 1);
+  const best = [...counts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0];
+  return best ? best[0] : null;
+}
+
+/**
+ * Name both arms of the ladder from where trains come from. Trains on the right are heading toward the left end, so
+ * the left arm is named by the most common destination of right-side trains, and the reverse. A side with no trains
+ * falls back to the compass point behind the track direction.
+ */
+export function armNames(rows: readonly Row[], bearing: number | null): { left: Arm; right: Arm } {
+  const arm = (side: Side): Arm => {
+    const here = rows.filter((r) => r.side === side);
+    const opposite = rows.filter((r) => r.side !== side);
+    const name = commonest(opposite.flatMap((r) => (r.train.direction.toward ? [cleanName(r.train.direction.toward).toUpperCase()] : [])));
+    const tag = commonest(here.flatMap((r) => (r.train.direction.label ? [r.train.direction.label] : []))) ?? "";
+    if (name) return { name, tag, compass: false };
+    const b = bearing === null ? null : sideOf(bearing) === side ? bearing : bearing + 180;
+    return { name: b === null ? "" : compass(b + 180), tag, compass: true };
+  };
+  return { left: arm("left"), right: arm("right") };
 }
 
 /** Position of a row on the ladder axis, 0 (far left) to 1 (far right), or null beyond the scale. */

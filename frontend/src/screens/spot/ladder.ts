@@ -11,8 +11,10 @@ export interface Placed {
   row: Row;
   /** centre of the glyph on the x axis, in px */
   x: number;
-  /** 0 or 1: the row of tags it was placed in; null when it collapsed into the count */
+  /** 0 or 1: the tier of tags it was placed in; null when its tag folded into a neighbour's count */
   tier: 0 | 1 | null;
+  /** trains whose tags folded into this one: `MARC 448 +1` */
+  extra: number;
 }
 
 /** The x of a row on an axis `width` px wide, or null beyond the scale. */
@@ -24,9 +26,13 @@ export function ladderX(row: Pick<Row, "remainingS" | "side">, width: number): n
 /** Pixels per minute of an axis `width` px wide (both arms count 30 minutes). */
 export const pxPerMinute = (width: number): number => (width - 2 * GUTTER_PX) / (2 * LADDER_MIN);
 
+/** The text of a tag, with the trains folded into it. */
+export const tagText = (p: Pick<Placed, "row" | "extra">): string => (p.extra ? `${p.row.tag} +${p.extra}` : p.row.tag);
+
 /**
- * Greedy tag placement, nearest the spot first: a tag takes the first of two tiers where it clears the tags
- * already there, else it collapses into the count.
+ * Greedy tag placement, nearest the spot first: a tag takes the first of two tiers where it clears the tags already
+ * there. A train whose tag cannot place keeps its glyph and folds into the nearest placed tag on the same side
+ * (`MARC 448 +1`), so every train inside the scale is either named or counted.
  */
 export function placeTags(rows: readonly Row[], width: number, gap = 6): Placed[] {
   const placed: Placed[] = [];
@@ -39,7 +45,13 @@ export function placeTags(rows: readonly Row[], width: number, gap = 6): Placed[
     const [from, to] = [x - half - gap, x + half + gap];
     const tier = ([0, 1] as const).find((t) => edges[t].every(([a, b]) => to <= a || from >= b)) ?? null;
     if (tier !== null) edges[tier].push([from, to]);
-    placed.push({ row, x, tier });
+    placed.push({ row, x, tier, extra: 0 });
+  }
+  for (const folded of placed.filter((p) => p.tier === null)) {
+    const host = placed
+      .filter((p) => p.tier !== null && p.row.side === folded.row.side)
+      .sort((a, b) => Math.abs(a.x - folded.x) - Math.abs(b.x - folded.x))[0];
+    if (host) host.extra += 1;
   }
   return placed;
 }

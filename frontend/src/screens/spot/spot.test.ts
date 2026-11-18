@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  basisLine, basisOf, etaText, fromLabel, ladderFraction, meets, parseLatLon, passedText, rowEta, rowOf, searchStops, sideOf, sortRows,
+  armNames, basisLine, basisOf, etaText, fromLabel, ladderFraction, meets, parseLatLon, passedText, rowEta, rowOf, searchStops, sideOf, sortRows, stopWord,
 } from "./spot";
 import { APPROACHING } from "./fixture";
 
@@ -92,8 +92,9 @@ describe("ladder", () => {
     expect(ladderFraction({ remainingS: 31 * 60, side: "right" })).toBeNull();
   });
   it("finds meets between opposite directions within two minutes", () => {
-    const { coming } = sortRows(APPROACHING.trains, 0);
-    // 537 (right, 240 s) and 448 (left, 300 s)
+    // 537 (right, 240 s) and 448 (left, 300 s); 537 runs through, so the pair is worth watching
+    const trains = APPROACHING.trains.map((t) => (t.train === "537" ? { ...t, station: null } : t));
+    const { coming } = sortRows(trains, 0);
     expect(meets(coming).map((m) => [m.left.train.train, m.right.train.train])).toEqual([["448", "537"]]);
   });
 });
@@ -113,5 +114,50 @@ describe("position input", () => {
     expect(searchStops(stops, "odent").map((s) => s.name)).toEqual(["Odenton", "Odenton South Lot"]);
     expect(searchStops(stops, "penn bal")).toHaveLength(1);
     expect(searchStops(stops, "")).toEqual([]);
+  });
+});
+
+describe("stop word", () => {
+  it("says what the train does at the spot's station", () => {
+    const at = (stops: boolean, role: "origin" | "terminus" | null) => ({ station: { id: "x", name: "X", distance_m: 100, stops, role, scheduled: null, eta: null, delay_s: null } });
+    expect(stopWord(at(true, null))).toBe("STOPS");
+    expect(stopWord(at(true, "origin"))).toBe("DEPARTS");
+    expect(stopWord(at(true, "terminus"))).toBe("TERMINATES");
+    expect(stopWord(at(false, null))).toBe("PASSES");
+    expect(stopWord({ station: null })).toBe("PASSES");
+  });
+});
+
+describe("meets", () => {
+  it("is not a meet when both trains stop at the spot's station", () => {
+    const { coming } = sortRows(APPROACHING.trains, 0);
+    const bothStop = coming.map((r) => ({ ...r, passes: false }));
+    expect(meets(bothStop)).toEqual([]);
+  });
+  it("lists the soonest first", () => {
+    const { coming } = sortRows(APPROACHING.trains, 0);
+    const found = meets(coming);
+    const latest = found.map((m) => Math.max(m.left.remainingS, m.right.remainingS));
+    expect(latest).toEqual([...latest].sort((a, b) => a - b));
+  });
+});
+
+describe("arm names", () => {
+  it("names each arm by where the opposite side's trains are heading, with the timetable tag of its own", () => {
+    const { passed, coming } = sortRows(APPROACHING.trains, 0);
+    const arms = armNames([...passed, ...coming], 41);
+    // right-side trains (SB) head for Washington: that is the left arm
+    expect(arms.left).toEqual({ name: "WASHINGTON", tag: "NB", compass: false });
+    expect(arms.right.tag).toBe("SB");
+  });
+  it("falls back to the compass point for a side with no trains", () => {
+    expect(armNames([], 41)).toEqual({ left: { name: "SW", tag: "", compass: true }, right: { name: "NE", tag: "", compass: true } });
+  });
+  it("breaks ties alphabetically so the label does not flicker", () => {
+    const { coming } = sortRows(APPROACHING.trains, 0);
+    const right = coming.filter((r) => r.side === "right");
+    const toward = (name: string) => (r: (typeof right)[number]) => ({ ...r, train: { ...r.train, direction: { ...r.train.direction, toward: name } } });
+    const rows = [toward("BOSTON")(right[0]), toward("ALBANY")(right[1])];
+    expect(armNames(rows, 41).left.name).toBe("ALBANY");
   });
 });

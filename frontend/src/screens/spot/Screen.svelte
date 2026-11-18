@@ -16,7 +16,7 @@
   import SpotBar from "./SpotBar.svelte";
   import SpotPicker from "./SpotPicker.svelte";
   import TrainRows from "./TrainRows.svelte";
-  import { bearingOf, parseLatLon, sortRows, type Row } from "./spot";
+  import { armNames, bearingOf, parseLatLon, sortRows, type Row } from "./spot";
   import { HORIZONS, spotStore as store, type Spot } from "./spot.svelte";
   import "./spot.css";
 
@@ -24,6 +24,8 @@
 
   let pickerOpen = $state(false);
   let selected = $state<string | null>(null);
+  /** the row opened in place */
+  let expanded = $state<string | null>(null);
   let contrast = $state(false);
   let awake = $state(false);
 
@@ -104,10 +106,11 @@
   const line = $derived(store.data?.position.nearest_line ?? null);
   /** the way trains travel here, which decides what each arm of the ladder is called */
   const bearing = $derived(trains.length ? bearingOf(trains[0]) : null);
-  const radiusKm = $derived(store.data?.position.radius_km ?? 2);
+  const arms = $derived(armNames([...rows.passed, ...rows.coming], bearing));
+  const radiusKm = $derived(store.data?.position.radius_km ?? 1);
   const near = $derived(store.spot ? nearestStop(store.stops, store.spot.lon, store.spot.lat, NEAR_STATION_KM) : null);
   const nearName = $derived(near ? displayName(near) : null);
-  const spotLabel = $derived(store.spot?.name ?? line?.name ?? "SPOT");
+  const spotLabel = $derived(store.spot?.name ?? nearName ?? "SPOT");
 
   const pending = $derived(!!store.spot && !store.data && !store.failed);
   const emptyText = $derived(
@@ -116,7 +119,7 @@
 
   $effect(() => {
     const parts = ["SPOT"];
-    if (store.spot) parts.push(line?.name ?? spotLabel, `${rows.coming.length} TRAINS NEXT ${store.horizonMin} MIN`);
+    if (store.spot) parts.push(spotLabel, `${rows.coming.length} TRAINS NEXT ${store.horizonMin} MIN`);
     if (store.failed) parts.push("NO LINK · LAST TABLE");
     if (awake) parts.push("AWAKE");
     shell.statusFallback = parts.join(" · ").toUpperCase();
@@ -126,9 +129,13 @@
     store.setSpot(spot);
     pickerOpen = false;
   }
-  const open = (row: Row): void => router.go(`/map?page=trip&id=${encodeURIComponent(row.train.trip_id ?? row.train.vehicle_id ?? "")}`);
+  /** a tap on the ladder opens that train's row in the table, and brings it into view */
+  function openRow(row: Row): void {
+    expanded = expanded === row.train.key ? null : row.train.key;
+    if (expanded) requestAnimationFrame(() => document.querySelector(`[data-key="${CSS.escape(row.train.key)}"]`)?.scrollIntoView({ block: "center", behavior: "smooth" }));
+  }
   function useSnap(): void {
-    if (line) pick({ lat: line.lat, lon: line.lon, source: "typed", name: line.name });
+    if (line) pick({ lat: line.lat, lon: line.lon, source: "typed" });
   }
 </script>
 
@@ -151,7 +158,7 @@
     </div>
     <div class="sp__hero"><Hero {next} empty={emptyText} {pending} /></div>
     <div class="sp__ladder">
-      <Ladder rows={rows.coming} {bearing} {spotLabel} {selected} onselect={(key) => (selected = key)} onopen={open} />
+      <Ladder rows={rows.coming} leftArm={arms.left} rightArm={arms.right} {spotLabel} {selected} onselect={(key) => (selected = key)} onopen={openRow} />
     </div>
   </div>
 
@@ -176,7 +183,7 @@
   {/if}
 
   {#if rows.passed.length || rows.coming.length}
-    <TrainRows {rows} {selected} onselect={(key) => (selected = key)} />
+    <TrainRows {rows} {selected} bind:expanded onselect={(key) => (selected = key)} />
   {:else if store.data}
     <p class="sp__empty">{emptyText}</p>
   {/if}

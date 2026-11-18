@@ -11,13 +11,15 @@
   import { shell } from "$lib/stores/shell.svelte";
   import { simClock } from "$lib/stores/simClock.svelte";
   import { ui } from "$lib/stores/ui.svelte";
+  import { viewport } from "$lib/stores/viewport.svelte";
   import type { FrequencyInfo, Recording } from "$lib/types/recordings";
   import * as fmt from "$lib/hud/fmt";
   import { cyclicAge } from "$lib/time";
   import { endsOf, spanLabel, totalsOf } from "./dayStrip";
   import DayStrip from "./DayStrip.svelte";
+  import WeekGrid from "./WeekGrid.svelte";
   import { ActivityStore } from "./activityStore.svelte";
-  import { beforeAt, DEFAULT_TZ, dayHeading, dayKey, findByStart, hasAudio, nextNewer } from "./frequency";
+  import { beforeAt, clockOf, DEFAULT_TZ, dayHeading, dayKey, dayName, findByStart, hasAudio, nextNewer } from "./frequency";
   import Identity from "./Identity.svelte";
   import Log from "./Log.svelte";
   import { LogStore } from "./logStore.svelte";
@@ -27,6 +29,7 @@
   const REFRESH_AFTER_KEY_UP_MS = 2000;
   const PENDING_POLL_MS = 10_000;
   const GAP_MS = 400;
+  const RAIL_MIN_PX = 1100;
 
   const frequencyId = $derived(decodeURIComponent(router.path.split("/")[2] ?? ""));
   const snapshot = $derived(live.state);
@@ -94,7 +97,11 @@
   const isToday = $derived(viewDate === undefined);
   let activity = $state.raw<ActivityStore | null>(null);
   /** the bucket the log was jumped to */
-  let jumped = $state<{ start: string; label: string; from: number; to: number } | null>(null);
+  let jumped = $state<{ label: string; from: number; to: number } | null>(null);
+  /** the phone shows the day strip or the week grid in one slot */
+  let range = $state<"day" | "week">("day");
+  /** below the width where the right rail fits, the week grid shares the strip's slot */
+  const compact = $derived(viewport.width < RAIL_MIN_PX);
 
   $effect(() => {
     const id = frequencyId;
@@ -179,19 +186,36 @@
     return new Date(Date.UTC(y, m - 1, d - 7)).toISOString().slice(0, 10);
   });
 
-  /** A click on a bucket of the strip: the log jumps to the end of it and scrolls its newest row to the top. */
-  async function jump(index: number): Promise<void> {
-    const day = activity?.day;
-    if (!day || !store) return;
-    const bucket = day.buckets[index];
-    const to = endsOf(day.buckets)[index];
-    const from = Date.parse(bucket.start);
-    jumped = { start: bucket.start, label: spanLabel(bucket, to, tz), from, to };
+  /** Jump the log to the end of a span of time, and scroll the newest row inside it to the top. */
+  async function jumpTo(from: number, to: number, label: string): Promise<void> {
+    if (!store) return;
+    jumped = { from, to, label };
     selectedId = null;
     await store.load(new Date(to).toISOString());
     const newest = store.rows.find((rec) => Date.parse(rec.started_at) >= from && Date.parse(rec.started_at) < to);
     if (newest) log?.scrollToRow(newest.id);
     else window.scrollTo({ top: 0 });
+  }
+
+  /** A click on a bucket of the strip. */
+  function jump(index: number): void {
+    const day = activity?.day;
+    if (!day) return;
+    const bucket = day.buckets[index];
+    const to = endsOf(day.buckets)[index];
+    void jumpTo(Date.parse(bucket.start), to, spanLabel(bucket, to, tz));
+  }
+
+  /** A click on a week-grid cell: that day in the strip, and the log at the end of that hour. */
+  async function pick(date: string, hour: number | null): Promise<void> {
+    await showDay(date >= todayKey ? undefined : date);
+    range = "day";
+    const week = activity?.week?.days.find((d) => d.date === date);
+    const cell = hour === null ? undefined : week?.hours[hour];
+    if (!cell) return;
+    const from = Date.parse(cell.start);
+    const to = hour! + 1 < (week?.hours.length ?? 0) ? Date.parse(week!.hours[hour! + 1].start) : from + 3_600_000;
+    await jumpTo(from, to, `${clockOf(from, tz).slice(0, 5)}–${clockOf(to, tz).slice(0, 5)}`);
   }
 
   // ---- what is on the air now, and the refresh rules (no websocket work: the live store tells us)
@@ -297,6 +321,7 @@
 
   // ---- shell: tab title and status line
   const day = $derived(activity?.day ?? null);
+  const dayLabel = $derived(isToday ? "TODAY" : dayName(viewDate!));
   const countToday = $derived(day && day.date === todayKey ? totalsOf(day.buckets).count : null);
   const heading = $derived(dayHeading(day?.date ?? viewDate ?? todayKey, todayKey));
   const lastHeardMs = $derived(store?.rows[0] ? Date.parse(store.rows[0].started_at) : null);
@@ -316,6 +341,9 @@
   {:else if info}
     <div class="fq__top" bind:clientHeight={topHeight}>
       <Identity {info} {channel} {keyedElapsed} {lidOpen} ontogglelid={() => (lidOpen = !lidOpen)} />
+      {#if compact && range === "week"}
+        <WeekGrid week={activity?.week ?? null} {tz} {nowMs} shownDate={viewDate ?? todayKey} {range} {dayLabel} onrange={(next) => (range = next)} onpick={(date, hour) => void pick(date, hour)} />
+      {:else}
       <DayStrip
         {day}
         failed={activity?.failed ?? false}
@@ -324,13 +352,17 @@
         {isToday}
         {nowMs}
         {keyedElapsed}
-        jumpedStart={jumped?.start ?? null}
+        {jumped}
         {lastHeardMs}
         canBack={(viewDate ?? todayKey) > earliest}
         canForward={!isToday}
         onstep={step}
         onjump={jump}
+        range={compact ? range : undefined}
+        {dayLabel}
+        onrange={(next) => (range = next)}
       />
+      {/if}
     </div>
     <div class="fq__body">
       <div class="fq__log">
@@ -355,6 +387,9 @@
         {/if}
       </div>
       <aside class="fq__rail">
+        {#if !compact}
+          <WeekGrid week={activity?.week ?? null} {tz} {nowMs} shownDate={viewDate ?? todayKey} onpick={(date, hour) => void pick(date, hour)} />
+        {/if}
         {#if info.notes || info.sources?.length}
           <section class="fq__about">
             <h2>ABOUT</h2>
@@ -383,10 +418,11 @@
     .fq__top { position: sticky; top: var(--header-h); z-index: 10; }
   }
 
-  @media (min-width: 1100px) {
+  @media (min-width: 1100px) { /* RAIL_MIN_PX */
     .fq__body { display: grid; grid-template-columns: minmax(0, 2fr) minmax(320px, 1fr); }
     .fq__rail { display: block; border-left: 1px solid var(--grid); padding: 16px var(--margin-x) 24px 24px; align-self: start; position: sticky; top: calc(var(--header-h) + var(--fq-top)); }
   }
+  .fq__rail :global(.wk) { padding: 0 0 20px; }
   .fq__about h2 { margin: 0 0 8px; font: 500 var(--fs-13)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink); }
   .fq__meta { margin: 0 0 8px; font: 500 var(--fs-11)/1.3 var(--font-label); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--ink-2); }
   .fq__notes { margin: 0 0 12px; font: 400 var(--fs-13)/1.45 var(--font-read); color: var(--ink-2); }

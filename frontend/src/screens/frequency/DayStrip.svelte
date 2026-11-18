@@ -7,6 +7,7 @@
   import * as fmt from "$lib/hud/fmt";
   import { viewport } from "$lib/stores/viewport.svelte";
   import type { DayActivity } from "$lib/types/recordings";
+  import RangeSwitch from "./RangeSwitch.svelte";
   import { barHeight, busiest, endsOf, fullScale, geometry, hourMarks, kindOf, silences, spanLabel, totalsOf, unrecordedLead } from "./dayStrip";
   import { clockOf } from "./frequency";
 
@@ -21,16 +22,20 @@
     nowMs: number;
     /** seconds the channel has been keyed, or null: the current bucket fills orange and grows */
     keyedElapsed: number | null;
-    /** the bucket the log was jumped to (its start), marked with a tick under the ruler */
-    jumpedStart: string | null;
+    /** the span the log was jumped to (UTC ms): its buckets are marked, with a tick under the ruler */
+    jumped: { from: number; to: number } | null;
     /** when the newest recording started, for "LAST 2D 3H AGO" on an empty day */
     lastHeardMs: number | null;
     canBack: boolean;
     canForward: boolean;
     onstep: (direction: -1 | 1) => void;
     onjump: (index: number) => void;
+    /** the phone's range switch (day strip or week grid) replaces the heading */
+    range?: "day" | "week";
+    dayLabel?: string;
+    onrange?: (range: "day" | "week") => void;
   }
-  let { day, failed, tz, heading, isToday, nowMs, keyedElapsed, jumpedStart, lastHeardMs, canBack, canForward, onstep, onjump }: Props = $props();
+  let { day, failed, tz, heading, isToday, nowMs, keyedElapsed, jumped, lastHeardMs, canBack, canForward, onstep, onjump, range, dayLabel = "TODAY", onrange }: Props = $props();
 
   const phone = $derived(viewport.phone);
   const PLOT_H = $derived(phone ? 56 : 96);
@@ -127,7 +132,7 @@
 
 <section class="ds" aria-label="Activity, {heading}">
   <div class="ds__read">
-    <span class="ds__day">{heading}</span>
+    {#if range && onrange}<RangeSwitch {range} {dayLabel} {onrange} />{:else}<span class="ds__day">{heading}</span>{/if}
     <span class="ds__steps">
       <button type="button" aria-label="Previous day" disabled={!canBack} onclick={() => onstep(-1)}>‹</button>
       <button type="button" aria-label="Next day" disabled={!canForward} onclick={() => onstep(1)}>›</button>
@@ -159,7 +164,7 @@
         <g class="ds__bars">
           {#each buckets as b, i (b.start)}
             {@const kind = kinds[i]}
-            {@const picked = b.start === jumpedStart}
+            {@const picked = !!jumped && Date.parse(b.start) >= jumped.from && Date.parse(b.start) < jumped.to}
             {#if kind === "data" || kind === "current"}
               {#if kind === "current" && liveHeight !== null}
                 <rect class="ds__live" x={x(i)} y={yOf(liveHeight)} width={geo.bar} height={liveHeight} />
@@ -246,7 +251,7 @@
 
 <style>
   .ds { padding: 0 16px 8px; background: var(--bg-void); }
-  .ds__read { display: flex; flex-wrap: wrap; align-items: center; column-gap: 8px; min-height: 36px; white-space: nowrap; }
+  .ds__read { display: flex; flex-wrap: wrap; align-items: center; column-gap: 8px; min-height: 36px; row-gap: 6px; white-space: nowrap; }
   .ds__day { font: 500 var(--fs-13)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink); }
   .ds__steps { display: inline-flex; }
   .ds__steps button { width: 32px; height: 32px; font: 400 var(--fs-18)/1 var(--font-label); color: var(--ink-2); }

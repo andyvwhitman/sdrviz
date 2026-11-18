@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { session } from "$lib/stores/session.svelte";
   /**
    * Hero strip (spec 5.27, brief 9.1.1): what is keyed now, or how long ago the bank last was, then
    * the off-bank count and the displayed-feed selector. The selector opens a small menu: inspect the
@@ -63,7 +64,8 @@
       {#if menuOpen}
         <div class="lo-menu br" role="menu">
           <button class="lo-menu__item" role="menuitem" onclick={pick(() => oninspectfeed(displayed.id))}>INSPECT {displayed.short}</button>
-          {#each feeds as feed (feed.id)}
+          <!-- the displayed feed is shared by everyone: only an admin changes it -->
+          {#each session.isAdmin ? feeds : [] as feed (feed.id)}
             <button class="lo-menu__item" role="menuitemradio" aria-checked={feed.id === displayed.id} onclick={pick(() => onshowfeed(feed.id))}>
               <PositionGlyph state={feed.state === "fault" ? "fault" : feed.state === "ok" ? "idle" : "stale"} />
               SHOW {feed.short}

@@ -1,3 +1,4 @@
+import { session } from "$lib/stores/session.svelte";
 import { api } from "$lib/api/client";
 import type { Line, Stop, TransitSourceStatus, Vehicle } from "$lib/types/transit";
 import { TRANSIT_POLL_MS } from "$lib/hud/transitChips";
@@ -66,7 +67,8 @@ class TransitStore {
   }
 
   async refresh(): Promise<void> {
-    api.transit.sources().then((sources) => (this.sources = sources), () => {}); // the chips are decoration
+    // the chips are decoration, and the source list is admin-only (a viewer would get a 403)
+    if (session.isAdmin) api.transit.sources().then((sources) => (this.sources = sources), () => {});
     try {
       this.vehicles = await api.transit.vehicles();
       this.fetchedAt = Date.now();

@@ -21,6 +21,8 @@ from ..live import node_protocol as wire
 from ..live import protocol
 from ..live.opus import OpusDecoder
 from .gain_guard import OVERLOAD_DBFS, GainGuard
+from .ghosts import WINDOW_S as GHOST_HOLD_S
+from .ghosts import GhostFilter, Start
 from .link import LinkStats
 from .schemas import ChannelsIn, CommandError, CommandIn, CommandResult, GainIn
 from .service import BANKS_PRESET, AuthError, NodeLive, node_feed_id
@@ -42,6 +44,16 @@ NO_SAMPLES = "no samples"  # shown as the node's rtl_tcp state while that is so
 
 def now_ms() -> int:
     return int(time.time() * 1000)
+
+
+@dataclass
+class HeldKeyUp:
+    """A weak key-up waiting GHOST_HOLD_S for a stronger neighbour to rule it out; its audio waits with it."""
+
+    message: wire.KeyUp
+    start: Start
+    timer: asyncio.TimerHandle
+    frames: list[wire.AudioFrame] = field(default_factory=list)
 
 
 @dataclass
@@ -71,6 +83,9 @@ class NodeSession:
         self.live = NodeLive(online=True)
         self.pending: dict[str, asyncio.Future[wire.Ack]] = {}
         self.transmissions: dict[int, Transmission] = {}  # by AAR channel
+        self.ghosts = GhostFilter()
+        self.held: dict[int, HeldKeyUp] = {}  # weak key-ups not yet judged, by AAR channel
+        self.ghost_channels: set[int] = set()  # channels whose current transmission was dropped as a ghost
         self.refused: set[int] = set()  # AAR channels whose key-up lost to another receiver
         self._last_rx = time.monotonic()
         self._last_frame = time.monotonic()  # the last binary frame (spectrum or audio): proof the node gets samples
@@ -127,6 +142,8 @@ class NodeSession:
         finally:
             for task in [*background, *self._tasks]:
                 task.cancel()
+            for held in self.held.values():
+                held.timer.cancel()
             self._end_all_transmissions()
             for future in self.pending.values():
                 future.cancel()
@@ -184,6 +201,7 @@ class NodeSession:
     def _publish_peak(self) -> None:
         if self.live.health is not None:
             self.live.health["peak_dbfs"] = self.gain_guard.peak_dbfs()
+            self.live.health["ghosts"] = {str(ch): n for ch, n in sorted(self.ghosts.counts.items())}
 
     # --- messages from the node -------------------------------------------------------------------------------------
 
@@ -226,6 +244,31 @@ class NodeSession:
 
     def _on_key_up(self, message: wire.KeyUp) -> None:
         self._guard_gain(message.power_db)
+        self._release(message.ch)  # an earlier key-up on this channel that is still held
+        self.ghost_channels.discard(message.ch)
+        start = self.ghosts.note(message.ch, message.freq_hz, message.power_db, time.monotonic())
+        if not self.ghosts.may_be_ghost(message.power_db):
+            self._start_transmission(message)
+            return
+        timer = asyncio.get_running_loop().call_later(GHOST_HOLD_S, self._release, message.ch)
+        self.held[message.ch] = HeldKeyUp(message, start, timer)
+
+    def _release(self, aar_channel: int) -> None:
+        """Judge a held key-up: drop it as a ghost, or let it start with the audio that waited."""
+        if (held := self.held.pop(aar_channel, None)) is None:
+            return
+        held.timer.cancel()
+        if self.ghosts.is_ghost(held.start):
+            self.ghost_channels.add(aar_channel)
+            log.info("node %s: CH%02d key-up at %.0f dBFS is a ghost of a stronger neighbour (%d so far)",
+                     self.node_id, aar_channel, held.message.power_db, self.ghosts.counts[aar_channel])  # fmt: skip
+            self._publish_peak()
+            return
+        self._start_transmission(held.message)
+        for frame in held.frames:
+            self._on_audio(frame)
+
+    def _start_transmission(self, message: wire.KeyUp) -> None:
         self._end_transmission(message.ch)  # a key-up without a key-down first: close the old one
         self.refused.discard(message.ch)
         channel_id = self._channel_id(message.ch)
@@ -239,6 +282,8 @@ class NodeSession:
         self.transmissions[message.ch] = Transmission(channel_id, message.ch, seq)
 
     def _on_key_down(self, aar_channel: int) -> None:
+        self._release(aar_channel)  # a short transmission is judged now
+        self.ghost_channels.discard(aar_channel)
         self.refused.discard(aar_channel)
         self._end_transmission(aar_channel)
 
@@ -298,6 +343,11 @@ class NodeSession:
             self._on_audio(frame)
 
     def _on_audio(self, frame: wire.AudioFrame) -> None:
+        if frame.ch in self.ghost_channels:
+            return
+        if held := self.held.get(frame.ch):
+            held.frames.append(frame)
+            return
         tx = self.transmissions.get(frame.ch)
         if tx is None or not self.events.owns(tx.channel_id, self.feed_id):
             return  # refused, unknown or already ended

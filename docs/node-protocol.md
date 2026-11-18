@@ -131,6 +131,11 @@ NodeEvent { t: string, kind: "enrolled" | "online" | "offline" | "reconnect" | "
 Gain guard (A-2): when a key-up or level arrives above -4 dBFS and the node's gain (from its health) is known, the
 server sends a `gain` command one R820T step lower (floor 20 dB, at most one step a minute) and records a `gain` event.
 
+Ghost filter (A-5): a key-up weaker than -20 dBFS is held for 0.5 s (its audio waits with it). If a key-up on another channel
+within 60 kHz, at least 20 dB stronger, started within 0.5 s of it (before or after), the weak one is a ghost (sideband energy of
+the strong transmitter): no `keyup`, no audio is forwarded, and `health.ghosts` (server-added, `{"<aar channel>": count}`)
+counts it. Stronger key-ups are forwarded at once.
+
 ```
 GET    /nodes                      -> Node[]                          (ordered by number)
 POST   /nodes                      -> 201 { node: Node, key: string } (body: { name, location: {lat, lon}, preset? })

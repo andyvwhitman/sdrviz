@@ -3,6 +3,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import literal_column
 from sqlmodel import select
 
+from ..auth import ADMIN
 from ..db import bank_short
 from ..deps import DB, RT
 from ..models import Bank, BankBase, Feed, Frequency, Prefs
@@ -32,7 +33,7 @@ def list_banks(session: DB) -> list[Bank]:
     return list(session.exec(select(Bank).order_by(literal_column("rowid"))).all())
 
 
-@router.post("", status_code=201)
+@router.post("", status_code=201, dependencies=[ADMIN])
 def create_bank(body: BankBase, session: DB, rt: RT) -> Bank:
     if session.get(Bank, body.id):
         raise HTTPException(status_code=409, detail=f"Bank {body.id!r} already exists")
@@ -70,7 +71,7 @@ def live_frequency(session: DB, aar_channel: int) -> Frequency:
     return freq
 
 
-@router.post("/live/channels")
+@router.post("/live/channels", dependencies=[ADMIN])
 def add_live_channel(body: LiveChannelIn, session: DB, rt: RT) -> Bank:
     """Listen to a channel: put it in the live bank (made on first use). Nodes on the banks preset start decoding it."""
     if body.feed_id is not None and body.feed_id not in rt.world.feeds:
@@ -94,7 +95,7 @@ def add_live_channel(body: LiveChannelIn, session: DB, rt: RT) -> Bank:
     return bank
 
 
-@router.delete("/live/channels/{aar_channel}")
+@router.delete("/live/channels/{aar_channel}", dependencies=[ADMIN])
 def remove_live_channel(aar_channel: int, session: DB, rt: RT) -> Bank:
     """Stop listening: take the channel out of the live bank (the frequency row stays)."""
     bank = get_or_404(session, LIVE_BANK_ID)
@@ -113,7 +114,7 @@ def read_bank(bank_id: str, session: DB) -> Bank:
     return get_or_404(session, bank_id)
 
 
-@router.put("/{bank_id}")
+@router.put("/{bank_id}", dependencies=[ADMIN])
 def update_bank(bank_id: str, body: BankBase, session: DB, rt: RT) -> Bank:
     get_or_404(session, bank_id)
     if body.id != bank_id:
@@ -124,7 +125,7 @@ def update_bank(bank_id: str, body: BankBase, session: DB, rt: RT) -> Bank:
     return bank
 
 
-@router.delete("/{bank_id}", status_code=204)
+@router.delete("/{bank_id}", status_code=204, dependencies=[ADMIN])
 def delete_bank(bank_id: str, session: DB, rt: RT) -> Response:
     bank = get_or_404(session, bank_id)
     if rt.prefs.active_bank == bank_id:
@@ -135,7 +136,7 @@ def delete_bank(bank_id: str, session: DB, rt: RT) -> Response:
     return Response(status_code=204)
 
 
-@router.post("/{bank_id}/activate")
+@router.post("/{bank_id}/activate", dependencies=[ADMIN])
 async def activate_bank(bank_id: str, session: DB, rt: RT) -> PrefsModel:
     get_or_404(session, bank_id)
     rt.save_prefs(Prefs(**{**rt.prefs.model_dump(), "active_bank": bank_id, "displayed_feed": None}))

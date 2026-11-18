@@ -11,12 +11,13 @@ ScenarioName = Literal[tuple(SCENARIOS)]  # type: ignore[valid-type]
 
 
 class LoginIn(BaseModel):
-    password: str
+    password: str = Field(max_length=256)  # a longer body is refused before it is compared
 
 
 class SessionOut(BaseModel):
     authenticated: bool
     sim: bool = True
+    role: Literal["viewer", "admin"] | None = None  # null when not logged in
 
 
 class SimOut(BaseModel):

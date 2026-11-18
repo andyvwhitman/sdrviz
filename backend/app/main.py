@@ -9,8 +9,9 @@ from fastapi import APIRouter, Depends, FastAPI
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
-from .auth import SESSION_COOKIE, LoginLimiter, require_session
+from .auth import ADMIN, SESSION_COOKIE, LoginLimiter, require_session
 from .config import REPO_ROOT, Settings
+from .origin import OriginCheck
 from .routers import (
     auth,
     banks,
@@ -32,12 +33,14 @@ from .runtime import Runtime
 
 log = logging.getLogger("sdrviz")
 
-PROTECTED = (system, radio, sim, prefs, frequencies, banks, feeds, trains, transit, geo, lofar, nodes)
+PROTECTED = (system, radio, sim, prefs, frequencies, banks, feeds, trains, transit, geo, lofar)
 FRONTEND_DIST = REPO_ROOT / "frontend" / "dist"
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or Settings()
+    if settings.production and (problems := settings.production_problems()):
+        raise RuntimeError("refusing to start a public site: " + "; ".join(problems))
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
@@ -47,6 +50,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         rt.start()
         if settings.password == "sdrviz":
             log.warning("using the default dev password %r (set SDRVIZ_PASSWORD)", settings.password)
+        if settings.production and not settings.admin_password:
+            log.warning("SDRVIZ_ADMIN_PASSWORD is not set: the one password gives admin rights to every visitor")
         log.info("sdrviz backend ready: sim clock %s at %sx", rt.clock.now(), rt.clock.speed)
         yield
         await rt.stop()
@@ -58,14 +63,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         secret_key=settings.secret,
         session_cookie=SESSION_COOKIE,
         same_site="lax",
-        https_only=False,
+        https_only=settings.production,
         max_age=14 * 24 * 3600,
     )
+    app.add_middleware(OriginCheck, public_url=settings.public_url)  # outermost: refuses before anything runs
 
     api = APIRouter(prefix="/api")
     api.include_router(auth.router)
     for module in PROTECTED:
         api.include_router(module.router, dependencies=[Depends(require_session)])
+    api.include_router(nodes.router, dependencies=[ADMIN])  # the node fleet, keys and commands: admin only
     app.include_router(api)
     app.include_router(live.router)
     app.include_router(node_ws.router)

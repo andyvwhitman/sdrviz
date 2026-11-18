@@ -2,6 +2,7 @@
 
 from fastapi import APIRouter
 
+from ..auth import ADMIN
 from ..deps import RT
 from ..schemas import JumpIn, SimOut
 from ..sim.timefmt import hms
@@ -18,7 +19,7 @@ def get_sim(rt: RT) -> SimOut:
     return _state(rt)
 
 
-@router.post("/jump")
+@router.post("/jump", dependencies=[ADMIN])
 async def jump(body: JumpIn, rt: RT) -> SimOut:
     """Set the clock to a scripted scenario moment or an explicit time, and/or change its speed.
 

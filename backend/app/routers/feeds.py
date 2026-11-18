@@ -3,6 +3,7 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Query, Response
 from sqlmodel import select
 
+from ..auth import ADMIN
 from ..db import feed_short
 from ..deps import DB, RT
 from ..models import Bank, Feed, FeedBase
@@ -43,7 +44,7 @@ def list_feeds(rt: RT) -> list[dict[str, Any]]:
     return [view(rt, fid) for fid in rt.world.feeds]
 
 
-@router.post("", status_code=201)
+@router.post("", status_code=201, dependencies=[ADMIN])
 def create_feed(body: FeedBase, session: DB, rt: RT) -> dict[str, Any]:
     if session.get(Feed, body.id):
         raise HTTPException(status_code=409, detail=f"Feed {body.id!r} already exists")
@@ -59,7 +60,7 @@ def read_feed(feed_id: str, session: DB, rt: RT) -> dict[str, Any]:
     return view(rt, feed_id)
 
 
-@router.put("/{feed_id}")
+@router.put("/{feed_id}", dependencies=[ADMIN])
 def update_feed(feed_id: str, body: FeedBase, session: DB, rt: RT) -> dict[str, Any]:
     get_or_404(session, feed_id)
     if body.id != feed_id:
@@ -70,7 +71,7 @@ def update_feed(feed_id: str, body: FeedBase, session: DB, rt: RT) -> dict[str, 
     return view(rt, feed_id)
 
 
-@router.delete("/{feed_id}", status_code=204)
+@router.delete("/{feed_id}", status_code=204, dependencies=[ADMIN])
 def delete_feed(feed_id: str, session: DB, rt: RT) -> Response:
     feed = get_or_404(session, feed_id)
     homes = [b.id for b in session.exec(select(Bank)).all() if b.home_feed == feed_id]

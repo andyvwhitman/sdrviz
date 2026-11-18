@@ -3,6 +3,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query, Response
 
+from ..auth import ADMIN
 from ..deps import RT
 from ..transit.geometry import Bbox
 from ..transit.models import Alert, Approaching, Board, Line, Merges, StationBoard, Stop, Timetable, Trip, Vehicle
@@ -26,7 +27,7 @@ OptionalBBox = Annotated[str | None, Query(description="w,s,e,n in degrees")]
 # --- sources ---------------------------------------------------------------------
 
 
-@router.get("/sources")
+@router.get("/sources", dependencies=[ADMIN])
 def sources(rt: RT) -> list[TransitSource]:
     """Every configured feed with its state, last update, counts and last error."""
     return rt.transit.sources() if rt.transit else []
@@ -38,7 +39,7 @@ def _service(rt):
     return rt.transit
 
 
-@router.post("/sources", status_code=201)
+@router.post("/sources", status_code=201, dependencies=[ADMIN])
 async def add_source(body: SourceConfig, rt: RT) -> TransitSource:
     service = _service(rt)
     if body.id in service.configs:
@@ -46,7 +47,7 @@ async def add_source(body: SourceConfig, rt: RT) -> TransitSource:
     return await service.apply(body)
 
 
-@router.put("/sources/{source_id}")
+@router.put("/sources/{source_id}", dependencies=[ADMIN])
 async def update_source(source_id: str, body: SourceConfig, rt: RT) -> TransitSource:
     service = _service(rt)
     if source_id not in service.configs:
@@ -54,14 +55,14 @@ async def update_source(source_id: str, body: SourceConfig, rt: RT) -> TransitSo
     return await service.apply(body.model_copy(update={"id": source_id}))
 
 
-@router.delete("/sources/{source_id}", status_code=204)
+@router.delete("/sources/{source_id}", status_code=204, dependencies=[ADMIN])
 async def delete_source(source_id: str, rt: RT) -> Response:
     if not await _service(rt).remove(source_id):
         raise HTTPException(status_code=404, detail=f"no source {source_id!r}")
     return Response(status_code=204)
 
 
-@router.post("/sources/{source_id}/refresh")
+@router.post("/sources/{source_id}/refresh", dependencies=[ADMIN])
 async def refresh_source(source_id: str, rt: RT) -> TransitSource:
     service = _service(rt)
     if source_id not in service.configs:

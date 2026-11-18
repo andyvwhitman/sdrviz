@@ -8,11 +8,18 @@ from .transit.sources import SourceConfig
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
+DEFAULT_PASSWORDS = {"sdrviz", "change-me", "password", ""}
+DEFAULT_SECRETS = {"dev-secret-change-me", "change-me-too", "change-me", ""}
+MIN_PASSWORD_LENGTH = 8
+MIN_SECRET_LENGTH = 32
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="SDRVIZ_")
 
-    password: str = "sdrviz"
+    password: str = "sdrviz"  # the viewer password: read and listen
+    # The admin password: nodes, sources, banks, frequencies, settings. Unset: the one password above is admin.
+    admin_password: str | None = None
     secret: str = "dev-secret-change-me"
     data_dir: Path = REPO_ROOT / "data"
     db_path: Path | None = None
@@ -48,6 +55,25 @@ class Settings(BaseSettings):
     rtltcp_name: str = "SDR-01 Pi"
     rtltcp_lat: float = 38.8973  # Washington Union Station, until the receiver is a real feed row
     rtltcp_lon: float = -77.0063
+
+    @property
+    def production(self) -> bool:
+        """A public site: served over https. The checks and the Secure cookie follow from this."""
+        return self.public_url.startswith("https://")
+
+    def production_problems(self) -> list[str]:
+        """Settings a public site must not start with."""
+        problems = []
+        if self.password in DEFAULT_PASSWORDS or len(self.password) < MIN_PASSWORD_LENGTH:
+            problems.append(f"SDRVIZ_PASSWORD is a default or shorter than {MIN_PASSWORD_LENGTH} characters")
+        if self.secret in DEFAULT_SECRETS or len(self.secret) < MIN_SECRET_LENGTH:
+            problems.append(f"SDRVIZ_SECRET is a default or shorter than {MIN_SECRET_LENGTH} characters")
+        if self.admin_password is not None:
+            if self.admin_password in DEFAULT_PASSWORDS or len(self.admin_password) < MIN_PASSWORD_LENGTH:
+                problems.append(f"SDRVIZ_ADMIN_PASSWORD is a default or shorter than {MIN_PASSWORD_LENGTH} characters")
+            if self.admin_password == self.password:
+                problems.append("SDRVIZ_ADMIN_PASSWORD equals SDRVIZ_PASSWORD")
+        return problems
 
     @property
     def transit_dir(self) -> Path:

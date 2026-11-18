@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Response
 from sqlalchemy import literal_column
 from sqlmodel import select
 
+from ..auth import ADMIN
 from ..deps import DB, RT
 from ..models import Bank, Frequency, FrequencyBase
 
@@ -36,7 +37,7 @@ def list_frequencies(session: DB) -> list[Frequency]:
     return list(session.exec(select(Frequency).order_by(literal_column("rowid"))).all())
 
 
-@router.post("", status_code=201)
+@router.post("", status_code=201, dependencies=[ADMIN])
 def create_frequency(body: FrequencyBase, session: DB, rt: RT) -> Frequency:
     if session.get(Frequency, body.id):
         raise HTTPException(status_code=409, detail=f"Frequency {body.id!r} already exists")
@@ -52,7 +53,7 @@ def read_frequency(freq_id: str, session: DB) -> Frequency:
     return get_or_404(session, freq_id)
 
 
-@router.put("/{freq_id}")
+@router.put("/{freq_id}", dependencies=[ADMIN])
 def update_frequency(freq_id: str, body: FrequencyBase, session: DB, rt: RT) -> Frequency:
     get_or_404(session, freq_id)
     if body.id != freq_id:
@@ -63,7 +64,7 @@ def update_frequency(freq_id: str, body: FrequencyBase, session: DB, rt: RT) -> 
     return freq
 
 
-@router.delete("/{freq_id}", status_code=204)
+@router.delete("/{freq_id}", status_code=204, dependencies=[ADMIN])
 def delete_frequency(freq_id: str, session: DB, rt: RT, force: bool = False) -> Response:
     freq = get_or_404(session, freq_id)
     banks = [b for b in session.exec(select(Bank)).all() if freq_id in b.frequency_ids]

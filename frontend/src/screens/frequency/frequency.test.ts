@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Recording } from "$lib/types/recordings";
-import { backoffS, beforeAt, clockOf, dayHeading, dayKey, dayName, findByStart, logItems, nextNewer, transcriptKind } from "./frequency";
+import { backoffS, beforeAt, clockOf, dayHeading, dayKey, dayName, findByStart, instantOf, liveRowInstant, logItems, nextNewer, transcriptKind } from "./frequency";
 
 const NY = "America/New_York";
 
@@ -20,6 +20,14 @@ describe("local time", () => {
     expect(dayName("2026-11-17")).toBe("TUE 17 NOV");
     expect(dayHeading("2026-11-17", "2026-11-17")).toBe("TODAY · TUE 17 NOV");
     expect(dayHeading("2026-11-16", "2026-11-17")).toBe("MON 16 NOV");
+  });
+});
+
+describe("liveRowInstant", () => {
+  const now = Date.parse("2026-11-18T05:30:00Z"); // 00:30 on 18 Nov in New York
+  it("puts a time earlier than now today, and a later one yesterday", () => {
+    expect(new Date(liveRowInstant(20 * 60, 30 * 60, NY, now)).toISOString()).toBe("2026-11-18T05:20:00.000Z");
+    expect(new Date(liveRowInstant(23 * 3600, 30 * 60, NY, now)).toISOString()).toBe("2026-11-18T04:00:00.000Z");
   });
 });
 
@@ -49,7 +57,16 @@ describe("paging helpers", () => {
     const rows = [rec(2, "2026-11-17T19:07:33.500Z"), rec(1, "2026-11-17T19:00:00.000Z")];
     expect(findByStart(rows, "2026-11-17T19:07:33.500Z")?.id).toBe(2);
     expect(findByStart(rows, "junk")).toBeUndefined();
-    expect(beforeAt("2026-11-17T19:07:33.500Z")).toBe("2026-11-17T19:07:34.500Z");
+    expect(beforeAt("2026-11-17T19:07:33.500Z")).toBe("2026-11-17T19:07:36.500Z");
+  });
+  it("accepts a link a second or so off, and picks the nearest row", () => {
+    const rows = [rec(2, "2026-11-17T19:07:34.000Z"), rec(1, "2026-11-17T19:07:31.000Z")];
+    expect(findByStart(rows, "2026-11-17T19:07:33Z")?.id).toBe(2);
+    expect(findByStart(rows, "2026-11-17T19:09:00Z")).toBeUndefined();
+  });
+  it("turns a local day and seconds into a UTC instant, winter and summer", () => {
+    expect(new Date(instantOf("2026-11-17", 14 * 3600 + 3 * 60 + 5, NY)).toISOString()).toBe("2026-11-17T19:03:05.000Z");
+    expect(new Date(instantOf("2026-07-01", 8 * 3600, NY)).toISOString()).toBe("2026-07-01T12:00:00.000Z");
   });
   it("continuous play goes to the next newer playable row", () => {
     const rows = [rec(3, "2026-11-17T19:02:00Z"), rec(2, "2026-11-17T19:01:00Z", { audio_state: "expired", audio_url: null }), rec(1, "2026-11-17T19:00:00Z")];

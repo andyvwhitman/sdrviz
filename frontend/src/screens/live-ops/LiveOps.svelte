@@ -31,6 +31,8 @@
   import { boxStyle, geometryFor } from "./geometry";
   import { stage } from "$lib/stores/stage.svelte";
   import { elsewhereLabel, heroFor, offBankLabel } from "./hero";
+  import { liveRowInstant } from "../frequency/frequency";
+  import type { TxRow } from "$lib/types/live";
   import HeroStrip from "./HeroStrip.svelte";
   import { KeyupMotion } from "./keyup.svelte";
   import { LEVER_LIST, type LeverKey } from "./mixer";
@@ -180,10 +182,27 @@
       event.preventDefault();
       targetedId = null; // arrow keys show the browser's own focus ring
       tilesEl[Math.min(tilesEl.length - 1, Math.max(0, at + step[event.key]))].focus();
+    } else if (event.target === tilesEl[at] && event.key.toLowerCase() === "f" && !event.ctrlKey && !event.metaKey && !event.altKey) {
+      event.preventDefault(); // F opens the channel's frequency page
+      router.go(`/frequency/${tiles[at].id}`);
     } else if (event.target === tilesEl[at] && event.key.toLowerCase() in LEVER_LIST) {
       event.preventDefault(); // R is also a tab hotkey: the focused tile's lever wins
       leverPressed(tiles[at].id, event.key.toLowerCase() as LeverKey);
     }
+  }
+
+  /** A transcript row's channel label opens the frequency page with that transmission selected (`?at=` its UTC start). */
+  function channelHref(row: TxRow): string | null {
+    if (!snapshot) return null;
+    const at = new Date(liveRowInstant(row.t_offset_s, snapshot.t_offset_s, snapshot.tz.iana)).toISOString();
+    return `/frequency/${row.frequency_id}?at=${encodeURIComponent(at)}`;
+  }
+
+  /** A double-click on a tile goes straight to its frequency page. */
+  function tileDoubleClick(event: MouseEvent): void {
+    const tilesEl = [...(event.currentTarget as HTMLElement).querySelectorAll<HTMLElement>(".tile")];
+    const at = tilesEl.indexOf((event.target as HTMLElement).closest(".tile") as HTMLElement);
+    if (at >= 0 && (event.target as HTMLElement).closest(".tile button, .tile [role='checkbox']") === null) router.go(`/frequency/${tiles[at].id}`);
   }
 
   /**
@@ -254,7 +273,7 @@
     </div>
 
     <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-    <div bind:this={tilesBox} class="lo-box lo-tiles" class:has-solo={prefs.solo.size > 0} style={boxStyle(geometry.tiles)} role="group" aria-label="Channels" onkeydown={tileKeys} onfocusout={(e) => !(e.relatedTarget as HTMLElement | null)?.closest(".tile") && (targetedId = null)}>
+    <div bind:this={tilesBox} class="lo-box lo-tiles" class:has-solo={prefs.solo.size > 0} style={boxStyle(geometry.tiles)} role="group" aria-label="Channels" onkeydown={tileKeys} ondblclick={tileDoubleClick} onfocusout={(e) => !(e.relatedTarget as HTMLElement | null)?.closest(".tile") && (targetedId = null)}>
       {#if tiles.length === 0}
         <div class="lo-empty br">
           {#if bank.id === "bank-live"}
@@ -293,6 +312,7 @@
         {bankIds}
         {now}
         onselect={(row) => selectChannel(row.frequency_id)}
+        {channelHref}
       />
     </div>
 

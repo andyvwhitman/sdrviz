@@ -5,6 +5,7 @@
    */
   import * as fmt from "$lib/hud/fmt";
   import { speaker } from "$lib/hud/speaker";
+  import { followLink } from "$lib/router.svelte";
   import type { TxRow } from "$lib/types/live";
   import Button from "./Button.svelte";
   import DefectTag from "./DefectTag.svelte";
@@ -21,8 +22,10 @@
     colWidth?: number;
     onclick?: () => void;
     onretry?: () => void;
+    /** where the channel label goes (the frequency page at this transmission); the label is plain text without it */
+    channelHref?: string | null;
   }
-  let { row, columns = "log", live = false, selected = false, play = false, colWidth = 320, onclick, onretry }: Props = $props();
+  let { row, columns = "log", live = false, selected = false, play = false, colWidth = 320, onclick, onretry, channelHref = null }: Props = $props();
 
   const isDetector = $derived(row.role_tag === "DET");
   const offBank = $derived(row.off_bank);
@@ -73,7 +76,11 @@
     <span class="c-aar">{row.aar4}</span>
     <span class="c-chan">{row.label}</span>
   {:else}
-    <span class="c-ch">{row.aar}</span>
+    {#if channelHref}
+      <a class="c-ch c-ch--link" href={channelHref} title="Open the {row.label} frequency page" onclick={(e) => (e.stopPropagation(), followLink(e))}>{row.label || row.aar}</a>
+    {:else}
+      <span class="c-ch">{row.aar}</span>
+    {/if}
   {/if}
   <span class="c-feed">{row.feed_label}</span>
   <span class="c-role">{row.role_tag}</span>
@@ -108,3 +115,8 @@
     {/if}
   </span>
 </div>
+
+<style>
+  .c-ch--link { border: 0; color: var(--ink); text-decoration: underline; text-decoration-color: var(--line-faint); text-underline-offset: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .c-ch--link:hover { text-decoration-color: var(--ink); }
+</style>

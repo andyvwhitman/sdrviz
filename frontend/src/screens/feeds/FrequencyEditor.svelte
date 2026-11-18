@@ -3,6 +3,7 @@
   import { ApiError } from "$lib/api/client";
   import Button from "$lib/components/Button.svelte";
   import Field from "$lib/components/Field.svelte";
+  import { followLink } from "$lib/router.svelte";
   import { catalogue } from "./catalogue.svelte";
   import { aarOf, emptyFrequencyDraft, frequencyBody, frequencyDraftFrom, validateFrequency, type FrequencyDraft, type FrequencyErrors } from "./frequencyForm";
   import SelectField from "./SelectField.svelte";
@@ -64,6 +65,7 @@
   <div class="fb-ph">
     <span class="t-panel">{frequency ? `FREQUENCY · ${frequency.label.toUpperCase()}` : "NEW FREQUENCY"}</span>
     <span class="t-micro">{aar == null ? "" : `AAR CH${String(aar).padStart(2, "0")}`}</span>
+    {#if frequency}<a class="t-micro" href="/frequency/{frequency.id}" onclick={followLink}>OPEN FREQUENCY PAGE ›</a>{/if}
     <Button sm onclick={() => ondone(null)}>{frequency ? "CLOSE" : "CANCEL"}</Button>
   </div>
   <div class="fb-edit__row fb-edit__row--wrap">

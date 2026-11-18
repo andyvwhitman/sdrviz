@@ -23,8 +23,10 @@
     now: number;
     selectedId?: string | null;
     onselect?: (row: TxRow) => void;
+    /** where a finished row's channel label links to, or null */
+    channelHref?: (row: TxRow) => string | null;
   }
-  let { rows, countToday, colWidth, bankIds, now, selectedId = null, onselect }: Props = $props();
+  let { rows, countToday, colWidth, bankIds, now, selectedId = null, onselect, channelHref }: Props = $props();
 
   /** A live row counts its own duration on the smooth sim clock. */
   const forLog = (row: TxRow): TxRow => (row.live ? { ...row, duration_s: cyclicAge(now, row.t_offset_s) } : row);
@@ -107,7 +109,7 @@
   </div>
   <div class="lo-rows" aria-live="polite" bind:this={list} {onscroll} {onwheel}>
     {#each shown as row (row.id)}
-      <TranscriptRow row={forLog(row)} live={row.live} {colWidth} selected={row.id === selectedId} onclick={() => onselect?.(row)} />
+      <TranscriptRow row={forLog(row)} live={row.live} {colWidth} selected={row.id === selectedId} channelHref={row.live ? null : (channelHref?.(row) ?? null)} onclick={() => onselect?.(row)} />
     {/each}
   </div>
 </div>

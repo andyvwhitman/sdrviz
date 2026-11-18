@@ -100,14 +100,30 @@ export function logItems(rows: Recording[], tz: string, todayKey: string): LogIt
   return items;
 }
 
-/** Row whose start is the given instant (the `?at=` link), within a millisecond. */
+/** How far a `?at=` link may be from a recording's start: the live log knows a transmission to the second. */
+const AT_TOLERANCE_MS = 2000;
+
+/** The row that starts nearest the given instant (the `?at=` link), within the tolerance. */
 export function findByStart(rows: Recording[], at: string): Recording | undefined {
   const target = Date.parse(at);
-  return Number.isNaN(target) ? undefined : rows.find((rec) => Math.abs(Date.parse(rec.started_at) - target) < 1);
+  if (Number.isNaN(target)) return undefined;
+  const near = rows.filter((rec) => Math.abs(Date.parse(rec.started_at) - target) <= AT_TOLERANCE_MS);
+  return near.sort((a, b) => Math.abs(Date.parse(a.started_at) - target) - Math.abs(Date.parse(b.started_at) - target))[0];
 }
 
-/** The `before` that makes a page start at the given transmission: one second after it. */
-export const beforeAt = (at: string): string => new Date(Date.parse(at) + 1000).toISOString();
+/** The `before` that makes a page start at the given transmission: just after it, past the tolerance. */
+export const beforeAt = (at: string): string => new Date(Date.parse(at) + AT_TOLERANCE_MS + 1000).toISOString();
+
+/** The UTC instant of a local day (YYYY-MM-DD) plus seconds since local midnight, in a zone. */
+export function instantOf(date: string, secondsOfDay: number, tz: string): number {
+  const [y, m, d] = date.split("-").map(Number);
+  const wall = Date.UTC(y, m - 1, d) + secondsOfDay * 1000;
+  const offset = (at: number): number => {
+    const p = zoneParts(at, tz);
+    return Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second) - Math.floor(at / 1000) * 1000;
+  };
+  return wall - offset(wall - offset(wall));
+}
 
 /** The next row that continuous play should take: the next newer playable row (the log is newest first). */
 export function nextNewer(rows: Recording[], id: number): Recording | undefined {
@@ -118,3 +134,13 @@ export function nextNewer(rows: Recording[], id: number): Recording | undefined 
 
 /** Retry delays after a failed load: 1, 2, 4, then 8 s. */
 export const backoffS = (attempt: number): number => Math.min(8, 2 ** Math.max(0, attempt));
+
+/**
+ * The UTC start of a live-log row, which carries only seconds since local midnight: the latest such moment that is
+ * not in the future (a time later than the clock now is yesterday's). Uses the real date, not the sim's.
+ */
+export function liveRowInstant(secondsOfDayAt: number, nowSecondsOfDay: number, tz: string, nowMs = Date.now()): number {
+  const [y, m, d] = dayKey(nowMs, tz).split("-").map(Number);
+  const back = secondsOfDayAt > nowSecondsOfDay + 5 ? 1 : 0;
+  return instantOf(new Date(Date.UTC(y, m - 1, d - back)).toISOString().slice(0, 10), secondsOfDayAt, tz);
+}

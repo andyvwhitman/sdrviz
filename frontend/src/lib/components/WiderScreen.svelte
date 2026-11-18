@@ -19,6 +19,7 @@
   <nav class="ws__links" aria-label="Phone screens">
     <a href={hrefOf("/spot")} onclick={followLink}>SPOT<span>Trains approaching you</span></a>
     <a href={hrefOf("/map")} onclick={followLink}>MAP<span>Trains, stations and feeds</span></a>
+    <a href={hrefOf("/frequency")} onclick={followLink}>FREQUENCIES<span>What each channel said, with audio</span></a>
   </nav>
 </section>
 

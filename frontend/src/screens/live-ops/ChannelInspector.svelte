@@ -10,11 +10,14 @@
   import { feedName } from "$lib/hud/roles";
   import * as fmt from "$lib/hud/fmt";
   import { speaker } from "$lib/hud/speaker";
+  import { followLink } from "$lib/router.svelte";
   import { levels } from "$lib/stores/levels.svelte";
+  import { cyclicAge } from "$lib/time";
   import type { Channel, LiveState } from "$lib/types/live";
   import AudioMixer from "./AudioMixer.svelte";
   import Inspector from "./Inspector.svelte";
   import InspectorSection from "./InspectorSection.svelte";
+  import FrequencyStrip from "../frequency/FrequencyStrip.svelte";
   import { WAVE_WIDTH, waveEnvelope } from "./wave";
   import { noiseFloor } from "./wall";
 
@@ -39,6 +42,7 @@
     void levels.version;
     return waveEnvelope(levels.envelope(channel.id), floor ?? -45, elapsed, active?.words);
   });
+  const lastS = $derived(channel.last_heard ? cyclicAge(now, channel.last_heard.end_t) : null);
   const recent = $derived(snapshot.transcript.rows.filter((row) => row.frequency_id === channel.id && !row.live).slice(0, 2));
 </script>
 
@@ -55,6 +59,11 @@
       {/if}
     </div>
   {/snippet}
+
+  <InspectorSection title="TODAY">
+    <FrequencyStrip frequencyId={channel.id} label={channel.label} keyed={!!tx} {lastS} />
+    <a class="lo-fpage" href="/frequency/{channel.id}" onclick={followLink}>FREQUENCY PAGE ›</a>
+  </InspectorSection>
 
   {#if tx && active}
     <InspectorSection title="TRANSMISSION · {active.id.toUpperCase()}">
@@ -109,3 +118,8 @@
     </InspectorSection>
   {/if}
 </Inspector>
+
+<style>
+  .lo-fpage { display: inline-block; margin-top: 6px; border: 0; font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink); }
+  .lo-fpage:hover { color: var(--state-select); }
+</style>

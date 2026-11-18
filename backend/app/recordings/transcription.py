@@ -12,6 +12,8 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import TYPE_CHECKING, Protocol
 
+import av
+import numpy as np
 from sqlmodel import select
 
 from ..config import Settings
@@ -32,6 +34,21 @@ class Transcriber(Protocol):
     name: str
 
     def transcribe(self, path: Path) -> str: ...
+
+
+WHISPER_RATE = 16_000
+
+
+def decode_audio(path: Path) -> np.ndarray:
+    """A file as 16 kHz mono float samples, which is what Whisper takes. (faster-whisper's own decoder passes an
+    option that PyAV 19 no longer has, so the file is decoded here.)"""
+    resampler = av.AudioResampler(format="flt", layout="mono", rate=WHISPER_RATE)
+    chunks = []
+    with av.open(str(path)) as container:
+        for frame in container.decode(audio=0):
+            chunks += [piece.to_ndarray().reshape(-1) for piece in resampler.resample(frame)]
+    chunks += [piece.to_ndarray().reshape(-1) for piece in resampler.resample(None)]
+    return np.concatenate(chunks) if chunks else np.zeros(0, dtype=np.float32)
 
 
 class FasterWhisperTranscriber:
@@ -56,7 +73,7 @@ class FasterWhisperTranscriber:
                 download_root=str(self._root),
             )
         segments, _info = self._model.transcribe(
-            str(path),
+            decode_audio(path),
             language="en",
             beam_size=1,
             vad_filter=True,  # skips the hiss between words, where Whisper invents text

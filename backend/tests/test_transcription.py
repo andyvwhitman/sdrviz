@@ -126,3 +126,14 @@ def test_the_prompt_has_the_app_vocabulary_and_the_jargon(client):
     assert freqs[0]["label"] in prompt
     assert "Washington Union Station" in prompt
     assert "foul time" in prompt and "milepost" in prompt and len(prompt) < 900
+
+
+def test_decode_audio_gives_16k_mono_floats(tmp_path):
+    from app.recordings.ogg import ogg_opus
+    from app.recordings.transcription import WHISPER_RATE, decode_audio
+
+    path = tmp_path / "x.ogg"
+    path.write_bytes(ogg_opus(packets(50)))  # 1 s
+    samples = decode_audio(path)
+    assert samples.dtype.name == "float32" and samples.ndim == 1
+    assert abs(len(samples) - WHISPER_RATE) < 400

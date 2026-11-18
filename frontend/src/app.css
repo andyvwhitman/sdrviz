@@ -4,3 +4,6 @@ html, body, #app { height: 100%; margin: 0; overflow: hidden; }
 
 /* ?gray=1: grayscale test on the stage (spec 7) */
 :root[data-gray] .hud-stage { filter: grayscale(1); }
+
+/* page layout (routes with layout: "page"): the document scrolls, nothing is scaled */
+:root[data-layout="page"], :root[data-layout="page"] body, :root[data-layout="page"] #app { height: auto; min-height: 100%; overflow: visible; }

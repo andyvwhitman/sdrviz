@@ -6,7 +6,7 @@
 import type { Component } from "svelte";
 import StubScreen from "$lib/components/StubScreen.svelte";
 
-export type ScreenId = "live-ops" | "feeds" | "map" | "settings" | "login" | "kit";
+export type ScreenId = "live-ops" | "feeds" | "map" | "settings" | "spot" | "login" | "kit";
 
 export interface Route {
   id: ScreenId;
@@ -17,6 +17,11 @@ export interface Route {
   dir: string;
   /** false for login: no header, nav or status line (spec 4.6) */
   shell: boolean;
+  /**
+   * "stage" (default): the fixed-height stage scaled to the window, for the wall displays.
+   * "page": an ordinary responsive document that scrolls, for phones (the shell becomes PageShell).
+   */
+  layout?: "stage" | "page";
 }
 
 export const ROUTES: Route[] = [
@@ -24,12 +29,13 @@ export const ROUTES: Route[] = [
   { id: "feeds", path: "/feeds", name: "FEEDS & BANKS", dir: "feeds", shell: true },
   { id: "map", path: "/map", name: "MAP", dir: "map", shell: true },
   { id: "settings", path: "/settings", name: "SETTINGS", dir: "settings", shell: true },
+  { id: "spot", path: "/spot", name: "SPOT", dir: "spot", shell: true, layout: "page" },
   { id: "login", path: "/login", name: "LOGIN", dir: "system", shell: false },
   ...(import.meta.env.DEV ? [{ id: "kit", path: "/kit", name: "KIT", dir: "kit", shell: true } as const] : []),
 ];
 
 /** The header tabs, in order. History and Stats still answer at their paths but are off the nav for now. */
-const NAV_ORDER: ScreenId[] = ["map", "live-ops", "feeds", "settings"];
+const NAV_ORDER: ScreenId[] = ["map", "live-ops", "feeds", "settings", "spot"];
 export const NAV = NAV_ORDER.map((id) => ROUTES.find((r) => r.id === id)!);
 
 /** The keyboard's top letter row: Q opens the first tab, W the second, and so on. */

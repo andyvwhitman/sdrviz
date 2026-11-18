@@ -1,0 +1,64 @@
+/* SPOT page layout. Colours come from the tokens; the --sp-* variables are what HIGH CONTRAST changes. */
+
+.sp {
+  --sp-hair: 1px;
+  --sp-dash-stale: 4 4;
+  --sp-dash-predicted: 2 3;
+  --sp-faint: var(--line-faint);
+  max-width: 100%;
+}
+
+/* HIGH CONTRAST (direction 8.1): ink-2 becomes ink, ink-3 becomes ink-2, hairlines thicken, dashes lengthen.
+   The palette, hue rules and layout do not change. */
+:root[data-contrast="high"] {
+  --ink-2: #E4F1F5;
+  --ink-3: #8FAFBA;
+  --line-faint: #5E8794;
+}
+:root[data-contrast="high"] .sp {
+  --sp-hair: 1.5px;
+  --sp-dash-stale: 6 4;
+  --sp-dash-predicted: 3 3;
+  --sp-faint: var(--ink-3);
+}
+
+/* the pinned block: spot bar, hero and ladder stay in view while the table scrolls beneath */
+.sp__top { position: sticky; top: var(--header-h); z-index: 10; background: var(--bg-void); border-bottom: 1px solid var(--grid); }
+.sp__bar { position: relative; }
+.sp__ladder { padding: 4px 16px 6px; }
+
+.sp__filters {
+  display: flex; align-items: center; gap: 8px; padding: 10px 16px;
+  border-bottom: 1px solid var(--grid);
+}
+.sp__filters .chip { height: 36px; }
+.sp__sep { flex: 1; }
+.sp__opr { display: flex; align-items: center; gap: 8px; }
+.sp__opr-k { display: none; font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink-2); }
+.sp__opr select {
+  min-height: 36px; max-width: 160px; padding: 0 12px; border: 0; border-radius: 0; background: var(--bg-void); color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--line-faint); font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label);
+  appearance: none; padding-right: 30px;
+  background:
+    linear-gradient(45deg, transparent 50%, var(--ink-2) 50%) right 15px center / 5px 5px no-repeat,
+    linear-gradient(135deg, var(--ink-2) 50%, transparent 50%) right 10px center / 5px 5px no-repeat,
+    var(--bg-void);
+}
+.sp__note, .sp__empty {
+  margin: 0; padding: 16px; font: 500 var(--fs-13)/1.3 var(--font-label); letter-spacing: var(--track-label);
+  text-transform: uppercase; color: var(--ink-2);
+}
+
+/* phone held sideways: no room to pin three blocks */
+@media (max-height: 520px) { .sp__top { position: static; } }
+
+@media (min-width: 900px) {
+  .sp__opr-k { display: inline; }
+  .sp__top { display: grid; grid-template-columns: minmax(0, 1fr) 460px; grid-template-areas: "hero bar" "ladder ladder"; align-items: start; }
+  .sp__hero { grid-area: hero; }
+  .sp__bar { grid-area: bar; border-left: 1px solid var(--grid); height: 100%; display: flex; flex-direction: column; justify-content: center; }
+  .sp__bar :global(.sb__main) { padding-left: 24px; padding-right: var(--margin-x); }
+  .sp__ladder { grid-area: ladder; padding: 4px var(--margin-x) 8px; border-top: 1px solid var(--grid); }
+  .sp__filters { padding: 10px var(--margin-x); }
+  .sp__note, .sp__empty { padding-left: var(--margin-x); padding-right: var(--margin-x); }
+}

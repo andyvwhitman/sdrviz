@@ -2,13 +2,6 @@
 
 import type { BaseProjection, LonLat, View } from "./project";
 
-/** A GPS fix: position plus the reported accuracy radius in metres. */
-export interface Fix {
-  lon: number;
-  lat: number;
-  accuracyM: number;
-}
-
 /** A fix vaguer than this (a cell-tower or IP guess) is not drawn as a circle. */
 export const MAX_ACCURACY_M = 5000;
 /** Zoom the LOCATE button goes to when the map is further out than this. */

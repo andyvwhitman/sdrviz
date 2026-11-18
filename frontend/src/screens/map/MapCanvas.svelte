@@ -25,7 +25,7 @@
   import LiveTrains from "./LiveTrains.svelte";
   import TrainMark from "./TrainMark.svelte";
   import UserMark from "./UserMark.svelte";
-  import { userLocation } from "./userLocation.svelte";
+  import { userLocation } from "$lib/stores/userLocation.svelte";
   import { accuracyRadiusPx, LOCATE_ZOOM, viewCentredAt } from "./lib/userLocation";
   import { easeInOut, easeInstrument } from "./lib/ease";
   import { dist, lerp, type Pt, type Rect } from "./lib/geom";

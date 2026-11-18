@@ -257,9 +257,13 @@
     <div bind:this={tilesBox} class="lo-box lo-tiles" class:has-solo={prefs.solo.size > 0} style={boxStyle(geometry.tiles)} role="group" aria-label="Channels" onkeydown={tileKeys} onfocusout={(e) => !(e.relatedTarget as HTMLElement | null)?.closest(".tile") && (targetedId = null)}>
       {#if tiles.length === 0}
         <div class="lo-empty br">
-          <EmptyState title="BANK EMPTY">
-            <span class="t-body">Add channels in <a href="/feeds" onclick={(e) => (e.preventDefault(), router.go("/feeds"))}>Feeds &amp; Banks</a>.</span>
-          </EmptyState>
+          {#if bank.id === "bank-live"}
+            <EmptyState title="LIVE BANK EMPTY" detail="Click a channel on the waterfall to listen." />
+          {:else}
+            <EmptyState title="BANK EMPTY">
+              <span class="t-body">Add channels in <a href="/feeds" onclick={(e) => (e.preventDefault(), router.go("/feeds"))}>Feeds &amp; Banks</a>.</span>
+            </EmptyState>
+          {/if}
         </div>
       {:else}
         <TileGrid cols={geometry.tileCols}>

@@ -17,6 +17,7 @@
   import FrontWallMessage from "./FrontWallMessage.svelte";
   import SpectrumTrace from "./SpectrumTrace.svelte";
   import Waterfall from "./Waterfall.svelte";
+  import { listenFlash } from "./listenFlash.svelte";
   import { carriersOn, channelNumber, heardChannels, noiseFloor } from "./wall";
 
   interface Props {
@@ -77,14 +78,8 @@
     return onSlot ? ch : null;
   }
 
-  /** what the last click did, shown under the readout for a few seconds */
-  let flash = $state<string | null>(null);
-  let flashTimer: ReturnType<typeof setTimeout> | undefined;
-  const say = (text: string) => {
-    flash = text;
-    clearTimeout(flashTimer);
-    flashTimer = setTimeout(() => (flash = null), 4000);
-  };
+  /** left of the waterfall's time-axis labels */
+  const FLASH_X = 56;
 
   /** click: listen to the channel (it joins the live bank, which becomes active); alt-click: drop it */
   let busy = false; // one request at a time: a double click must not add and activate twice
@@ -93,18 +88,18 @@
     const ch = channelAt(layoutX(event)); // from the click itself: a touch tap has no hover first
     if (ch === null) return;
     busy = true;
-    const name = `CH${String(ch).padStart(2, "0")}`;
+    const name = fmt.ch(ch);
     try {
       if (event.altKey) {
         await api.banks.removeLive(ch);
-        say(`${name} REMOVED FROM LIVE`);
+        listenFlash.say(`${name} REMOVED FROM LIVE`);
       } else {
         await api.banks.addLive(ch, feed.id);
         await api.banks.activate("bank-live");
-        say(`LISTENING ${name} · LIVE BANK`);
+        listenFlash.say(`LISTENING ${name} · LIVE BANK`);
       }
     } catch (error) {
-      say(`${name}: ${error instanceof Error ? error.message : "failed"}`.toUpperCase());
+      listenFlash.say(`${name}: ${error instanceof Error ? error.message : "failed"}`.toUpperCase());
     } finally {
       busy = false;
     }
@@ -148,5 +143,12 @@
 {/if}
 
 {#if hoverX !== null && !blank}
-  <FrequencyCursor x={hoverX} spectrum={geometry.spectrum} ruler={geometry.ruler} waterfall={geometry.waterfall} channels={snapshot.channels} {flash} />
+  <FrequencyCursor x={hoverX} spectrum={geometry.spectrum} ruler={geometry.ruler} waterfall={geometry.waterfall} channels={snapshot.channels} flash={listenFlash.text} />
+{:else if listenFlash.text}
+  <!-- the confirmation outlives the pointer: a tap or a mouse that moved away still sees what happened -->
+  <div class="lo-box lo-flash" style="left:{geometry.spectrum[0] + FLASH_X}px;top:{geometry.ruler[1] + geometry.ruler[3] + 4}px" role="status">{listenFlash.text}</div>
 {/if}
+
+<style>
+  .lo-flash { font: 500 var(--fs-11)/20px var(--font-label); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--ink-2); background: var(--bg-void); padding: 0 6px; white-space: nowrap; pointer-events: none; z-index: 2; }
+</style>

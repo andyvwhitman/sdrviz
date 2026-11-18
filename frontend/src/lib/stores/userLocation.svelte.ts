@@ -1,4 +1,9 @@
-import type { Fix } from "./lib/userLocation";
+/** A GPS fix: position plus the reported accuracy radius in metres. */
+export interface Fix {
+  lon: number;
+  lat: number;
+  accuracyM: number;
+}
 
 export type LocationStatus = "idle" | "locating" | "tracking" | "denied" | "unavailable";
 

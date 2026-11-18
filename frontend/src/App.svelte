@@ -1,6 +1,7 @@
 <script lang="ts">
   import { untrack, type Component } from "svelte";
   import AppShell from "$lib/components/AppShell.svelte";
+  import PageShell from "$lib/components/PageShell.svelte";
   import Stage from "$lib/components/Stage.svelte";
   import { startLive, stopLive } from "$lib/boot";
   import { buildOn } from "$lib/motion/buildOn";
@@ -34,6 +35,11 @@
     if (session.authenticated === false) document.documentElement.dataset.ready = "1";
   });
 
+  // a page-layout route scrolls like a document; the stage routes stay fixed to the window
+  $effect(() => {
+    document.documentElement.dataset.layout = route?.layout ?? "stage";
+  });
+
   let Screen = $state.raw<Component | null>(null);
   $effect(() => {
     const wanted = route;
@@ -51,13 +57,19 @@
 </script>
 
 {#if route && session.authenticated !== null}
-  <Stage>
-    {#if route.shell}
-      <AppShell {route}>
-        {#if Screen}<Screen />{/if}
-      </AppShell>
-    {:else if Screen}
-      <Screen />
-    {/if}
-  </Stage>
+  {#if route.layout === "page"}
+    <PageShell {route}>
+      {#if Screen}<Screen />{/if}
+    </PageShell>
+  {:else}
+    <Stage>
+      {#if route.shell}
+        <AppShell {route}>
+          {#if Screen}<Screen />{/if}
+        </AppShell>
+      {:else if Screen}
+        <Screen />
+      {/if}
+    </Stage>
+  {/if}
 {/if}

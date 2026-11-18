@@ -5,7 +5,7 @@
  */
 
 import type { LiveState } from "$lib/types/live";
-import type { Board, Line, RouteTimetable, Stop, StationBoard, TransitSourceStatus, Trip, Vehicle } from "$lib/types/transit";
+import type { Approaching, ApproachingQuery, Board, Line, RouteTimetable, Stop, StationBoard, TransitSourceStatus, Trip, Vehicle } from "$lib/types/transit";
 import type { BackendStats, SourceConfig, TransitSource } from "../../screens/settings/types";
 import type { Prefs, SessionInfo, SimJump, SimStatus } from "$lib/types/api";
 
@@ -40,9 +40,10 @@ function withQuery(path: string, query?: Query): string {
   return text ? `${path}?${text}` : path;
 }
 
-async function request<T>(method: string, path: string, body?: unknown, query?: Query): Promise<T> {
+async function request<T>(method: string, path: string, body?: unknown, query?: Query, signal?: AbortSignal): Promise<T> {
   const response = await fetch(withQuery(`/api${path}`, query), {
     method,
+    signal,
     credentials: "same-origin",
     headers: body === undefined ? undefined : { "Content-Type": "application/json" },
     body: body === undefined ? undefined : JSON.stringify(body),
@@ -59,7 +60,7 @@ async function request<T>(method: string, path: string, body?: unknown, query?: 
   return (await response.json()) as T;
 }
 
-const get = <T = Json>(path: string, query?: Query) => request<T>("GET", path, undefined, query);
+const get = <T = Json>(path: string, query?: Query, signal?: AbortSignal) => request<T>("GET", path, undefined, query, signal);
 const post = <T = Json>(path: string, body?: unknown, query?: Query) => request<T>("POST", path, body ?? {}, query);
 const put = <T = Json>(path: string, body: unknown) => request<T>("PUT", path, body);
 const del = <T = void>(path: string, query?: Query) => request<T>("DELETE", path, undefined, query);
@@ -147,6 +148,8 @@ export const api = {
     /** a station or station group; `agency` (name) and `source` (id) keep only those rows */
     station: (stopId: string, query: { back?: number; ahead?: number; date?: string; agency?: string; source?: string; passing?: 1 } = {}) =>
       get<StationBoard>(`/transit/stations/${encodeURIComponent(stopId)}`, query),
+    /** every train that will reach (or just passed) a position, with an ETA and how it was worked out */
+    approaching: (query: ApproachingQuery, signal?: AbortSignal) => get<Approaching>("/transit/approaching", { ...query }, signal),
     route: (routeId: string, date?: string) => get<RouteTimetable>(`/transit/routes/${encodeURIComponent(routeId)}`, { date }),
     board: (placeId: string, query: { back?: number; ahead?: number } = {}) =>
       get<Board>(`/transit/stations/${encodeURIComponent(placeId)}/board`, query),

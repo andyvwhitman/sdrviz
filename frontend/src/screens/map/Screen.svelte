@@ -28,7 +28,7 @@
   import TrainList from "./TrainList.svelte";
   import TripPanel from "./TripPanel.svelte";
   import { panel } from "./panelStore.svelte";
-  import { userLocation } from "./userLocation.svelte";
+  import { userLocation } from "$lib/stores/userLocation.svelte";
   import StationSchematic from "./StationSchematic.svelte";
   import { STATIONS, stationFor } from "./lib/stationSchematic";
   import OnAirList from "./OnAirList.svelte";

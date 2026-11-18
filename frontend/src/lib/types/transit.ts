@@ -220,3 +220,84 @@ export interface TransitSourceStatus {
     rt_updated_at: string | null;
   };
 }
+
+// ---- GET /transit/approaching (docs/transit-api.md, "Approaching"): trains converging on a spot
+
+/** `at_spot`: nearest the spot now; `passed`: reached it within the back window; `unknown`: no ETA could be worked out */
+export type ApproachState = "approaching" | "at_spot" | "passed" | "unknown";
+
+/** How good the data behind a row is: live position, an estimate without one, a position gone stale, the timetable alone */
+export type ApproachBasis = "live" | "estimated" | "stale" | "schedule";
+
+export interface ApproachingTrain {
+  /** trip + service day: stable list key */
+  key: string;
+  trip_id: string | null;
+  vehicle_id: string | null;
+  source: string;
+  agency: string;
+  train: string | null;
+  route_id: string | null;
+  route_name: string | null;
+  headsign: string | null;
+  origin: string | null;
+  destination: string | null;
+  state: ApproachState;
+  /** when the train is nearest the spot (when it was, once passed), ISO with offset; null when not computable */
+  eta: string | null;
+  /** seconds from `generated`; negative once passed */
+  eta_in_s: number | null;
+  scheduled: string | null;
+  delay_s: number | null;
+  delay_suspect: boolean;
+  status: VehicleStatus;
+  basis: ApproachBasis;
+  /** how `eta` was worked out: from the live position, the trip update's delay on the timetable, or the timetable alone */
+  eta_basis: "realtime" | "schedule" | "position";
+  /** how far the track passes from the spot, metres */
+  pass_distance_m: number;
+  /** along the track, km; null when not running */
+  to_go_km: number | null;
+  /** the station on this train's line nearest the spot, and whether the train calls there */
+  station: { id: string; name: string; distance_m: number; stops: boolean; scheduled: string | null; eta: string | null; delay_s: number | null } | null;
+  between: { previous: string; next: string } | null;
+  /** the train's travel direction at the spot */
+  direction: { bearing: number | null; cardinal: string | null; label: string | null; toward: string | null };
+  vehicle: { lat: number; lon: number; speed_mph: number | null; age_s: number | null; stale: boolean; position: "realtime" | "estimated"; next_stop: string | null } | null;
+}
+
+export interface NearestLine {
+  id: string;
+  name: string;
+  agency: string;
+  source: string;
+  /** from the spot to the line, metres */
+  distance_m: number;
+  /** the nearest point on the line */
+  lat: number;
+  lon: number;
+}
+
+export interface Approaching {
+  /** the clock the `eta_in_s` values are relative to */
+  generated: string;
+  position: { lat: number; lon: number; radius_km: number; nearest_line: NearestLine | null };
+  trains: ApproachingTrain[];
+  meta: {
+    sources: { id: string; agency: string; state: "ok" | "warming" | "error" | "lines"; rt_age_s: number | null; trains: number }[];
+    window_from: string;
+    window_to: string;
+    /** more rows matched than `limit` */
+    truncated: boolean;
+  };
+}
+
+export interface ApproachingQuery {
+  lat: number;
+  lon: number;
+  radius_km?: number;
+  ahead_min?: number;
+  back_min?: number;
+  agency?: string;
+  limit?: number;
+}

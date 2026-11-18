@@ -50,7 +50,7 @@
 @media (max-width: 767px) {
   .sy-login {
     width: auto; height: auto; min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column;
-    justify-content: center; padding: 24px 16px 16px; box-sizing: border-box;
+    justify-content: flex-start; padding: 15vh 16px 16px; /* anchored high, so the field and ENTER stay above a phone keyboard */ box-sizing: border-box;
   }
   .sy-login__panel { position: static; transform: none; width: 100%; max-width: 400px; margin: 0 auto; padding: 32px 24px 28px; }
   .sy-login__sub { white-space: normal; text-wrap: balance; font-size: var(--fs-13); line-height: 1.3; }

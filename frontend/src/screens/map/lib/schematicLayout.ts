@@ -332,7 +332,7 @@ export function layoutSchematic(input: SchematicInput): SchematicLayout {
     const detector = it.p.kind === "detector";
     if (TERMINALS.has(id) && it.rid === "r-nec") continue;
     const place = placeById[id];
-    const name = detector ? (it.p.mp_label || "").replace("≈", "≈ ") : shortName(place ?? { id, name: it.p.name });
+    const name = detector ? (it.p.mp_label || "").replace("≈", "≈ ").replace(" | ", " · ") : shortName(place ?? { id, name: it.p.name });
     const w = detector ? measure.exact(name, "mono11") : measure.tracked(name, "lab11");
     const cls = detector ? "mp" : "stn";
     const slot = (ox: number, oy: number, rotate: number, anchor: Anchor): NameCandidate => {

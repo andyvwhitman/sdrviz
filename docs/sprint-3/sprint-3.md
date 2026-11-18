@@ -48,3 +48,15 @@ tested steps; agents sized per role (GMUNK on Opus, builders on Sonnet).
 | D-5 | **Frequency page** `/frequency/:id` (GMUNK direction first): today's activity across the day, a briefer week view, the list of transmissions with transcript and a play button. Reachable from channel tiles, the inspector, Feeds & Banks and transcript rows. Phone-friendly (page layout). | GMUNK review; works on real recordings. |
 
 Later (not this sprint): the home page summary of recordings; starring transmissions to keep audio; search.
+
+## Outcome (2026-11-18, overnight)
+
+All four blocks shipped to production and were checked on real data.
+
+- **A** live: gain 36.4 → 28.0 dB (K Tower -1 → -9 dBFS, no clipping); A-2 gain guard; A-3 Eastern clock and `last_heard` (site clock matches DC; FE `cyclicAge` skew fix); A-4 "no samples" fault (Pi watchdog committed in receiver/pi/, **not installed: needs owner sudo**); A-5 ghost key-ups dropped (CH14 ghosts counted in node health).
+- **B** live: lockout with Retry-After, production settings check, viewer/admin roles (single-password mode until **`SDRVIZ_ADMIN_PASSWORD` is set** in the server .env), Secure cookie, Origin check. One outage: the settings check rejected the empty admin password from compose; fixed in a067f2b within minutes.
+- **C** live: phone layouts; GMUNK C-3 must-fixes 1-7 done. Open SHOULDs: plate card brackets, trip ARR · DEP header, feed sheet pan.
+- **D** live: every banked transmission recorded (Ogg Opus) and transcribed by faster-whisper small.en (keeps up with K Tower's ~170 tx/hour); retention 90 d / 10 GB; recordings API; `/frequency` index and `/frequency/:id` pages.
+- Also fixed: Live Ops mute/solo (a lever press re-saved stale prefs and reverted the bank; PATCH /api/prefs).
+
+Open: iPhone check of Ogg Opus playback (Safari < 18.4 cannot play it); D-5 leftovers (word reveal, DST ticks, strip aggregation under 192 px, SIM tag); transcript accuracy on noisy calls; DNS-rebinding re-check for transit sources; Caddy request-size limit.

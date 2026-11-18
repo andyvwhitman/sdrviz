@@ -19,6 +19,8 @@ from .nodes.service import BANKS_PRESET, NodeOffline, NodeRegistry
 from .nodes.session import NodeConnections
 from .radio.receiver import load_receiver, save_receiver
 from .radio.source import RadioSource
+from .recordings.recorder import Recorder
+from .recordings.transcription import Transcription
 from .sim import live_state
 from .sim.clock import SimClock, WallClock, local_time_of_day
 from .sim.data import SimData, load_health, load_sim_data
@@ -64,6 +66,8 @@ class Runtime:
         self.clock = WallClock() if wall else SimClock(start, settings.sim_speed)
         self.hub = Hub()
         self.audio = AudioStore(settings.audio_path)
+        self.transcription = Transcription()
+        self.recorder = Recorder(self)
         self.engine = ReplayEngine(self)
         self.prefetcher: Prefetcher | None = None
         # Real audio from the rtl_tcp receiver, once it has a host; the replay's synthetic audio then stays quiet.
@@ -109,6 +113,7 @@ class Runtime:
             self.prefetcher.stop()
         await self.engine.stop()
         await self.radio.stop()
+        await asyncio.to_thread(self.recorder.stop)
         if self.transit:
             await self.transit.stop()
         self.hub.close_all()

@@ -56,6 +56,14 @@ class Settings(BaseSettings):
     rtltcp_lat: float = 38.8973  # Washington Union Station, until the receiver is a real feed row
     rtltcp_lon: float = -77.0063
 
+    # Recording (D-1) and transcription (D-2), retention (D-3). Audio files live under audio_dir as YYYY/MM/DD/*.ogg.
+    recording_max_s: float = 120.0  # a longer transmission goes on in a second file
+    transcriber: str = "faster-whisper"  # or "none": rows are saved without a transcript
+    whisper_model: str = "small.en"
+    whisper_threads: int = 2  # leave the other cores of a small server to the web app
+    audio_retention_days: int = 90
+    audio_max_gb: float = 10.0
+
     @property
     def production(self) -> bool:
         """A public site: served over https. The checks and the Secure cookie follow from this."""

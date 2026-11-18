@@ -15,6 +15,7 @@ from sqlmodel import Session, SQLModel, create_engine, select
 from .config import Settings
 from .models import Bank, Feed, FeedAck, FeedEvent, Frequency, Prefs, Transmission
 from .nodes import models as _node_tables  # noqa: F401  (registers the node tables for create_all)
+from .recordings import models as _recording_tables  # noqa: F401  (registers the recording table)
 from .sim.detector import detector_fields
 from .sim.timefmt import iso_from_offset
 

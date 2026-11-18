@@ -1,5 +1,6 @@
 """Test fixtures: every test gets its own copy of a once-seeded database and a fresh app."""
 
+import os
 import shutil
 from pathlib import Path
 
@@ -11,6 +12,7 @@ from app.db import create_schema, make_engine, seed_if_empty
 from app.main import create_app
 
 PASSWORD = "test-password"
+os.environ.setdefault("SDRVIZ_TRANSCRIBER", "none")  # tests never load a speech model
 
 
 @pytest.fixture(scope="session")

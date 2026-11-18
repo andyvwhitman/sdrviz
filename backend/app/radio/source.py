@@ -142,6 +142,7 @@ class RadioSource:
             # every known channel inside the tuned window; the pipeline keeps state per channel across blocks
             freqs = {cid: _hz(freq) for cid, freq in self.rt.world.freqs.items()}
             for cid in self.pipeline.set_channels(freqs):  # deleted while on air
+                self.rt.recorder.end_pcm(cid)
                 self.events.key_down(cid)
             want_spectrum = self._blocks % SPECTRUM_EVERY == 0 and LIVE_FEED_ID in self.hub.watched_feeds()
             result = await asyncio.to_thread(self.pipeline.process, raw, want_spectrum)
@@ -159,10 +160,14 @@ class RadioSource:
                 continue
             flags = (protocol.FLAG_FIRST if chunk.first else 0) | (protocol.FLAG_LAST if chunk.last else 0)
             aar_channel = world_freqs[chunk.key].aar_channel or 0
+            self.rt.recorder.add_pcm(chunk.key, chunk.tx_seq, aar_channel, LIVE_FEED_ID, chunk.pcm, chunk.first)
+            if chunk.last:
+                self.rt.recorder.end_pcm(chunk.key)
             self.hub.send_audio(
                 chunk.key, protocol.audio_frame(aar_channel, chunk.tx_seq, chunk.offset_ms, flags, chunk.pcm)
             )
         for cid in result.key_downs:
+            self.rt.recorder.end_pcm(cid)
             self.events.key_down(cid)
         self.events.levels(result.levels)
         if result.spectrum is not None:
@@ -182,6 +187,7 @@ class RadioSource:
         """The link dropped: end any transmission still on air."""
         for cid, rx in self.channels.items():
             if rx.squelch.is_open:
+                self.rt.recorder.end_pcm(cid)
                 self.events.key_down(cid)
 
     def _update_status(self) -> None:

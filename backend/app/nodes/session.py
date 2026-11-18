@@ -20,6 +20,7 @@ from pydantic import ValidationError
 from ..live import node_protocol as wire
 from ..live import protocol
 from ..live.opus import OpusDecoder
+from ..recordings.recorder import ActiveRecording
 from .gain_guard import OVERLOAD_DBFS, GainGuard
 from .ghosts import WINDOW_S as GHOST_HOLD_S
 from .ghosts import GhostFilter, Start
@@ -67,6 +68,7 @@ class Transmission:
     pcm: bytearray = field(default_factory=bytearray)
     sent_ms: int = 0
     started: bool = False  # whether the first chunk has gone out
+    recording: ActiveRecording | None = None  # what is being saved of it (D-1)
 
 
 class NodeSession:
@@ -279,7 +281,9 @@ class NodeSession:
         if not self.events.key_up(channel_id, seq, message.snr_db, message.power_db, self.feed_id):
             self.refused.add(message.ch)  # another receiver has the channel: ignore this transmission
             return
-        self.transmissions[message.ch] = Transmission(channel_id, message.ch, seq)
+        tx = Transmission(channel_id, message.ch, seq)
+        tx.recording = self.rt.recorder.begin(channel_id, seq, message.ch, self.feed_id)
+        self.transmissions[message.ch] = tx
 
     def _on_key_down(self, aar_channel: int) -> None:
         self._release(aar_channel)  # a short transmission is judged now
@@ -289,6 +293,8 @@ class NodeSession:
 
     def _end_transmission(self, aar_channel: int) -> None:
         if tx := self.transmissions.pop(aar_channel, None):
+            if tx.recording:
+                self.rt.recorder.finish(tx.recording)
             self.events.key_down(tx.channel_id, self.feed_id)
 
     def _end_all_transmissions(self) -> None:
@@ -358,6 +364,8 @@ class NodeSession:
         except Exception as error:  # a damaged packet costs 20 ms, not the connection
             log.debug("node %s: opus decode failed: %s", self.node_id, error)
             return
+        if tx.recording:
+            self.rt.recorder.add(tx.recording, frame.payload)
         cut = len(tx.pcm) if frame.last else len(tx.pcm) // CHUNK_BYTES * CHUNK_BYTES
         data, tx.pcm = bytes(tx.pcm[:cut]), tx.pcm[cut:]
         for start in range(0, len(data), CHUNK_BYTES):

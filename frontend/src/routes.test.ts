@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
 import { layoutFor, routeFor, type Route } from "./routes";
 

@@ -18,10 +18,11 @@ COPY data/geo data/geo
 COPY data/sim data/sim
 
 # Everything that changes at run time lives in the /data volume; the app expects it under data/.
-RUN mkdir -p /data/db /data/transit /data/audio \
+RUN mkdir -p /data/db /data/transit /data/audio /data/models \
     && ln -s /data/db data/db \
     && ln -s /data/transit data/transit \
     && ln -s /data/audio data/audio \
+    && ln -s /data/models data/models \
     && chown -R sdrviz:sdrviz /data
 VOLUME /data
 

@@ -1,6 +1,7 @@
 """Application runtime: the long-lived objects the routers and the replay engine share."""
 
 import asyncio
+import contextlib
 import logging
 
 from sqlalchemy.engine import Engine
@@ -19,6 +20,7 @@ from .nodes.service import BANKS_PRESET, NodeOffline, NodeRegistry
 from .nodes.session import NodeConnections
 from .radio.receiver import load_receiver, save_receiver
 from .radio.source import RadioSource
+from .recordings import retention
 from .recordings.recorder import Recorder
 from .recordings.transcription import Transcription, make_transcriber, vocabulary_prompt
 from .sim import live_state
@@ -53,6 +55,7 @@ class Runtime:
         self.loop: asyncio.AbstractEventLoop | None = None  # set by start(); bank edits arrive on worker threads
         self._bank_channels = self.nodes.bank_channels()  # last list pushed to nodes on the banks preset
         self._tasks: set[asyncio.Task] = set()
+        self._retention: asyncio.Task | None = None
         self.data: SimData = load_sim_data(self.db, settings)
         self.receiver: Receiver = load_receiver(self.db, settings)
         self.world: World = load_world(self.db, settings, self.receiver, self.nodes)
@@ -101,6 +104,7 @@ class Runtime:
             self.engine.start(self.hub)
         self.radio.start()
         self.transcription.start()
+        self._retention = asyncio.create_task(retention.run_forever(self), name="retention")
         if self.transit:
             self.transit.start()
         if missing := missing_tools():
@@ -110,6 +114,10 @@ class Runtime:
             self.prefetcher.start()
 
     async def stop(self) -> None:
+        if self._retention:
+            self._retention.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await self._retention
         if self.prefetcher:
             self.prefetcher.stop()
         await self.engine.stop()

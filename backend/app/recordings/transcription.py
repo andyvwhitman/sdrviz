@@ -64,7 +64,7 @@ class FasterWhisperTranscriber:
         if self._model is None:
             from faster_whisper import WhisperModel  # imported here: a heavy import, and not needed with engine none
 
-            self._root.mkdir(parents=True, exist_ok=True)
+            self._root.resolve().mkdir(parents=True, exist_ok=True)  # the folder may be a dangling link into the volume
             self._model = WhisperModel(
                 self._model_name,
                 device="cpu",

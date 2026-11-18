@@ -1,7 +1,6 @@
 """Application runtime: the long-lived objects the routers and the replay engine share."""
 
 import asyncio
-import contextlib
 import logging
 
 from sqlalchemy.engine import Engine
@@ -172,9 +171,13 @@ class Runtime:
             asyncio.run_coroutine_threadsafe(coro, self.loop)
 
     async def _send_channels(self, node_ids: list[str], channels: list[int]) -> None:
-        for node_id in node_ids:
-            with contextlib.suppress(NodeOffline):
+        for node_id in node_ids:  # one failing node must not stop the others
+            try:
                 await self.nodes.send_command(node_id, ChannelsIn(type="channels", channels=channels))
+            except NodeOffline:
+                pass
+            except Exception:
+                log.exception("could not send the bank channels to node %s", node_id)
 
     def reload_node_feeds(self) -> None:
         """A node was enrolled, changed or revoked: its feed row appears, changes or goes."""

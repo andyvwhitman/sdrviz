@@ -48,7 +48,7 @@ AAR_FIRST_MHZ, AAR_STEP_MHZ = 160.110, 0.015
 
 
 class LiveChannelIn(BaseModel):
-    aar_channel: int = Field(ge=1, le=255)
+    aar_channel: int = Field(ge=1, le=97)  # the AAR band: 160.125 to 161.565 MHz
     feed_id: str | None = None  # the feed whose waterfall was clicked: the live bank's home feed
 
 
@@ -73,6 +73,8 @@ def live_frequency(session: DB, aar_channel: int) -> Frequency:
 @router.post("/live/channels")
 def add_live_channel(body: LiveChannelIn, session: DB, rt: RT) -> Bank:
     """Listen to a channel: put it in the live bank (made on first use). Nodes on the banks preset start decoding it."""
+    if body.feed_id is not None and body.feed_id not in rt.world.feeds:
+        raise HTTPException(status_code=422, detail=f"Unknown feed {body.feed_id!r}")
     freq = live_frequency(session, body.aar_channel)
     bank = session.get(Bank, LIVE_BANK_ID)
     if bank is None:

@@ -55,10 +55,10 @@ async def patch_node(node_id: str, body: NodePatch, rt: RT) -> NodeOut:
         raise _not_found(node_id) from error
     except ValueError as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
-    if body.preset is not None and node.status == "ONLINE":  # tell the running node its new channel list
-        channels = ChannelsIn(type="channels", channels=rt.nodes.channels_for(node.preset))
+    wanted = rt.nodes.channels_for(node.preset)
+    if body.preset is not None and node.status == "ONLINE" and wanted:  # tell the running node its new list
         with contextlib.suppress(NodeOffline):
-            await rt.nodes.send_command(node_id, channels)
+            await rt.nodes.send_command(node_id, ChannelsIn(type="channels", channels=wanted))
     return node
 
 

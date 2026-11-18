@@ -32,4 +32,5 @@ EXPOSE 8100
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8100/api/auth/session', timeout=4)"
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8100"]
+# Behind Caddy: take the client address from X-Forwarded-For, so rate limits are per visitor, not global.
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8100", "--proxy-headers", "--forwarded-allow-ips", "*"]

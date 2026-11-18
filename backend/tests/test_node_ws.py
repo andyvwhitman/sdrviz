@@ -530,3 +530,9 @@ def test_live_channel_reuses_a_known_frequency(client):
     added = client.post("/api/banks/live/channels", json={"aar_channel": known["aar_channel"]})
     assert added.status_code == 200 and added.json()["frequency_ids"] == [known["id"]]
     assert client.post("/api/banks/live/channels", json={"aar_channel": 0}).status_code == 422
+
+
+def test_live_channel_rejects_unknown_feeds_and_channels_outside_the_band(client):
+    assert client.post("/api/banks/live/channels", json={"aar_channel": 98}).status_code == 422
+    assert client.post("/api/banks/live/channels", json={"aar_channel": 33, "feed_id": "bogus"}).status_code == 422
+    assert client.get("/api/banks/bank-live").status_code == 404

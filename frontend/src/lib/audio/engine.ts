@@ -14,6 +14,9 @@ const CODEC_PCM_S16LE = 0;
 const JITTER_S = 0.25;
 const MAX_LAG_S = 1.5;
 const RAMP_S = 0.05; // gain changes glide instead of clicking
+const DUCK_GAIN = 0.125; // -18 dB
+const DUCK_IN_S = 0.12;
+const DUCK_OUT_S = 0.4;
 
 interface Voice {
   gain: GainNode;
@@ -26,6 +29,8 @@ export class AudioEngine {
   private ctx: AudioContext | null = null;
   private voices = new Map<number, Voice>();
   private gains = new Map<number, number>();
+  private master: GainNode | null = null;
+  private ducked = false;
 
   /** Must run inside a user gesture (a click), or the browser keeps the context suspended. */
   start(): void {
@@ -36,7 +41,16 @@ export class AudioEngine {
   stop(): void {
     void this.ctx?.close();
     this.ctx = null;
+    this.master = null;
     this.voices.clear();
+  }
+
+  /** Lower everything by 18 dB while a recorded clip plays (120 ms down, 400 ms back); live audio is never paused. */
+  duck(on: boolean): void {
+    this.ducked = on;
+    if (!this.ctx || !this.master) return;
+    const time = on ? DUCK_IN_S : DUCK_OUT_S;
+    this.master.gain.setTargetAtTime(on ? DUCK_GAIN : 1, this.ctx.currentTime, time / 3);
   }
 
   get running(): boolean {
@@ -71,12 +85,21 @@ export class AudioEngine {
     voice.cursor += source.buffer.duration;
   }
 
+  private masterFor(ctx: AudioContext): GainNode {
+    if (!this.master) {
+      this.master = ctx.createGain();
+      this.master.gain.value = this.ducked ? DUCK_GAIN : 1;
+      this.master.connect(ctx.destination);
+    }
+    return this.master;
+  }
+
   private voiceFor(ctx: AudioContext, aar: number): Voice {
     let voice = this.voices.get(aar);
     if (!voice) {
       const gain = ctx.createGain();
       gain.gain.value = this.gains.get(aar) ?? 0;
-      gain.connect(ctx.destination);
+      gain.connect(this.masterFor(ctx));
       voice = { gain, cursor: 0, txSeq: -1, lastOffsetMs: -1 };
       this.voices.set(aar, voice);
     }

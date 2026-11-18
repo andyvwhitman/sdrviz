@@ -42,6 +42,8 @@ class Player {
       $effect(() => {
         if (this.element) this.element.muted = audio.muted;
       });
+      // live audio ducks while a clip is audible
+      $effect(() => audio.duck(this.status === "playing" && !audio.muted));
     });
   }
 

@@ -66,6 +66,11 @@ class AudioStore {
     else this.engine.start();
   }
 
+  /** Lower the live audio while a recorded clip plays (the frequency page). */
+  duck(on: boolean): void {
+    this.engine.duck(on);
+  }
+
   /** Tell the server which channels to stream and set each voice's gain. */
   private subscribe(): void {
     const channels = live.state?.channels ?? [];

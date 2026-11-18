@@ -6,7 +6,7 @@
 import type { Component } from "svelte";
 import StubScreen from "$lib/components/StubScreen.svelte";
 
-export type ScreenId = "live-ops" | "feeds" | "map" | "settings" | "spot" | "login" | "kit";
+export type ScreenId = "live-ops" | "feeds" | "map" | "settings" | "spot" | "frequency" | "login" | "kit";
 
 export interface Route {
   id: ScreenId;
@@ -27,6 +27,8 @@ export interface Route {
    * "plate" shows a "needs a wider screen" notice instead. A route with layout "page" is already phone-ready.
    */
   phone?: "page" | "plate";
+  /** also answers every path below this one ("/frequency/amtk-k-tower"); the screen reads the rest */
+  prefix?: boolean;
   /** hidden from viewers and closed to them (they are sent to the default screen) */
   adminOnly?: boolean;
 }
@@ -44,6 +46,7 @@ export const ROUTES: Route[] = [
   { id: "map", path: "/map", name: "MAP", dir: "map", shell: true, phone: "page" },
   { id: "settings", path: "/settings", name: "SETTINGS", dir: "settings", shell: true, phone: "plate", adminOnly: true },
   { id: "spot", path: "/spot", name: "SPOT", dir: "spot", shell: true, layout: "page" },
+  { id: "frequency", path: "/frequency", name: "FREQUENCY", dir: "frequency", shell: true, layout: "page", prefix: true },
   { id: "login", path: "/login", name: "LOGIN", dir: "system", shell: false, phone: "page" },
   ...(import.meta.env.DEV ? [{ id: "kit", path: "/kit", name: "KIT", dir: "kit", shell: true } as const] : []),
 ];
@@ -63,7 +66,7 @@ export const DEFAULT_PATH = "/live";
 /** Where a session lands: SPOT on a phone (a plate is never a destination), Live Ops otherwise. */
 export const homePath = (phone: boolean): string => (phone ? "/spot" : DEFAULT_PATH);
 
-export const routeFor = (path: string): Route | undefined => ROUTES.find((r) => r.path === path);
+export const routeFor = (path: string): Route | undefined => ROUTES.find((r) => r.path === path || (r.prefix && path.startsWith(`${r.path}/`)));
 
 type ScreenModule = { default: Component };
 const screenModules = import.meta.glob<ScreenModule>("./screens/*/Screen.svelte");

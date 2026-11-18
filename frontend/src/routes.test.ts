@@ -20,6 +20,15 @@ describe("layoutFor", () => {
   });
 });
 
+describe("routeFor", () => {
+  it("answers a frequency id under /frequency, and nothing else below a path", () => {
+    expect(routeFor("/frequency")?.id).toBe("frequency");
+    expect(routeFor("/frequency/amtk-k-tower")?.id).toBe("frequency");
+    expect(routeFor("/spot/anything")).toBeUndefined();
+    expect(layoutFor(route("/frequency/amtk-k-tower"), true)).toBe("page");
+  });
+});
+
 describe("navFor", () => {
   it("shows an admin every tab and a viewer all but Settings", () => {
     expect(navFor(true).map((r) => r.id)).toContain("settings");

@@ -8,6 +8,7 @@ import type { LiveState } from "$lib/types/live";
 import type { Approaching, ApproachingQuery, Board, Line, RouteTimetable, Stop, StationBoard, TransitSourceStatus, Trip, Vehicle } from "$lib/types/transit";
 import type { BackendStats, SourceConfig, TransitSource } from "../../screens/settings/types";
 import type { Prefs, SessionInfo, SimJump, SimStatus } from "$lib/types/api";
+import type { ActivityIndex, DayActivity, FrequencyInfo, Recording, WeekActivity } from "$lib/types/recordings";
 
 /** A JSON object whose fields the owning screen narrows. Replace with schema.gen.ts types. */
 export type Json = Record<string, unknown>;
@@ -95,8 +96,21 @@ export const api = {
     list: () => get<Json[]>("/frequencies"),
     create: (frequency: Json) => post("/frequencies", frequency),
     get: (id: string) => get(`/frequencies/${id}`),
+    info: (id: string, signal?: AbortSignal) => get<FrequencyInfo>(`/frequencies/${encodeURIComponent(id)}`, undefined, signal),
     update: (id: string, frequency: Json) => put(`/frequencies/${id}`, frequency),
     remove: (id: string, force = false) => del(`/frequencies/${id}`, { force }),
+  },
+  /** Saved transmissions and per-frequency activity (docs/recordings-api.md). Times are UTC. */
+  recordings: {
+    /** newest first; `before` (ISO) pages: pass the last row's started_at */
+    list: (query: { frequency_id?: string; before?: string; limit?: number } = {}, signal?: AbortSignal) => get<Recording[]>("/recordings", query, signal),
+    /** the file is served by the browser's own audio element */
+    audioUrl: (id: number) => `/api/recordings/${id}/audio`,
+  },
+  activity: {
+    day: (frequencyId: string, date?: string, signal?: AbortSignal) => get<DayActivity>(`/frequencies/${encodeURIComponent(frequencyId)}/activity`, { date }, signal),
+    week: (frequencyId: string, date?: string, signal?: AbortSignal) => get<WeekActivity>(`/frequencies/${encodeURIComponent(frequencyId)}/activity/week`, { date }, signal),
+    all: (date?: string, signal?: AbortSignal) => get<ActivityIndex>("/frequencies/activity", { date }, signal),
   },
   banks: {
     list: () => get<Json[]>("/banks"),

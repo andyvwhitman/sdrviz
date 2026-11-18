@@ -32,6 +32,10 @@ describe("nodeFaults", () => {
     expect(nodeFaults(health({ rtl_tcp: "down" }))).toEqual(["RTL_TCP DOWN"]);
     expect(nodeFaults(health({ rtl_tcp: "connecting" }))).toEqual([]);
   });
+
+  it("flags a dongle that delivers no samples", () => {
+    expect(nodeFaults(health({ rtl_tcp: "no samples" }))).toEqual(["NO SAMPLES"]);
+  });
   it("flags a temperature over 80 C, not 80 itself or an unknown one", () => {
     expect(nodeFaults(health({ temp_c: 80.4 }))).toEqual(["TEMPERATURE 80 C"]);
     expect(nodeFaults(health({ temp_c: 80 }))).toEqual([]);

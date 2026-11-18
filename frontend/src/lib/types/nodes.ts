@@ -1,7 +1,8 @@
 /** Nodes: the REST shapes of docs/node-protocol.md, part 2. Times are ISO 8601 strings. */
 
 export type NodeStatus = "PENDING" | "ONLINE" | "OFFLINE" | "REVOKED";
-export type RtlTcpState = "connected" | "connecting" | "down";
+/** "no samples": rtl_tcp is connected (or reconnecting in a loop) but delivers no blocks, as after a dongle dropout */
+export type RtlTcpState = "connected" | "connecting" | "down" | "no samples";
 
 export interface NodeLocation {
   lat: number;
@@ -21,6 +22,10 @@ export interface NodeHealth {
   cpu_pct: number;
   temp_c: number | null;
   rtl_tcp: RtlTcpState;
+  /** the strongest recent level, dBFS */
+  peak_dbfs?: number;
+  /** key-ups judged to be intermod ghosts, by AAR channel */
+  ghosts?: Record<string, number>;
   dropped_blocks: number;
   audio_age_ms: number;
   uptime_s: number;

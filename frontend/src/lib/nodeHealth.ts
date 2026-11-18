@@ -24,6 +24,7 @@ export function nodeFaults(health: NodeHealth | null): string[] {
   if (!health) return [];
   const faults: string[] = [];
   if (health.rtl_tcp === "down") faults.push("RTL_TCP DOWN");
+  if (health.rtl_tcp === "no samples") faults.push("NO SAMPLES");
   if (health.temp_c != null && health.temp_c > TEMP_FAULT_C) faults.push(`TEMPERATURE ${Math.round(health.temp_c)} C`);
   return faults;
 }

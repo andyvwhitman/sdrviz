@@ -53,7 +53,9 @@
   let boxW = $state(0);
   let boxH = $state(0);
   const stageHeight = params.size === 1440 ? 804 : 984;
-  const height = $derived(phone ? boxH : stageHeight);
+  /** the foot of a phone's canvas is for the mode chips and the attribution, not for the map */
+  const PHONE_FOOT_PX = 120;
+  const height = $derived(phone ? Math.max(0, boxH - PHONE_FOOT_PX) : stageHeight);
   const width = $derived(phone ? boxW : stage.width - 64);
   const query = new URLSearchParams(location.search);
   const demo = query.get("motion") === "1";

@@ -105,3 +105,17 @@
 /* transit layers: stops take a generous click target; the train marker's ring and labels */
 .hud .mp-stop-hit { fill: transparent; stroke: none; }
 .hud .mp-vlabel      { font: 500 var(--fs-12) var(--font-label); letter-spacing: 0.08em; text-transform: uppercase; fill: var(--ink); }
+
+/* ---------- phone (below 768 px): the map is a page; the canvas fills the window under the page header ---------- */
+.mp-frame.is-phone { position: relative; inset: auto; flex: 1; display: flex; min-height: 420px; }
+.mp-frame.is-phone .mp-canvas { position: relative; inset: auto; flex: 1; }
+.is-phone .mp-origin { display: none; }
+.is-phone .mp-readout { left: 12px; top: 12px; max-width: calc(100% - 24px); gap: 8px; }
+.is-phone .mp-readout .hero__big { font-size: var(--fs-32); line-height: 36px; }
+.is-phone .mp-onair, .is-phone .mp-cursor, .is-phone .mp-zoom { display: none; }
+/* the mode chips sit along the foot, wrapping, clear of the readout */
+.is-phone .mp-ctl { left: 12px; right: 12px; top: auto; bottom: 36px; flex-wrap: wrap; gap: 8px; }
+.is-phone .mp-terms { right: 12px; top: auto; bottom: 120px; }
+.is-phone .mp-attrib { left: 12px; bottom: 10px; }
+/* the sim feed inspector fills the width as a sheet over the lower part of the map */
+.is-phone .mp-canvas .inspector { left: 0; right: 0; width: auto; top: 30%; bottom: 0; }

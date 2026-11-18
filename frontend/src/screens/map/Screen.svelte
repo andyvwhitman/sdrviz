@@ -21,6 +21,7 @@
   import { transit } from "$lib/stores/transit.svelte";
   import { ui } from "$lib/stores/ui.svelte";
   import { stage } from "$lib/stores/stage.svelte";
+  import { viewport } from "$lib/stores/viewport.svelte";
   import MapCanvas from "./MapCanvas.svelte";
   import MapInspector from "./MapInspector.svelte";
   import RoutePanel from "./RoutePanel.svelte";
@@ -47,8 +48,13 @@
   import "./map.css";
 
   const INSPECTOR_W = 480;
-  const height = params.size === 1440 ? 804 : 984;
-  const width = $derived(stage.width - 64); // the canvas follows the window's width
+  // The canvas follows the window: the stage's design size on a wide screen, its measured box on a phone.
+  const phone = $derived(viewport.phone);
+  let boxW = $state(0);
+  let boxH = $state(0);
+  const stageHeight = params.size === 1440 ? 804 : 984;
+  const height = $derived(phone ? boxH : stageHeight);
+  const width = $derived(phone ? boxW : stage.width - 64);
   const query = new URLSearchParams(location.search);
   const demo = query.get("motion") === "1";
   const frozenAt = query.get("t") ? Number(query.get("t")) : null;
@@ -92,7 +98,7 @@
   // ---- the side panel (`?page=station|trip|route&id=`): one at a time, and the trains in view
   const PANEL_W = 440;
   const current = $derived(panel.current);
-  const overlayView = $derived({ stageWidth: stage.width, panelWidth: current ? PANEL_W : 0, mode });
+  const overlayView = $derived({ stageWidth: phone ? viewport.width : stage.width, panelWidth: current && !phone ? PANEL_W : 0, mode });
   const heroCountOnly = $derived(countOnly(overlayView));
   const listFolded = $derived(listFoldedByDefault(overlayView));
   let inView = $state.raw<Vehicle[]>([]);
@@ -268,14 +274,14 @@
   });
 </script>
 
-<div class="mp-frame">
-  <div class="mp-canvas bezel" style:--pn-w={current ? `${PANEL_W}px` : null}>
-    {#if station && data?.detail}
+<div class="mp-frame" class:is-phone={phone}>
+  <div class="mp-canvas bezel" bind:clientWidth={boxW} bind:clientHeight={boxH} style:--pn-w={current && !phone ? `${PANEL_W}px` : null}>
+    {#if station && data?.detail && width > 0}
       <StationSchematic config={station} detail={data.detail} {width} {height} />
-    {:else if data && measure && snap && overlays}
+    {:else if data && measure && snap && overlays && width > 0 && height > 0}
       <MapCanvas
         {data} {measure} {mode} {width} {height} {selection} {overlays} {pings} {demoMs}
-        inspectorWidth={selection ? INSPECTOR_W : 0}
+        inspectorWidth={selection && !phone ? INSPECTOR_W : 0}
         onselect={select}
         onpointer={(p) => (pointer = p)}
         onview={(k, m) => ((zoom = k), (moved = m))}
@@ -291,7 +297,7 @@
         onwindow={(v) => (inView = v)}
         {centre}
         {reveal}
-        panelWidth={current ? PANEL_W : 0}
+        panelWidth={current && !phone ? PANEL_W : 0}
         {national}
       />
     {:else if failure}
@@ -306,7 +312,7 @@
           <span class="b" class:is-hidden={heroCountOnly}>{counts?.feeds ?? 0} FEEDS · {counts?.stations ?? 0} STATIONS · {counts?.detectors ?? 0} DETECTORS</span>
         </span>
       </div>
-      <TrainList fetchedAt={transit.fetchedAt} vehicles={inView} selectedId={trainId} onselect={(id) => openTrain(id, true)} compact={width - (current ? PANEL_W : 0) < 1500} folded={listFolded} />
+      <TrainList fetchedAt={transit.fetchedAt} vehicles={inView} selectedId={trainId} onselect={(id) => openTrain(id, true)} compact={phone || width - (current ? PANEL_W : 0) < 1500} folded={listFolded} />
     </div>
 
     <div class="mp-onair" bind:this={onairEl}><OnAirList rows={snap?.active_transmissions ?? []} {demoMs} {demoRow} /></div>

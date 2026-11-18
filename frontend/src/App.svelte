@@ -8,9 +8,12 @@
   import { router } from "$lib/router.svelte";
   import { session } from "$lib/stores/session.svelte";
   import { shell } from "$lib/stores/shell.svelte";
-  import { DEFAULT_PATH, loadScreen, routeFor } from "./routes";
+  import { viewport } from "$lib/stores/viewport.svelte";
+  import WiderScreen from "$lib/components/WiderScreen.svelte";
+  import { DEFAULT_PATH, layoutFor, loadScreen, routeFor } from "./routes";
 
   const route = $derived(routeFor(router.path));
+  const layout = $derived(route ? layoutFor(route, viewport.phone) : "stage");
 
   // Unknown paths and "/" go to Live Ops (query kept).
   $effect(() => {
@@ -37,7 +40,7 @@
 
   // a page-layout route scrolls like a document; the stage routes stay fixed to the window
   $effect(() => {
-    document.documentElement.dataset.layout = route?.layout ?? "stage";
+    document.documentElement.dataset.layout = layout === "stage" ? "stage" : "page";
   });
 
   let Screen = $state.raw<Component | null>(null);
@@ -47,6 +50,10 @@
     Screen = null;
     if (!wanted) return;
     document.title = `SDRVIZ · ${wanted.name}`;
+    if (layoutFor(wanted, viewport.phone) === "plate") {
+      document.documentElement.dataset.ready = "1";
+      return;
+    }
     loadScreen(wanted).then((component) => {
       if (route === wanted) {
         Screen = component;
@@ -57,7 +64,11 @@
 </script>
 
 {#if route && session.authenticated !== null}
-  {#if route.layout === "page"}
+  {#if layout === "plate"}
+    <PageShell {route}><WiderScreen {route} /></PageShell>
+  {:else if layout === "page" && !route.shell}
+    {#if Screen}<Screen />{/if}
+  {:else if layout === "page"}
     <PageShell {route}>
       {#if Screen}<Screen />{/if}
     </PageShell>

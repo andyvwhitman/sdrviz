@@ -16,6 +16,7 @@
    */
   import type { Snippet } from "svelte";
   import Chip from "$lib/components/Chip.svelte";
+  import { viewport } from "$lib/stores/viewport.svelte";
 
   interface Props {
     title: string;
@@ -38,12 +39,12 @@
 
 <!-- the border click is for the pointer; Esc is the keyboard way (handled by the map screen) -->
 <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-<div class="pn-root" class:is-full={full} onclick={(e) => e.target === e.currentTarget && onclose()}>
+<div class="pn-root" class:is-full={full} class:is-phone={viewport.phone} onclick={(e) => e.target === e.currentTarget && onclose()}>
   <section class="pn br" aria-label={label}>
     <header class="pn__bar">
       {#if onback}<Chip text="BACK" kind="filter" button title="Back to the previous panel" onclick={onback} />{/if}
       <span class="pn__title">{title}</span>
-      <button class="chip chip--icon" data-chip="nominal" aria-label={fullLabel} title={fullLabel} onclick={() => onfull(!full)}>
+      {#if !viewport.phone}<button class="chip chip--icon" data-chip="nominal" aria-label={fullLabel} title={fullLabel} onclick={() => onfull(!full)}>
         <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.25" aria-hidden="true">
           {#if full}
             <path d="M1 6h5V1M10 1v5h5M15 10h-5v5M6 15v-5H1" />
@@ -51,8 +52,8 @@
             <path d="M1 5.5V1h4.5M10.5 1H15v4.5M15 10.5V15h-4.5M5.5 15H1v-4.5" />
           {/if}
         </svg>
-      </button>
-      <Chip text="ESC" button title="Close" onclick={onclose} />
+      </button>{/if}
+      <Chip text={viewport.phone ? "CLOSE" : "ESC"} button title="Close" onclick={onclose} />
     </header>
     {#if kind || status}<div class="pn__kind"><span class="pn__kindtext">{kind}</span>{#if status}<span class="pn__status">{@render status()}</span>{/if}</div>{/if}
     <div class="pn__body">{@render children()}</div>
@@ -70,6 +71,10 @@
   }
   .is-full .pn { inset: 28px; padding: 16px 24px 20px; box-shadow: 0 0 0 1px var(--bg-void), 0 12px 48px rgb(0 0 0 / 0.6); }
   .pn::before { --c: var(--line); }
+  /* phone: the panel is the page, covering the map; no maximize, no dimmed border */
+  .pn-root.is-phone { z-index: 7; left: 0; width: auto; pointer-events: auto; }
+  .is-phone .pn { inset: 0; padding: 12px 16px 16px; box-shadow: none; }
+  .is-phone .pn__bar { min-height: 44px; }
   .pn__bar { display: flex; align-items: center; gap: 8px; min-height: 32px; }
   .pn__title { flex: 1; min-width: 0; font: var(--type-title); letter-spacing: var(--track-title); text-transform: uppercase; color: var(--ink); overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; }
   .is-full .pn__title { font: var(--type-title-lg); letter-spacing: var(--track-title); }

@@ -45,3 +45,17 @@
 
 /* revision 3 · login error: the thin dim underline, never the bright autofocus underline or a ring */
 .sy-login .field.is-error .field__input { border-bottom: 1px solid var(--line-faint); outline: none; }
+
+/* ---------- login on a phone (below 768 px): a page, not the stage; the panel fills the width ---------- */
+@media (max-width: 767px) {
+  .sy-login {
+    width: auto; height: auto; min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column;
+    justify-content: center; padding: 24px 16px 16px; box-sizing: border-box;
+  }
+  .sy-login__panel { position: static; transform: none; width: 100%; max-width: 400px; margin: 0 auto; padding: 32px 24px 28px; }
+  .sy-login__sub { white-space: normal; text-wrap: balance; font-size: var(--fs-13); line-height: 1.3; }
+  .sy-login__form { margin-top: 32px; }
+  .sy-login__form .btn { justify-self: stretch; min-height: 48px; }
+  .sy-login__form .field__input { font-size: 16px; } /* 16 px stops iOS zooming the page on focus */
+  .sy-login__ruler { display: none; } /* 1856 design px of ticks has no honest phone version */
+}

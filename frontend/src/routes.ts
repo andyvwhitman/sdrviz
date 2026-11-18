@@ -22,15 +22,27 @@ export interface Route {
    * "page": an ordinary responsive document that scrolls, for phones (the shell becomes PageShell).
    */
   layout?: "stage" | "page";
+  /**
+   * What a phone (under 768 px) gets for a stage route: "page" renders the screen as a responsive document,
+   * "plate" shows a "needs a wider screen" notice instead. A route with layout "page" is already phone-ready.
+   */
+  phone?: "page" | "plate";
+}
+
+/** How a route is laid out in a window of this kind: its own layout, or the phone version of a stage route. */
+export function layoutFor(route: Route, phone: boolean): "stage" | "page" | "plate" {
+  if (route.layout === "page") return "page";
+  if (!phone) return "stage";
+  return route.phone ?? "stage";
 }
 
 export const ROUTES: Route[] = [
-  { id: "live-ops", path: "/live", name: "LIVE OPS", dir: "live-ops", shell: true },
-  { id: "feeds", path: "/feeds", name: "FEEDS & BANKS", dir: "feeds", shell: true },
-  { id: "map", path: "/map", name: "MAP", dir: "map", shell: true },
-  { id: "settings", path: "/settings", name: "SETTINGS", dir: "settings", shell: true },
+  { id: "live-ops", path: "/live", name: "LIVE OPS", dir: "live-ops", shell: true, phone: "plate" },
+  { id: "feeds", path: "/feeds", name: "FEEDS & BANKS", dir: "feeds", shell: true, phone: "plate" },
+  { id: "map", path: "/map", name: "MAP", dir: "map", shell: true, phone: "page" },
+  { id: "settings", path: "/settings", name: "SETTINGS", dir: "settings", shell: true, phone: "plate" },
   { id: "spot", path: "/spot", name: "SPOT", dir: "spot", shell: true, layout: "page" },
-  { id: "login", path: "/login", name: "LOGIN", dir: "system", shell: false },
+  { id: "login", path: "/login", name: "LOGIN", dir: "system", shell: false, phone: "page" },
   ...(import.meta.env.DEV ? [{ id: "kit", path: "/kit", name: "KIT", dir: "kit", shell: true } as const] : []),
 ];
 

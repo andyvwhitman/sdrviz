@@ -91,6 +91,8 @@
   }
   .pg__sheet a[aria-current="page"] { color: var(--state-select); box-shadow: inset 2px 0 0 var(--state-select); }
   .pg__main { flex: 1; min-width: 0; }
+  /* the map fills the window between the header and the status line */
+  .pg__main[data-route="map"] { display: flex; flex-direction: column; }
   .pg__status {
     display: flex; align-items: center; gap: 16px; min-height: var(--status-h); padding: 6px 16px;
     border-top: 1px solid var(--grid); font: 400 var(--fs-11)/1.2 var(--font-data); color: var(--ink-2);

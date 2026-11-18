@@ -1,0 +1,89 @@
+#!/usr/bin/env python3
+"""Restart sdrviz-rtltcp when the RTL-SDR dongle has dropped off USB and rtl_tcp holds a dead handle.
+
+On 2026-11-17 22:08 the dongle re-enumerated on USB. rtl_tcp kept the old handle and kept accepting connections, while
+the node agent logged "rtl_tcp: [Errno 104] Connection reset by peer; retrying in 1s" every 6 s for 40 minutes.
+Two signs trigger a restart:
+  * rtl_tcp's own log (last WINDOW_S seconds) mentions a USB or libusb error;
+  * the node agent's log (same window) retries rtl_tcp at least RETRIES times.
+The restart is limited to one per COOLDOWN_S, so a really missing dongle does not cause a restart loop.
+Runs as the unprivileged `sdrviz` user; the only privilege is the sudoers rule in sdrviz-watchdog.sudoers.
+Standard library only.
+"""
+
+import re
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+WINDOW_S = 60
+POLL_S = 15
+COOLDOWN_S = 300
+RETRIES = 5
+STATE_FILE = Path("/run/sdrviz-watchdog/last-restart")  # RuntimeDirectory of the service; cleared on reboot
+
+USB_ERROR = re.compile(
+    r"libusb|usb_claim_interface|usb_open|LIBUSB_ERROR|No such device|Device or resource busy|"
+    r"Failed to open rtlsdr|rtlsdr_read_async|Error: .*usb|Lost device",
+    re.IGNORECASE,
+)
+AGENT_RETRY = re.compile(r"rtl_tcp: .*retrying in")
+
+
+def trouble(rtltcp_lines: list[str], node_lines: list[str]) -> str | None:
+    """Why rtl_tcp should be restarted, or None when the logs look normal."""
+    usb = [line for line in rtltcp_lines if USB_ERROR.search(line)]
+    if usb:
+        return f"rtl_tcp logged a USB error: {usb[-1].strip()[:120]}"
+    retries = sum(1 for line in node_lines if AGENT_RETRY.search(line))
+    if retries >= RETRIES:
+        return f"the node agent retried rtl_tcp {retries} times in {WINDOW_S} s"
+    return None
+
+
+def may_restart(last_restart: float | None, now: float) -> bool:
+    return last_restart is None or now - last_restart >= COOLDOWN_S
+
+
+def journal(unit: str) -> list[str]:
+    result = subprocess.run(
+        ["journalctl", "-u", unit, "--since", f"-{WINDOW_S}s", "-o", "cat", "--no-pager"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return result.stdout.splitlines()
+
+
+def restart_rtltcp() -> None:
+    subprocess.run(["sudo", "-n", "/usr/bin/systemctl", "restart", "sdrviz-rtltcp.service"], check=True)
+
+
+def read_last_restart() -> float | None:
+    try:
+        return float(STATE_FILE.read_text())
+    except (OSError, ValueError):
+        return None
+
+
+def main() -> int:
+    last = read_last_restart()
+    print("sdrviz-rtltcp-watchdog started", flush=True)
+    while True:
+        reason = trouble(journal("sdrviz-rtltcp.service"), journal("sdrviz-node.service"))
+        now = time.time()
+        if reason and may_restart(last, now):
+            print(f"restarting sdrviz-rtltcp: {reason}", flush=True)
+            try:
+                restart_rtltcp()
+            except subprocess.CalledProcessError as error:
+                print(f"restart failed: {error}", file=sys.stderr, flush=True)
+            last = now
+            STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
+            STATE_FILE.write_text(str(now))
+        time.sleep(POLL_S)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

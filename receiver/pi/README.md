@@ -77,6 +77,31 @@ Optional test of the cap (temporary, then undone): `sudo systemctl set-property 
 `setup.sh` installs the same files, so running it again does the same. `/etc/sdrviz/rtltcp.env` is not touched (it keeps
 `RTLTCP_ADDRESS=0.0.0.0`; see the comment in the file for when to switch to `127.0.0.1`).
 
+## The dongle watchdog (not installed yet; needs sudo, once)
+
+On 2026-11-17 22:08 the dongle re-enumerated on USB; `rtl_tcp` kept a dead handle and the node agent logged
+`rtl_tcp: [Errno 104] Connection reset by peer; retrying in 1s` every 6 s for 40 minutes. The server now flags such a node
+("rtl_tcp: no samples" and a fault event, because the spectrum frames stop), but only the Pi can fix it. The watchdog
+(`sdrviz-rtltcp-watchdog`, a small Python script) runs as the `sdrviz` user and restarts `sdrviz-rtltcp` when, in the last
+minute, rtl_tcp logged a USB error or the agent retried rtl_tcp five times or more. At most one restart per 5 minutes. Its
+only privilege is one sudoers line: `systemctl restart sdrviz-rtltcp.service`.
+
+Install (on the Pi, with sudo):
+```bash
+cd ~/sdrviz && git pull && cd receiver/pi
+sudo visudo -cf sdrviz-watchdog.sudoers                       # must say: parsed OK
+sudo install -m 0440 sdrviz-watchdog.sudoers /etc/sudoers.d/sdrviz-watchdog
+sudo install -m 0755 sdrviz-rtltcp-watchdog /usr/local/bin/sdrviz-rtltcp-watchdog
+sudo install -m 0644 sdrviz-watchdog.service /etc/systemd/system/sdrviz-watchdog.service
+sudo systemctl daemon-reload && sudo systemctl enable --now sdrviz-watchdog
+systemd-analyze verify /etc/systemd/system/sdrviz-watchdog.service    # prints nothing when it is fine
+sudo -u sdrviz sudo -n -l                                      # lists only the one systemctl restart line
+journalctl -u sdrviz-watchdog -f                               # "sdrviz-rtltcp-watchdog started"
+```
+Test it (briefly interrupts the stream): `sudo -u sdrviz sudo -n /usr/bin/systemctl restart sdrviz-rtltcp.service` must work
+without a password, and `sudo -u sdrviz sudo -n /usr/bin/systemctl restart sshd` must be refused. The trigger logic is unit-tested (`backend/tests/test_pi_watchdog.py`); a live trigger needs a real USB drop.
+Remove: `sudo systemctl disable --now sdrviz-watchdog; sudo rm /etc/sudoers.d/sdrviz-watchdog /etc/systemd/system/sdrviz-watchdog.service /usr/local/bin/sdrviz-rtltcp-watchdog`.
+
 ## Tuning the gain
 Start at the default (36.4 dB). Run the probe:
 - **`clipped` above about 1%:** the gain is too high, so lower it.

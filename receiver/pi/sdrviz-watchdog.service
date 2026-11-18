@@ -1,0 +1,22 @@
+[Unit]
+Description=sdrviz watchdog: restart rtl_tcp when the dongle dropped off USB
+After=sdrviz-rtltcp.service
+Wants=sdrviz-rtltcp.service
+
+[Service]
+Type=simple
+User=sdrviz
+Group=sdrviz
+# Reads the journal of sdrviz-rtltcp and sdrviz-node.
+SupplementaryGroups=systemd-journal
+RuntimeDirectory=sdrviz-watchdog
+ExecStart=/usr/local/bin/sdrviz-rtltcp-watchdog
+Restart=always
+RestartSec=5
+# NoNewPrivileges must stay off: the script restarts the service through sudo (one command, see the sudoers file).
+NoNewPrivileges=no
+ProtectHome=yes
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target

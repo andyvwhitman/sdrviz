@@ -36,6 +36,8 @@ ACK_TIMEOUT_S = 10.0
 SLOW_ACK_TIMEOUT_S = 30.0  # restart and set_server
 REMOTE_SEQ_BASE = 2_000_000_000  # tx_seq of node transmissions on /ws/live: above the replay's and the LAN receiver's
 CHUNK_BYTES = protocol.CHUNK_BYTES
+NO_SAMPLES_AFTER_S = 20.0  # no spectrum or audio frame for this long (they come ~5 times a second): the dongle is dead
+NO_SAMPLES = "no samples"  # shown as the node's rtl_tcp state while that is so
 
 
 def now_ms() -> int:
@@ -71,6 +73,9 @@ class NodeSession:
         self.transmissions: dict[int, Transmission] = {}  # by AAR channel
         self.refused: set[int] = set()  # AAR channels whose key-up lost to another receiver
         self._last_rx = time.monotonic()
+        self._last_frame = time.monotonic()  # the last binary frame (spectrum or audio): proof the node gets samples
+        self.no_samples = False
+        self._node_rtl_tcp = "down"  # what the node itself last reported
         self._awaiting_pong: int | None = None
         self._send_lock = asyncio.Lock()
         self._ids = itertools.count(1)
@@ -158,7 +163,23 @@ class NodeSession:
     def _refresh_live(self) -> None:
         self.live.link_quality = self.link.quality()
         self.live.lag_ms = self.link.lag_ms()
+        self._check_samples()
         self._publish_peak()
+
+    def _check_samples(self) -> None:
+        """A dongle that re-enumerated on USB leaves rtl_tcp with a dead handle: the agent reports it connected and
+        idle, but no samples arrive. The node's own health cannot say so, the missing frames can (A-4)."""
+        silent_s = time.monotonic() - self._last_frame
+        if (silent_s > NO_SAMPLES_AFTER_S) != self.no_samples:
+            self.no_samples = not self.no_samples
+            if self.no_samples:
+                detail = f"no samples for {silent_s:.0f} s: the dongle may have dropped off USB"
+                log.warning("node %s: %s", self.node_id, detail)
+            else:
+                detail = "samples are arriving again"
+            self.rt.nodes.add_event(self.node_id, "fault", detail)
+        if self.live.health is not None and (self.no_samples or self.live.health["rtl_tcp"] == NO_SAMPLES):
+            self.live.health["rtl_tcp"] = NO_SAMPLES if self.no_samples else self._node_rtl_tcp
 
     def _publish_peak(self) -> None:
         if self.live.health is not None:
@@ -192,6 +213,7 @@ class NodeSession:
                 self.link.audio_age_ms = message.audio_age_ms
                 self.live.health = message.model_dump(exclude={"type"})
                 self.gain_guard.gain_db = message.tune.gain_db
+                self._node_rtl_tcp = message.rtl_tcp
                 self._refresh_live()
             case wire.Ack():
                 if (future := self.pending.get(message.id)) and not future.done():
@@ -268,6 +290,7 @@ class NodeSession:
             raise _Protocol(str(error)) from error
         if number != self.number:
             return  # not this node's number: dropped
+        self._last_frame = time.monotonic()
         if isinstance(frame, wire.SpectrumFrame):
             if self.feed_id in self.rt.hub.watched_feeds():
                 self.rt.hub.send_spectrum(self.feed_id, inner)

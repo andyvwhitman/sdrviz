@@ -799,3 +799,47 @@ def test_amtraker_platform_reaches_boards_and_trips(amtrak_gtfs):
     amtrak_gtfs.match_trips(NOW)
     [added] = [r for r in amtrak_gtfs.station_board("WAS", NOW, *wide).arrivals if r.added]
     assert (added.trip_id, added.track) == ("amtrak:999-13", "9")
+
+
+# --- B-2: source URLs must be http(s) to a public host ---------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "file:///etc/passwd",
+        "ftp://example.org/x.zip",
+        "http://127.0.0.1:8100/api/system",
+        "http://localhost/x",
+        "http://10.0.0.5/gtfs.zip",
+        "http://172.18.0.2/x",
+        "http://169.254.169.254/latest/meta-data/",
+        "http://[::1]/x",
+        "http://user:pass@93.184.216.34/x.zip",
+    ],
+)
+def test_source_urls_to_private_hosts_are_refused(client, live, url):
+    for field in ("static_url", "rt_vehicle_positions_url"):
+        response = client.post("/api/transit/sources", json=source_body(**{field: url}))
+        assert response.status_code == 422, (field, url)
+    assert client.get("/api/transit/sources").json() == []
+
+
+def test_source_url_to_a_public_address_is_accepted_and_names_are_resolved(client, live, monkeypatch):
+    assert (
+        client.post("/api/transit/sources", json=source_body(static_url="https://93.184.216.34/g.zip")).status_code
+        == 201
+    )
+
+    def resolve(host, port):
+        return (
+            [(2, 1, 6, "", ("10.1.2.3", port))]
+            if host == "sneaky.example"
+            else [(2, 1, 6, "", ("93.184.216.34", port))]
+        )
+
+    monkeypatch.setattr("app.transit.sources.socket.getaddrinfo", resolve)
+    bad = client.put("/api/transit/sources/x", json=source_body(static_url="https://sneaky.example/g.zip"))
+    assert bad.status_code == 422 and "not a public address" in bad.json()["detail"]
+    good = client.put("/api/transit/sources/x", json=source_body(static_url="https://feeds.example.org/g.zip"))
+    assert good.status_code == 200

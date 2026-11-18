@@ -1,3 +1,4 @@
+import asyncio
 from datetime import date
 from typing import Annotated
 
@@ -7,7 +8,7 @@ from ..auth import ADMIN
 from ..deps import RT
 from ..transit.geometry import Bbox
 from ..transit.models import Alert, Approaching, Board, Line, Merges, StationBoard, Stop, Timetable, Trip, Vehicle
-from ..transit.sources import SourceConfig, TransitSource
+from ..transit.sources import SourceConfig, TransitSource, check_public_url
 
 router = APIRouter(prefix="/transit", tags=["transit"])
 
@@ -39,12 +40,22 @@ def _service(rt):
     return rt.transit
 
 
+async def _checked(body: SourceConfig) -> SourceConfig:
+    """422 unless every URL is http(s) to a public host."""
+    try:
+        for url in body.urls:
+            await asyncio.to_thread(check_public_url, url)
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+    return body
+
+
 @router.post("/sources", status_code=201, dependencies=[ADMIN])
 async def add_source(body: SourceConfig, rt: RT) -> TransitSource:
     service = _service(rt)
     if body.id in service.configs:
         raise HTTPException(status_code=409, detail=f"source {body.id!r} exists")
-    return await service.apply(body)
+    return await service.apply(await _checked(body))
 
 
 @router.put("/sources/{source_id}", dependencies=[ADMIN])
@@ -52,7 +63,7 @@ async def update_source(source_id: str, body: SourceConfig, rt: RT) -> TransitSo
     service = _service(rt)
     if source_id not in service.configs:
         raise HTTPException(status_code=404, detail=f"no source {source_id!r}")
-    return await service.apply(body.model_copy(update={"id": source_id}))
+    return await service.apply((await _checked(body)).model_copy(update={"id": source_id}))
 
 
 @router.delete("/sources/{source_id}", status_code=204, dependencies=[ADMIN])

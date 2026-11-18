@@ -114,7 +114,7 @@ Not in the DB (read from files, held in memory): `trains.json` (136 trains with 
 |---|---|---|---|
 | `POST /auth/login` (public) | single-user login | `{password}` | 204 + `Set-Cookie: sdrviz_session` (signed, HttpOnly, SameSite=Lax); 401 `{detail}` |
 | `POST /auth/logout` | | | 204 |
-| `GET /auth/session` (public) | | | `{authenticated: bool, sim: true}` |
+| `GET /auth/session` (public) | | | `{authenticated: bool, sim: true, role: "viewer"\|"admin"\|null}` (see docs/auth.md) |
 | `GET /system` | host, decoder, disk, version | | `{host, decoder:{state, queue}, disk, version, sim}` (the `system` block of LiveState) |
 | `GET /live/state` | the current `LiveState` (same object the WS sends as `snapshot`) | | `LiveState` |
 | `GET/PUT /prefs` | active bank, mute/solo/record, volumes, displayed feed | `Prefs` | `Prefs` |

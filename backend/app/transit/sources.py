@@ -1,8 +1,11 @@
 """Transit sources: what the settings page edits and what the database stores (see docs/transit-api.md)."""
 
+import ipaddress
 import re
+import socket
 from datetime import datetime
 from typing import Literal
+from urllib.parse import urlsplit
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -30,6 +33,23 @@ class SourceStatus(BaseModel):
     rt_updated_at: datetime | None = None
     counts: SourceCounts = Field(default_factory=SourceCounts)
     timings: SourceTimings = Field(default_factory=SourceTimings)
+
+
+def check_public_url(url: str) -> None:
+    """Raise ValueError unless `url` is http(s) to a host whose every address is public (no SSRF to the docker
+    network, the loopback, link-local or cloud metadata addresses). Resolves the name; call it off the event loop."""
+    parts = urlsplit(url)
+    if parts.scheme not in ("http", "https") or not parts.hostname:
+        raise ValueError(f"{url!r} is not an http(s) URL")
+    if parts.username or parts.password:
+        raise ValueError("a URL with a user name or password is not allowed (use api_key)")
+    try:
+        addresses = {info[4][0] for info in socket.getaddrinfo(parts.hostname, parts.port or 443)}
+    except socket.gaierror as error:
+        raise ValueError(f"cannot resolve {parts.hostname!r}") from error
+    for address in addresses:
+        if not ipaddress.ip_address(address.split("%")[0]).is_global:
+            raise ValueError(f"{parts.hostname!r} is not a public address ({address})")
 
 
 class SourceConfig(BaseModel):
@@ -64,6 +84,12 @@ class SourceConfig(BaseModel):
         if not re.fullmatch(r"[a-z0-9][a-z0-9_-]{0,39}", value):
             raise ValueError("id must be a lowercase slug (letters, digits, - and _)")
         return value
+
+    @property
+    def urls(self) -> list[str]:
+        """Every URL the server would fetch for this source."""
+        urls = (self.static_url, self.rt_trip_updates_url, self.rt_vehicle_positions_url, self.rt_alerts_url)
+        return [url for url in urls if url]
 
     @property
     def headers(self) -> dict[str, str]:

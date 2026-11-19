@@ -23,6 +23,7 @@
   import Identity from "./Identity.svelte";
   import Index from "./Index.svelte";
   import Log from "./Log.svelte";
+  import LogHead from "./LogHead.svelte";
   import { LogStore } from "./logStore.svelte";
   import { player } from "./player.svelte";
 
@@ -69,7 +70,11 @@
   let store = $state.raw<LogStore | null>(null);
   let selectedId = $state<number | null>(null);
   let attop = $state(true);
-  /** height of the pinned block, so the right rail can stick just beneath it */
+  /**
+   * Height of the pinned block (0 where it is not pinned), so the right rail and the NEW button can stick just
+   * beneath it. The block holds the log's header bar, so that bar needs no offset at all. Svelte observes the
+   * size with a ResizeObserver, so the value follows every change of height.
+   */
   let topHeight = $state(0);
   let log = $state<ReturnType<typeof Log>>();
   let continuous = $state(readContinuous());
@@ -367,6 +372,7 @@
         onrange={(next) => (range = next)}
       />
       {/if}
+      <LogHead {countToday} bucket={jumped} {continuous} onclearbucket={() => void toNewest()} ontogglecontinuous={() => setContinuous(!continuous)} />
     </div>
     <div class="fq__body">
       <div class="fq__log">
@@ -379,14 +385,10 @@
             {todayKey}
             mhz={fmt.freq(info.freq_mhz)}
             inBank={!!channel || (snapshot?.banks ?? []).some((bank) => bank.frequency_ids.includes(info!.id))}
-            {countToday}
             {selectedId}
             bucket={jumped}
-            {continuous}
             {onAir}
             onplay={play}
-            onclearbucket={() => void toNewest()}
-            ontogglecontinuous={() => setContinuous(!continuous)}
           />
         {/if}
       </div>
@@ -411,15 +413,18 @@
 
 <style>
   .fq { min-width: 0; }
-  .fq__top { background: var(--bg-void); border-bottom: 1px solid var(--grid); }
+  .fq__top { background: var(--bg-void); }
   .fq__rail { display: none; }
   .fq__plate { display: grid; gap: 12px; justify-items: start; margin: 40px 16px; padding: 20px 24px; box-shadow: inset 0 0 0 1px var(--line-faint); width: fit-content; max-width: calc(100% - 32px); }
   .fq__plate-k { margin: 0; font: 600 var(--fs-18)/1.2 var(--font-label); letter-spacing: var(--track-title); color: var(--ink); overflow-wrap: anywhere; }
   .fq__plate a { font: 500 var(--fs-13)/1 var(--font-label); letter-spacing: var(--track-label); }
 
-  /* pinned: the identity stays in view while the log scrolls, when the window is tall enough */
+  /* Pinned: the identity and the log's header bar stay in view while the log scrolls, when the window is tall
+     enough. Otherwise the block does not exist as a box (it measures 0) and only the header bar pins itself. */
+  .fq__top { display: contents; }
   @media (min-height: 800px) {
-    .fq__top { position: sticky; top: var(--header-h); z-index: 10; }
+    .fq__top { display: block; position: sticky; top: var(--header-h); z-index: 10; }
+    .fq__top :global(.lg__head) { position: static; }
   }
 
   @media (min-width: 1100px) { /* RAIL_MIN_PX */

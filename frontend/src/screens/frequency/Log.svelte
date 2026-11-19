@@ -17,21 +17,16 @@
     todayKey: string;
     mhz: string;
     inBank: boolean;
-    /** transmissions today, once the day's activity is known */
-    countToday: number | null;
     selectedId: number | null;
     /** a bucket the log was jumped to: its label and the instants it covers */
     bucket: { label: string; from: number; to: number } | null;
-    continuous: boolean;
     /** this frequency is keyed now: the ON AIR row */
     onAir: { startedAt: number; elapsed: number } | null;
     onplay: (rec: Recording) => void;
-    onclearbucket: () => void;
-    ontogglecontinuous: () => void;
     /** a viewer is at the top of the list, so new rows may join without moving anything */
     attop?: boolean;
   }
-  let { store, tz, todayKey, mhz, inBank, countToday, selectedId, bucket, continuous, onAir, onplay, onclearbucket, ontogglecontinuous, attop = $bindable(true) }: Props = $props();
+  let { store, tz, todayKey, mhz, inBank, selectedId, bucket, onAir, onplay, attop = $bindable(true) }: Props = $props();
 
   let expanded = $state<number | null>(null);
   let focusId = $state<number | null>(null);
@@ -85,12 +80,6 @@
 </script>
 
 <section class="lg" bind:this={root} aria-label="Transmissions">
-  <div class="lg__head">
-    <h2 class="lg__title">TRANSMISSIONS{#if countToday != null}{" · "}<span class="lg__n">{countToday}</span> TODAY{/if}</h2>
-    {#if bucket}<button class="lg__chip" type="button" onclick={onclearbucket} aria-label="Return the log to newest">{bucket.label} ×</button>{/if}
-    <span class="lg__grow"></span>
-    <button class="lg__cont" type="button" aria-pressed={continuous} onclick={ontogglecontinuous} title="Play the next newer transmission when one ends (C)">CONTINUOUS</button>
-  </div>
   {#if !player.supported}
     <p class="lg__note">THIS BROWSER CANNOT PLAY THE RECORDINGS · OGG OPUS</p>
   {/if}
@@ -156,19 +145,6 @@
 
 <style>
   .lg { min-width: 0; padding-bottom: 24px; }
-  .lg__head {
-    position: sticky; top: calc(var(--header-h) + var(--fq-top, 0px)); z-index: 5; background: var(--bg-void);
-    display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 16px; border-bottom: 1px solid var(--grid);
-  }
-  .lg__title { margin: 0; font: 500 var(--fs-13)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink); white-space: nowrap; }
-  .lg__n { font-family: var(--font-data); }
-  .lg__grow { flex: 1; }
-  .lg__chip, .lg__cont {
-    min-height: 32px; padding: 0 12px; font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink);
-    box-shadow: inset 0 0 0 1px var(--line-faint); white-space: nowrap;
-  }
-  .lg__cont { color: var(--ink-2); }
-  .lg__cont[aria-pressed="true"] { color: var(--ink); box-shadow: inset 0 0 0 1px var(--line), inset 0 0 0 2px var(--bg-void), inset 0 0 0 3px var(--line-faint); }
   .lg__note { margin: 0; padding: 8px 16px; font: 500 var(--fs-11)/1.3 var(--font-label); letter-spacing: var(--track-label); color: var(--ink-2); }
   .lg__top { display: block; height: 1px; }
   .lg__list { margin: 0; padding: 0 16px; list-style: none; }
@@ -179,7 +155,7 @@
   .lg__air-t { font: 400 var(--fs-13)/1 var(--font-data); color: var(--state-tx); }
   .lg__air-d { font: 400 var(--fs-13)/1 var(--font-data); color: var(--state-tx); }
   .lg__air-k { font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink-2); }
-  .lg__new { display: block; margin: 8px auto; min-height: 32px; padding: 0 16px; font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); position: sticky; top: calc(var(--header-h) + var(--fq-top, 0px) + 52px); z-index: 5; background: var(--bg-void); }
+  .lg__new { display: block; margin: 8px auto; min-height: 32px; padding: 0 16px; font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); position: sticky; top: calc(var(--header-h) + max(var(--fq-top, 0px), 44px) + 8px); z-index: 5; background: var(--bg-void); }
   .lg__msg { margin: 0; padding: 16px 16px 4px; font: 500 var(--fs-13)/1.3 var(--font-label); letter-spacing: var(--track-label); color: var(--ink-2); }
   .lg__sentence { margin: 0; padding: 0 16px 16px; max-width: 60ch; font: 400 var(--fs-15)/1.45 var(--font-read); color: var(--ink-3); }
   .lg__sentence a { color: var(--line); }
@@ -187,7 +163,6 @@
   .lg__older { display: block; margin: 12px 16px 0; min-height: 44px; padding: 0 16px; font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink-2); box-shadow: inset 0 0 0 1px var(--line-faint); }
 
   @media (min-width: 900px) {
-    .lg__head { padding: 0 var(--margin-x) 0 var(--margin-x); }
     .lg__list { padding: 0 24px 0 var(--margin-x); }
     .lg__msg, .lg__sentence { padding-left: var(--margin-x); }
     .lg__note { padding-left: var(--margin-x); }

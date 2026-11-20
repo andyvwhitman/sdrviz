@@ -6,7 +6,8 @@
 
 import type { LiveState } from "$lib/types/live";
 import type { Approaching, ApproachingQuery, Board, Line, RouteTimetable, Stop, StationBoard, TransitSourceStatus, Trip, Vehicle } from "$lib/types/transit";
-import type { BackendStats, SourceConfig, TransitSource } from "../../screens/settings/types";
+import type { SourceConfig, TransitSource } from "$lib/types/sources";
+import type { BackendStats } from "../../screens/settings/types";
 import type { Prefs, SessionInfo, SimJump, SimStatus } from "$lib/types/api";
 import type { DayActivity, FrequencyInfo, Recording, WeekActivity } from "$lib/types/recordings";
 

@@ -16,7 +16,7 @@ describe("layoutFor", () => {
     for (const path of ["/login", "/map", "/spot"]) expect(layoutFor(route(path), true)).toBe("page");
   });
 
-  it("gives a phone the wider-screen plate for Feeds & Banks and Settings, and a page for Live Ops", () => {
+  it("gives a phone the wider-screen plate for Feeds and Settings, and a page for Live Ops", () => {
     for (const path of ["/feeds", "/settings"]) expect(layoutFor(route(path), true)).toBe("plate");
     expect(layoutFor(route("/live"), true)).toBe("page");
   });

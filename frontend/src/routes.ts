@@ -49,7 +49,7 @@ export function layoutFor(route: Route, phone: boolean): "stage" | "page" | "flu
 
 export const ROUTES: Route[] = [
   { id: "live-ops", path: "/live", name: "LIVE OPS", dir: "live-ops", shell: true, layout: "fluid", phone: "page" },
-  { id: "feeds", path: "/feeds", name: "FEEDS & BANKS", dir: "feeds", shell: true, phone: "plate" },
+  { id: "feeds", path: "/feeds", name: "FEEDS", dir: "feeds", shell: true, phone: "plate" },
   { id: "map", path: "/map", name: "MAP", dir: "map", shell: true, phone: "page" },
   { id: "settings", path: "/settings", name: "SETTINGS", dir: "settings", shell: true, phone: "plate", adminOnly: true },
   { id: "spot", path: "/spot", name: "SPOT", dir: "spot", shell: true, layout: "page" },

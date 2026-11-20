@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Feed } from "$lib/types/live";
-import { bankAbbr, feedLook, fix, roundDp, siteName, slugify } from "./look";
+import { feedLook, fix, roundDp, siteName } from "./look";
 
 const feed = (over: Partial<Feed>) => ({ enabled: true, state: "ok", acked: false, ...over }) as Feed;
 
@@ -20,8 +20,5 @@ describe("formatting", () => {
   });
   it("derives names", () => {
     expect(siteName({ name: "LND-02 New Carrollton", short: "LND-02" })).toBe("NEW CARROLLTON");
-    expect(bankAbbr({ name: "Baltimore Harbor" })).toBe("BAL");
-    expect(bankAbbr({ name: "Freight - CSX/NS" })).toBe("FRE");
-    expect(slugify("Baltimore  Harbor!", "bank")).toBe("bank-baltimore-harbor");
   });
 });

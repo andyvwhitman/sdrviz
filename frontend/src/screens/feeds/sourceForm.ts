@@ -1,6 +1,6 @@
 /** The transit source form: kind defaults, string drafts for the inputs, validation and the request body. */
 
-import type { SourceConfig, SourceKind, TransitSource } from "./types";
+import type { SourceConfig, SourceKind, TransitSource } from "$lib/types/sources";
 
 export const KINDS: { value: SourceKind; text: string }[] = [
   { value: "gtfs", text: "GTFS (+ REALTIME)" },

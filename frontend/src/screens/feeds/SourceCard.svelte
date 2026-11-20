@@ -6,7 +6,7 @@
   import * as fmt from "$lib/hud/fmt";
   import type { ChipKind } from "$lib/hud/chips";
   import { KINDS } from "./sourceForm";
-  import type { SourceState, TransitSource } from "./types";
+  import type { SourceState, TransitSource } from "$lib/types/sources";
 
   interface Props {
     source: TransitSource;
@@ -35,24 +35,24 @@
   );
 </script>
 
-<article class="st-card br" class:is-off={!source.enabled} aria-label={source.name}>
-  <header class="st-card__head">
-    <span class="st-card__name">{source.name}</span>
-    <span class="st-card__agency">{source.agency}</span>
-    <span class="st-card__kind">{kind}</span>
+<article class="src-card br" class:is-off={!source.enabled} aria-label={source.name}>
+  <header class="src-card__head">
+    <span class="src-card__name">{source.name}</span>
+    <span class="src-card__agency">{source.agency}</span>
+    <span class="src-card__kind">{kind}</span>
     <span class="grow"></span>
     <Toggle label="ENABLED" checked={source.enabled} onchange={onenable} />
   </header>
 
-  <div class="st-card__state">
+  <div class="src-card__state">
     <Chip text={status.state.toUpperCase()} kind={CHIP[status.state]} />
     {#each counts as [label, value]}
-      <span class="st-count"><span class="k">{label}</span> <span class="mono">{value}</span></span>
+      <span class="src-count"><span class="k">{label}</span> <span class="mono">{value}</span></span>
     {/each}
   </div>
-  {#if status.error}<p class="st-card__error" role="alert">{status.error}</p>{/if}
+  {#if status.error}<p class="src-card__error" role="alert">{status.error}</p>{/if}
 
-  <dl class="st-card__meta">
+  <dl class="src-card__meta">
     <div><dt>STATIC LOADED</dt><dd class="mono">{ago(status.static_loaded_at)}</dd></div>
     <div><dt>VERSION</dt><dd class="mono" title={status.static_version ?? ""}>{status.static_version ?? fmt.BLANK}</dd></div>
     {#if hasRealtime}
@@ -61,7 +61,7 @@
     <div><dt>REFRESH</dt><dd class="mono">{source.static_refresh_h} H{hasRealtime ? ` · POLL ${source.rt_poll_s} S` : ""}</dd></div>
   </dl>
 
-  <footer class="st-card__actions">
+  <footer class="src-card__actions">
     {#if confirming}
       <span class="t-micro">DELETE {source.name}?</span>
       <Button sm disabled={busy} onclick={ondelete}>CONFIRM DELETE</Button>

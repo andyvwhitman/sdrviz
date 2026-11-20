@@ -21,7 +21,6 @@ export interface FeedDraft {
   gain_db: string;
   ppm: string;
   noise_floor_dbfs: string;
-  hears: string[];
   enabled: boolean;
   sim: boolean;
 }
@@ -42,7 +41,6 @@ export const emptyDraft = (): FeedDraft => ({
   gain_db: "30",
   ppm: "0",
   noise_floor_dbfs: "-45",
-  hears: [],
   enabled: true,
   sim: false,
 });
@@ -70,7 +68,6 @@ export const draftFrom = (feed: FeedConfig): FeedDraft => {
     gain_db: text(feed.gain_db, defaults.gain_db),
     ppm: text(feed.ppm, defaults.ppm),
     noise_floor_dbfs: text(feed.noise_floor_dbfs, defaults.noise_floor_dbfs),
-    hears: [...feed.hears],
     enabled: feed.enabled,
     sim: feed.sim,
   };
@@ -123,7 +120,6 @@ export function configFrom(draft: FeedDraft): FeedConfig {
     lat: Number(draft.lat),
     lon: Number(draft.lon),
     coverage_radius_km: Number(draft.coverage_radius_km),
-    hears: draft.hears,
     driver: draft.driver,
     host: withPort ? draft.host.trim() : "",
     port: withPort ? Number(draft.port) : null,

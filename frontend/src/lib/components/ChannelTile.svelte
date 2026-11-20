@@ -19,11 +19,13 @@
     /** M15 waveform for the standard keyed tile's freed band */
     wave?: Snippet;
     onselect?: () => void;
-    onlever?: (key: "m" | "s" | "r") => void;
-    /** position in the bank (1-based); typing it targets the tile */
+    onlever?: (key: "m" | "s") => void;
+    /** the `⋯` opens the edit window (admin only: omit it for a viewer) */
+    onedit?: () => void;
+    /** position in the list (1-based); typing it targets the tile */
     index?: number;
   }
-  let { identity, state: s, variant = "standard", wave, onselect, onlever, index }: Props = $props();
+  let { identity, state: s, variant = "standard", wave, onselect, onlever, onedit, index }: Props = $props();
 
   const resolved = $derived(resolveTile(s, identity));
   const coverage = $derived(s.coverage ?? "ok");
@@ -63,6 +65,11 @@
   });
 
   const flag = (on: boolean | undefined) => (on ? "" : undefined);
+
+  function more(event: MouseEvent) {
+    event.stopPropagation(); // like a lever: the press never selects the tile
+    onedit?.();
+  }
 
   function keydown(event: KeyboardEvent) {
     if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {
@@ -114,7 +121,12 @@
   <span class="tile__timer">{fmt.dur(s.elapsed ?? 0)}</span>
   {#if variant !== "strip"}
     <span class="tile__meter"><LevelMeter {...meter} /></span>
-    <span class="tile__levers"><LeverRow state={s.levers ?? { m: s.muted, s: s.solo }} ontoggle={onlever} /></span>
+    <span class="tile__levers">
+      {#if onedit}
+        <button class="tile__more" type="button" aria-label="Edit {aarText} {identity.label}" aria-haspopup="dialog" onclick={more}><i></i><i></i><i></i></button>
+      {/if}
+      <LeverRow state={s.levers ?? { m: s.muted, s: s.solo }} ontoggle={onlever} />
+    </span>
   {/if}
   {#if variant === "standard" && wave}
     <span class="tile__wave">{@render wave()}</span>

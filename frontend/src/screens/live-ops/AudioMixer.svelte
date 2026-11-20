@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * The pane's audio row (direction 5.3): volume slider, level meter while keyed, and the same M S R levers the tiles
+   * The pane's audio row (direction 5.3): volume slider, level meter while keyed, and the same M S levers the tiles
    * carry. Everything goes through the `prefs` store (optimistic, REST-backed); the audio engine reads the same store
    * through `mixer.gainOf`. A line under the row says why a channel cannot be heard, when it cannot.
    */
@@ -62,7 +62,7 @@
     />
     <span class="au__v">{shown}</span>
     {#if keyed}<span class="au__meter"><LevelMeter w={96} db={level?.db ?? null} peak={level?.peak ?? null} {floor} tx muted={prefs.muted.has(channelId)} /></span>{/if}
-    <LeverRow class="au__levers" state={{ m: prefs.muted.has(channelId), s: prefs.solo.has(channelId), r: prefs.record.has(channelId) }} ontoggle={press} />
+    <LeverRow class="au__levers" state={{ m: prefs.muted.has(channelId), s: prefs.solo.has(channelId) }} ontoggle={press} />
   </div>
   <p class="au__note">{#if note}{note}{:else}OUTPUT GAIN <span class="au__n">{gain}</span>{/if}</p>
 </div>

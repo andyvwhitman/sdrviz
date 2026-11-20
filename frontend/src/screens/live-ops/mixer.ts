@@ -1,6 +1,6 @@
 /**
  * Audio mixer rules, in one place for the tiles, the inspector and the audio engine.
- * Mute, solo and record live in the `prefs` store; the server sends every subscribed channel
+ * Mute and solo live in the `prefs` store; the server sends every subscribed channel
  * and the client applies the gain (build-plan 3.4), so this is what the engine multiplies by.
  */
 
@@ -44,5 +44,5 @@ export const isDimmedBySolo = (mix: Mix, channelId: string): boolean => mix.solo
 /** Channels the server should stream: everything audible (a muted channel needs no audio). */
 export const subscribedChannels = (mix: Mix, channelIds: readonly string[]): string[] => channelIds.filter((id) => isAudible(mix, id));
 
-export const LEVER_LIST = { m: "muted", s: "solo", r: "record" } as const;
+export const LEVER_LIST = { m: "muted", s: "solo" } as const;
 export type LeverKey = keyof typeof LEVER_LIST;

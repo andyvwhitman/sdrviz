@@ -2,7 +2,7 @@ import { api } from "$lib/api/client";
 import type { Prefs } from "$lib/types/api";
 import { live } from "./live.svelte";
 
-/** REST-backed preferences with optimistic updates (mute, solo, record, volumes, active bank). */
+/** REST-backed preferences with optimistic updates (mute, solo, record, volumes, listened node). */
 class PrefsStore {
   value = $state<Prefs | null>(null);
 
@@ -11,7 +11,7 @@ class PrefsStore {
   record = $derived(new Set(this.value?.record ?? []));
 
   constructor() {
-    // The server announces bank and feed changes (from this tab, another tab or another device) with a
+    // The server announces node and frequency changes (from this tab, another tab or another device) with a
     // snapshot; reload so this copy never goes stale.
     live.on("snapshot", () => {
       if (this.value) this.load().catch((error) => console.warn("prefs not refreshed", error));

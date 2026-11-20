@@ -30,6 +30,14 @@ describe("layoutFor", () => {
 });
 
 describe("routeFor", () => {
+  it("keeps /frequencies apart from the /frequency prefix route", () => {
+    expect(routeFor("/frequencies")?.id).toBe("frequencies");
+    expect(routeFor("/frequency/x")?.id).toBe("frequency");
+    expect(routeFor("/frequency")?.id).toBe("frequency");
+    expect(layoutFor(route("/frequencies"), false)).toBe("fluid");
+    expect(layoutFor(route("/frequencies"), true)).toBe("page");
+  });
+
   it("answers a frequency id under /frequency, and nothing else below a path", () => {
     expect(routeFor("/frequency")?.id).toBe("frequency");
     expect(routeFor("/frequency/amtk-k-tower")?.id).toBe("frequency");

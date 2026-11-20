@@ -39,7 +39,7 @@ export interface TileInput {
   showLevers?: boolean;
   spark?: number[];
   meter?: { floor?: number | null; db?: number | null; peak?: number | null };
-  levers?: { m?: boolean; s?: boolean; r?: boolean };
+  levers?: { m?: boolean; s?: boolean };
 }
 
 export interface TileIdentity {

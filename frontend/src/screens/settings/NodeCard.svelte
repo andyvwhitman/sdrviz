@@ -24,7 +24,7 @@
 
   const ago = (iso: string | null): string => (iso ? `${fmt.age((now - Date.parse(iso)) / 1000, "age")} AGO` : fmt.BLANK);
   const place = $derived(`${node.location.lat.toFixed(3)}, ${node.location.lon.toFixed(3)}`);
-  const preset = $derived(node.preset === "aar" ? "AAR 07-97" : node.preset === "banks" ? "BANK CHANNELS" : node.preset.toUpperCase());
+  const preset = $derived(node.preset === "aar" ? "AAR 07-97" : node.preset === "assigned" ? "ENABLED FREQUENCIES" : node.preset.toUpperCase());
   /** hours left on a key; the key may be on a PENDING node or on one that was re-keyed */
   const keyHours = $derived(hoursLeft(node.key_expires_at, now));
 

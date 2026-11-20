@@ -1,6 +1,6 @@
 /**
- * Hero strip, off-bank and "on another feed" readouts, derived from the live state so they react
- * to the key-up deltas at once (the snapshot's `views[bank].hero` is only refreshed every 30 s).
+ * Hero strip and "on another node" readout, derived from the live state so they react to the key-up deltas at once.
+ * The hero covers the listened node's channels (the snapshot has no hero of its own).
  */
 
 import { feedName } from "$lib/hud/roles";
@@ -17,7 +17,7 @@ export type Hero =
       via: string;
       elapsedS: number;
       othersLabel: string | null;
-      /** the other keyed channels of the bank, for the "+2 · 0808 · 2828" items */
+      /** the other keyed channels of the node, for the "+2 · 0808 · 2828" items */
       others: { id: string; aar4: string }[];
     }
   | { mode: "idle"; aar: string; label: string; ageS: number }
@@ -27,17 +27,17 @@ export type Hero =
 interface HeroInput {
   channels: readonly Channel[];
   active: readonly TxRow[];
-  /** frequency ids of the active bank */
-  bankIds: ReadonlySet<string>;
+  /** frequency ids of the listened node's channels */
+  channelIds: ReadonlySet<string>;
   now: number;
 }
 
-const keyedOnBank = (active: readonly TxRow[], bankIds: ReadonlySet<string>) =>
-  active.filter((row) => bankIds.has(row.frequency_id)).sort((a, b) => a.t_offset_s - b.t_offset_s);
+const keyedOnNode = (active: readonly TxRow[], channelIds: ReadonlySet<string>) =>
+  active.filter((row) => channelIds.has(row.frequency_id)).sort((a, b) => a.t_offset_s - b.t_offset_s);
 
-export function heroFor({ channels, active, bankIds, now }: HeroInput): Hero {
-  if (bankIds.size === 0) return { mode: "empty" };
-  const keyed = keyedOnBank(active, bankIds);
+export function heroFor({ channels, active, channelIds, now }: HeroInput): Hero {
+  if (channelIds.size === 0) return { mode: "empty" };
+  const keyed = keyedOnNode(active, channelIds);
   if (keyed.length) {
     const [first, ...others] = keyed;
     const channel = channels.find((c) => c.id === first.frequency_id);
@@ -53,23 +53,21 @@ export function heroFor({ channels, active, bankIds, now }: HeroInput): Hero {
     };
   }
   const heard = channels
-    .filter((c) => bankIds.has(c.id) && c.last_heard)
+    .filter((c) => channelIds.has(c.id) && c.last_heard)
     .map((c) => ({ c, age: cyclicAge(now, c.last_heard!.end_t) }))
     .sort((a, b) => a.age - b.age)[0];
   if (!heard) return { mode: "none" };
   return { mode: "idle", aar: heard.c.aar, label: heard.c.label, ageS: heard.age };
 }
 
-/** "+1 OFF-BANK · 6666" for keyed channels outside the active bank, else null. */
-export function offBankLabel(active: readonly TxRow[], bankIds: ReadonlySet<string>): string | null {
-  const off = active.filter((row) => !bankIds.has(row.frequency_id));
-  return off.length ? `+${off.length} OFF-BANK · ${off.map((row) => row.aar4).join(" · ")}` : null;
-}
-
-/** "+1 ON BAY-04": keyed channels the displayed feed does not receive, and the feed that does. */
-export function elsewhereLabel(active: readonly TxRow[], displayedFeed: string, feedName: (id: string) => string): string | null {
-  const missed = active.filter((row) => row.receptions?.length && !row.receptions.some((r) => r.feed_id === displayedFeed));
+/** "+1 ON SDR-02": keyed channels the listened node does not receive, and the node that does (the first, to switch to). */
+export function elsewhereLabel(
+  active: readonly TxRow[],
+  listenFeed: string,
+  feedName: (id: string) => string,
+): { text: string; feedId: string } | null {
+  const missed = active.filter((row) => row.receptions?.length && !row.receptions.some((r) => r.feed_id === listenFeed));
   if (!missed.length) return null;
-  const via = new Set(missed.map((row) => feedName(row.receptions![0].feed_id)));
-  return `+${missed.length} ON ${[...via].join(" · ")}`;
+  const via = new Set(missed.map((row) => row.receptions![0].feed_id));
+  return { text: `+${missed.length} ON ${[...via].map(feedName).join(" · ")}`, feedId: [...via][0] };
 }

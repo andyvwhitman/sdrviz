@@ -123,7 +123,7 @@
   <InspectorSection title="ACTIONS">
     <div class="insp-btns">
       <Button primary={!!fault && !fault.acked} disabled={!fault || fault.acked || acking} onclick={acknowledge}>{fault?.acked ? "ACK'D" : "ACK"}</Button>
-      <Button onclick={() => router.go(`/feeds?inspect=${feed.id}`)}>OPEN IN FEEDS &amp; BANKS</Button>
+      <Button onclick={() => router.go(`/feeds?inspect=${feed.id}`)}>OPEN IN FEEDS</Button>
     </div>
   </InspectorSection>
 </Inspector>

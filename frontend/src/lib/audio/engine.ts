@@ -69,7 +69,7 @@ export class AudioEngine {
     if (!ctx || frame.codec !== CODEC_PCM_S16LE || frame.payload.byteLength < 2) return;
     const voice = this.voiceFor(ctx, frame.aarChannel);
 
-    // Two bank channels on the same AAR frequency each get a copy of the frame; play it once.
+    // Two frequencies on the same AAR frequency each get a copy of the frame; play it once.
     if (frame.txSeq === voice.txSeq && frame.offsetMs <= voice.lastOffsetMs) return;
 
     const now = ctx.currentTime;

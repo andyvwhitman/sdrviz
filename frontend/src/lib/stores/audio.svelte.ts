@@ -78,7 +78,7 @@ class AudioStore {
     const ids = channels.map((channel) => channel.id);
     sendOp({ op: "audio", channels: this.enabled ? subscribedChannels(mix, ids) : [] });
 
-    // Several bank channels can share one AAR frequency: the loudest setting wins.
+    // Several frequencies can share one AAR frequency: the loudest setting wins.
     const gains = new Map<number, number>();
     for (const channel of channels) {
       const aar = Number.parseInt(channel.aar.replace(/\D/g, ""), 10);

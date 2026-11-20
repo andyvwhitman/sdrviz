@@ -58,10 +58,6 @@
       busy = false;
     }
   }
-
-  function toggleHears(id: string, on: boolean): void {
-    draft.hears = on ? [...draft.hears, id] : draft.hears.filter((h) => h !== id);
-  }
 </script>
 
 <div class="fb-col fb-col--insp">
@@ -94,13 +90,6 @@
         <Toggle label="ENABLED" bind:checked={draft.enabled} />
         <Checkbox label="SIMULATED" bind:checked={draft.sim} />
       </div>
-    </div>
-
-    <h4 class="fb-form__h">HEARS · {draft.hears.length} CH</h4>
-    <div class="fb-form__hears">
-      {#each catalogue.frequencies as f (f.id)}
-        <Checkbox label={`CH${String(f.aar_channel).padStart(2, "0")}`} checked={draft.hears.includes(f.id)} onchange={(on) => toggleHears(f.id, on)} />
-      {/each}
     </div>
 
     {#if !isNew}

@@ -15,9 +15,9 @@
   }
   let { onsave, oncancel }: Props = $props();
 
-  /** the preset list is the API's: the channels in any bank (follows bank edits), or the whole AAR band */
+  /** the preset list is the API's: the enabled frequencies of the node (follows Frequencies edits), or the whole AAR band */
   const PRESETS = [
-    { value: "banks", text: "BANK CHANNELS" },
+    { value: "assigned", text: "ENABLED FREQUENCIES" },
     { value: "aar", text: "AAR 07-97" },
   ];
   const MANUAL = "";

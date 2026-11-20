@@ -1,6 +1,7 @@
 <script lang="ts">
   /** Feed inspector, a HUD within the HUD: spectrum, LOFAR waterfall, sample rate, coverage, telemetry. */
   import { onDestroy, onMount } from "svelte";
+  import { followLink } from "$lib/router.svelte";
   import { session } from "$lib/stores/session.svelte";
   import Button from "$lib/components/Button.svelte";
   import Chip from "$lib/components/Chip.svelte";
@@ -200,7 +201,7 @@
           <KeyValue label="RATE SET" value={fix(feed.sample_rate_msps, 3)} unit="MS/s" />
           <KeyValue label="GAIN" value={fix(feed.gain_db, 1)} unit="dB" />
           <KeyValue label="PPM" value={fix(feed.ppm, 0)} />
-          <KeyValue label="HEARS" value={String(feed.hears.length)} unit="CH" />
+          <KeyValue label="ENABLED" unit="CH"><a href="/frequencies?node={feed.id}&state=enabled" onclick={followLink}>{feed.hears.length}</a></KeyValue>
         </div>
       </div>
     </div>

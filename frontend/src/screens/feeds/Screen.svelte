@@ -140,7 +140,6 @@
   }
 
   onMount(() => {
-    catalogue.load().catch(report);
     loadSources();
     const poll = setInterval(loadSources, POLL_MS);
     const clock = setInterval(() => (now = Date.now()), 1000);

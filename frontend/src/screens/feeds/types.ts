@@ -1,19 +1,5 @@
 /** REST shapes owned by the Feeds screen (backend/app/models.py). */
 
-export interface Frequency {
-  id: string;
-  label: string;
-  freq_mhz: number;
-  aar_channel: number;
-  railroad: string;
-  use: string;
-  line: string;
-  mode: string;
-  confidence: "high" | "medium" | "med" | "low" | string;
-  notes: string;
-  sources: string[];
-}
-
 /** The configuration fields of a feed (FeedBase), as the forms edit them. */
 export interface FeedConfig {
   id: string;
@@ -23,7 +9,6 @@ export interface FeedConfig {
   lat: number;
   lon: number;
   coverage_radius_km: number;
-  hears: string[];
   driver: string;
   host: string;
   port: number | null;

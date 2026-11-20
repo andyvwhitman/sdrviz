@@ -1,19 +1,12 @@
 import { api } from "$lib/api/client";
-import type { FeedConfig, FeedHealth, Frequency, GeoRoute } from "./types";
+import type { FeedConfig, FeedHealth, GeoRoute } from "./types";
 
 /**
- * The configuration resources this screen edits over REST: frequencies (for a feed's hears list) and the route
+ * The configuration resources this screen edits over REST: feed configuration (CRUD, health) and the route
  * geometry for the coverage thumbnail. Live state (health, coverage, key-ups) stays in the live store.
  */
 class Catalogue {
-  frequencies = $state<Frequency[]>([]);
   routes = $state<GeoRoute[]>([]);
-  loaded = $state(false);
-
-  async load(): Promise<void> {
-    this.frequencies = (await api.frequencies.list()) as unknown as Frequency[];
-    this.loaded = true;
-  }
 
   private routesRequest: Promise<void> | null = null;
 
@@ -49,7 +42,7 @@ class Catalogue {
   ackFeed = (id: string): Promise<unknown> => api.feeds.ack(id);
 }
 
-const CONFIG_KEYS = ["id", "name", "short", "site", "lat", "lon", "coverage_radius_km", "hears", "driver", "host", "port", "center_mhz", "sample_rate_msps", "gain_db", "ppm", "noise_floor_dbfs", "enabled", "sim"] as const;
+const CONFIG_KEYS = ["id", "name", "short", "site", "lat", "lon", "coverage_radius_km", "driver", "host", "port", "center_mhz", "sample_rate_msps", "gain_db", "ppm", "noise_floor_dbfs", "enabled", "sim"] as const;
 
 /** A feed view carries live health next to its configuration; keep only the configuration. */
 export const pickConfig = (view: FeedConfig): FeedConfig =>

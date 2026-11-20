@@ -1,9 +1,10 @@
 <script lang="ts">
   /**
-   * Live Ops (brief 9.1, docs/sprint-4/liveops-direction.md): hero strip and front wall across the top; below, the
-   * bank (tabs over a scrolling tile grid) beside the selected frequency's pane. A fluid CSS grid in real pixels. The system screens reuse this wall: `link` renders
-   * it blank (loading, connecting), voided and AGE-stamped after a link drop (reconnecting), dimmed
-   * under the NO LINK alarm, or with an empty bank (spec 11.17).
+   * Live Ops (brief 9.1, docs/sprint-5/direction.md section 4): hero strip and front wall across the top; below, the
+   * listened node (tabs over a scrolling tile grid of its enabled frequencies, low to high) beside the selected
+   * frequency's pane. A fluid CSS grid in real pixels. The system screens reuse this wall: `link` renders
+   * it blank (loading, connecting), voided and AGE-stamped after a link drop (reconnecting), or dimmed
+   * under the NO LINK alarm (spec 11.17).
    */
   import { onMount, untrack } from "svelte";
   import ChannelTile from "$lib/components/ChannelTile.svelte";
@@ -22,9 +23,13 @@
   import { prefs } from "$lib/stores/prefs.svelte";
   import { shell } from "$lib/stores/shell.svelte";
   import { simClock } from "$lib/stores/simClock.svelte";
+  import FrequencyLayer from "$lib/components/frequency-editor/FrequencyLayer.svelte";
+  import FrequencyWindow from "$lib/components/frequency-editor/FrequencyWindow.svelte";
+  import type { Outcome } from "$lib/components/frequency-editor/editorForm";
+  import { session } from "$lib/stores/session.svelte";
   import type { Channel, Word } from "$lib/types/live";
   import { BACKOFF_S } from "$lib/ws/link";
-  import BankTabs from "./BankTabs.svelte";
+  import NodeTabs from "./NodeTabs.svelte";
   import FeedInspector from "./FeedInspector.svelte";
   import FrequencyPane from "./FrequencyPane.svelte";
   import { liveOpsPrefs } from "./liveOpsPrefs.svelte";
@@ -32,7 +37,7 @@
   import { PX_PER_S } from "./waterfallModel.svelte";
   import { viewport } from "$lib/stores/viewport.svelte";
   import FrontWall from "./FrontWall.svelte";
-    import { elsewhereLabel, heroFor, offBankLabel } from "./hero";
+  import { elsewhereLabel, heroFor } from "./hero";
   import Divider from "./Divider.svelte";
   import HeroStrip from "./HeroStrip.svelte";
   import { KeyupMotion } from "./keyup.svelte";
@@ -78,27 +83,24 @@
   });
   const now = $derived(dropAge != null && snapshot ? snapshot.t_offset_s : simClock.now);
 
-  /* ---- the bank on the wall */
-  const emptyForced = $derived(linkState === "empty-bank");
-  const bank = $derived(forced?.bank ?? (snapshot ? (snapshot.banks.find((b) => b.id === snapshot.active_bank) ?? snapshot.banks[0]) : null));
-  const bankList = $derived(snapshot ? (bank && !snapshot.banks.some((b) => b.id === bank.id) ? [...snapshot.banks, bank] : snapshot.banks) : []);
-  const tileIds = $derived(emptyForced ? [] : (snapshot && bank ? (snapshot.views[bank.id]?.tile_ids ?? []) : []));
-  const bankIds = $derived(new Set(emptyForced ? [] : (bank?.frequency_ids ?? [])));
-  const channelById = $derived(new Map((snapshot?.channels ?? []).map((c) => [c.id, c])));
-  const tiles = $derived(tileIds.flatMap((id) => (channelById.has(id) ? [channelById.get(id)!] : [])));
+  /* ---- the listened node on the wall: its enabled frequencies, already sorted low to high by the server */
+  const tiles = $derived(snapshot?.channels ?? []);
+  const tileIds = $derived(tiles.map((c) => c.id));
+  const channelIds = $derived(new Set(tileIds));
+  const channelById = $derived(new Map(tiles.map((c) => [c.id, c])));
   const feedById = $derived(new Map((snapshot?.feeds ?? []).map((f) => [f.id, f])));
-  const displayed = $derived(snapshot ? (feedById.get(snapshot.displayed_feed) ?? snapshot.feeds[0]) : null);
-  const bankChannelNumbers = $derived(tiles.map((c) => Number(c.aar.replace(/\D/g, ""))));
+  const displayed = $derived(snapshot ? (feedById.get(snapshot.listen_feed ?? "") ?? snapshot.feeds[0]) : null);
+  const nodeShort = $derived(displayed?.short ?? "");
+  const channelNumbers = $derived(tiles.map((c) => Number(c.aar.replace(/\D/g, ""))));
 
   $effect(() => {
-    shell.scope = bank ? ["BANK", bank.name.toUpperCase()] : ["BANK", fmt.BLANK];
+    shell.scope = displayed ? ["NODE", displayed.short] : ["NODE", fmt.BLANK];
   });
 
   /* ---- hero */
   const hero = $derived(
-    snapshot ? heroFor({ channels: snapshot.channels, active: snapshot.active_transmissions, bankIds, now }) : ({ mode: "none" } as const),
+    snapshot ? heroFor({ channels: snapshot.channels, active: snapshot.active_transmissions, channelIds, now }) : ({ mode: "none" } as const),
   );
-  const offBank = $derived(snapshot ? offBankLabel(snapshot.active_transmissions, bankIds) : null);
   const elsewhere = $derived(snapshot && displayed ? elsewhereLabel(snapshot.active_transmissions, displayed.id, feedName) : null);
 
   /* ---- selection (URL: `?select=<frequency id>`) and the feed inspector (`?inspect=<feed id>`) */
@@ -152,17 +154,17 @@
     document.documentElement.classList.toggle("lo-locked", locked);
     return () => document.documentElement.classList.remove("lo-locked");
   });
-  // the handset status line reads the bank
+  // the handset status line reads the node
   $effect(() => {
     if (!viewport.handset) return;
-    shell.statusFallback = bank ? `BANK ${bank.name.toUpperCase()} · ${tiles.length} CH` : undefined;
+    shell.statusFallback = displayed ? `NODE ${nodeShort} · ${tiles.length} CH` : undefined;
   });
   function clearSelection(): void {
     liveOpsPrefs.selected = null;
     liveOpsPrefs.save();
     router.setQuery({ select: null, inspect: null });
   }
-  /** The previous or next frequency in the bank's tile order, wrapping. */
+  /** The previous or next frequency in tile order, wrapping. */
   function stepSelection(direction: -1 | 1): void {
     if (!tileIds.length) return;
     const at = selectedId ? tileIds.indexOf(selectedId) : -1;
@@ -181,26 +183,45 @@
     restored = true;
     if (viewport.handset) return; // a phone opens on the list, not on a layer
     const last = liveOpsPrefs.selected;
-    const known = last && (channelById.has(last) || snapshot.banks.some((b) => b.frequency_ids.includes(last)));
+    const known = last && channelById.has(last);
     if (known && !untrack(() => router.query("select")) && !untrack(() => router.query("inspect"))) router.setQuery({ select: last });
   });
   const closeInspector = () => router.setQuery({ inspect: null });
-  const showFeed = (feedId: string) => prefs.update({ displayed_feed: feedId }).catch((e) => console.warn("feed not changed", e));
+  const showFeed = (feedId: string) => prefs.update({ listen_feed: feedId }).catch((e) => console.warn("node not switched", e));
   const inspectFeedId = (feedId: string) => router.setQuery({ inspect: feedId });
+
+  /* ---- the edit window (the tile's `⋯`, or `E` on a focused tile): a floating window on desktop, a layer on a phone */
+  let editId = $state<string | null>(null);
+  let editAnchor = $state<HTMLElement>();
+  let editWindow = $state<ReturnType<typeof FrequencyWindow>>();
+  function editTile(id: string): void {
+    if (editId === id) return;
+    const open = () => {
+      editAnchor = tileEl(id);
+      editId = id;
+    };
+    if (editWindow) editWindow.requestClose(open);
+    else open();
+  }
+  function edited(outcome: Outcome, id: string): void {
+    if (outcome !== "deleted") return;
+    editId = null;
+    if (selectedId === id) clearSelection();
+  }
 
   /* ---- tiles */
   function tileState(c: Channel): TileInput {
     const held = motion.held.get(c.id); // just released: the tile still shows the keyed channel, frozen
     const base = tileInputFrom(held?.channel ?? c, {
       feeds: Object.fromEntries(feedById),
-      displayedFeed: snapshot!.displayed_feed,
+      listenFeed: snapshot!.listen_feed ?? "",
       selectedId,
       muted: prefs.muted,
       solo: prefs.solo,
       linkDropAgeS: dropAge,
     });
-    base.levers = { m: prefs.muted.has(c.id), s: prefs.solo.has(c.id), r: prefs.record.has(c.id) };
-    base.focused = targetedId === c.id;
+    base.levers = { m: prefs.muted.has(c.id), s: prefs.solo.has(c.id) };
+    base.focused = targetedId === c.id || editId === c.id; // the tile that opened the window keeps its ring
     base.commit = motion.committing.has(c.id) && !prefs.muted.has(c.id);
     if (held) base.elapsed = held.elapsed;
     else if (dropAge == null) {
@@ -229,7 +250,7 @@
     return envelopeOf(c, elapsed, active?.words);
   }
 
-  function leverPressed(channelId: string, key: "m" | "s" | "r"): void {
+  function leverPressed(channelId: string, key: LeverKey): void {
     prefs.toggle(LEVER_LIST[key], channelId).catch((error) => console.warn("lever not saved", error));
   }
 
@@ -239,7 +260,7 @@
     return grid ? getComputedStyle(grid).gridTemplateColumns.split(" ").length : 1;
   };
 
-  /** Arrow keys move focus between tiles; M, S and R work the levers of the focused tile. */
+  /** Arrow keys move focus between tiles; M and S work the levers of the focused tile, E opens its edit window (admin). */
   function tileKeys(event: KeyboardEvent): void {
     const tilesEl = [...(event.currentTarget as HTMLElement).querySelectorAll<HTMLElement>(".tile")];
     const at = tilesEl.indexOf((event.target as HTMLElement).closest(".tile") as HTMLElement);
@@ -254,8 +275,11 @@
       event.preventDefault(); // F opens the channel's frequency page
       router.go(`/frequency/${tiles[at].id}`);
     } else if (event.target === tilesEl[at] && event.key.toLowerCase() in LEVER_LIST) {
-      event.preventDefault(); // R is also a tab hotkey: the focused tile's lever wins
+      event.preventDefault();
       leverPressed(tiles[at].id, event.key.toLowerCase() as LeverKey);
+    } else if (event.target === tilesEl[at] && event.key.toLowerCase() === "e" && session.isAdmin && !event.ctrlKey && !event.metaKey && !event.altKey) {
+      event.preventDefault();
+      editTile(tiles[at].id);
     }
   }
 
@@ -267,8 +291,8 @@
   }
 
   /**
-   * Number keys target a tile by its bank index (1-9; 0 is the tenth; two digits typed quickly, e.g. 1 then 2,
-   * reach 12). The targeted tile takes focus, so M, S and R then work its levers (tileKeys).
+   * Number keys target a tile by its position in the list (1-9; 0 is the tenth; two digits typed quickly, e.g. 1 then 2,
+   * reach 12). The targeted tile takes focus, so M, S and E then work its levers (tileKeys).
    */
   const DIGIT_PAIR_MS = 800;
   /** the tile a number key targeted; drawn focused explicitly, since the browser hides focus rings after a click */
@@ -301,7 +325,7 @@
 
   /** Esc steps back one layer: a menu or the feed inspector (they handle it), playback, a bucket jump, then the selection. */
   function escapeKey(event: KeyboardEvent): void {
-    if (inspectFeed || document.querySelector(".lo-menu") || !selectedId) return;
+    if (inspectFeed || editId || !selectedId) return;
     event.preventDefault();
     if (!pane?.escape()) clearSelection();
   }
@@ -350,15 +374,15 @@
   });
   const showTile = (id: string): void => tileEl(id)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
 
-  // the selected tile scrolls into view (a digit, [ ], the hero); a bank switch starts the area at the top
-  let lastBank = "";
+  // the selected tile scrolls into view (a digit, [ ], the hero); a node switch starts the area at the top
+  let lastNode = "";
   $effect(() => {
     const id = selectedId;
-    const bankId = bank?.id ?? "";
+    const nodeId = displayed?.id ?? "";
     void tiles.length;
     if (viewport.handset || !tilesBox) return;
-    const changed = untrack(() => lastBank) !== bankId;
-    lastBank = bankId;
+    const changed = untrack(() => lastNode) !== nodeId;
+    lastNode = nodeId;
     const at = id ? tiles.findIndex((c) => c.id === id) : -1;
     if (at >= 0) tilesBox.querySelectorAll(".tile")[at]?.scrollIntoView({ block: "nearest" });
     else if (changed) tilesBox.scrollTop = 0;
@@ -394,17 +418,31 @@
     wave={(c.tx || motion.held.has(c.id)) && variant === "standard" ? wave : undefined}
     onselect={() => selectChannel(c.id)}
     onlever={(key) => leverPressed(c.id, key)}
+    onedit={session.isAdmin ? () => editTile(c.id) : undefined}
     index={i + 1}
   />
 {/snippet}
 
+{#snippet emptyTiles(desktop: boolean)}
+  {#if !snapshot?.feeds_listenable.length}
+    <EmptyState title="NO NODES">
+      {#if session.isAdmin}<span class="t-body"><a href="/settings" onclick={(e) => (e.preventDefault(), router.go("/settings"))}>Add a node in Settings.</a></span>{/if}
+    </EmptyState>
+  {:else}
+    <EmptyState title="NOTHING ENABLED ON {nodeShort}">
+      <span class="t-body">Enable frequencies for this node in <a href="/frequencies?node={displayed?.id}" onclick={(e) => (e.preventDefault(), router.go(`/frequencies?node=${displayed?.id}`))}>Frequencies</a>.</span>
+      {#if desktop && session.isAdmin}<span class="t-body c-ink-3">Or right-click a channel on the waterfall.</span>{/if}
+    </EmptyState>
+  {/if}
+{/snippet}
+
 {#if viewport.handset}
   <div class="hs" class:is-down={linkState === "no-link"} data-link={linkState ?? undefined}>
-    {#if !snapshot || !bank || blank}
+    {#if !snapshot || blank}
       <div class="hs__top"><div class="hs__hero"><span class="hs__k">LAST KEY-UP</span><span class="hs__age">{fmt.BLANK}</span></div></div>
     {:else}
       <div class="hs__top">
-        <div class="hs__tabs"><BankTabs banks={bankList} active={bank.id} /></div>
+        <div class="hs__tabs"><NodeTabs nodes={snapshot.feeds_listenable} feeds={snapshot.feeds} active={snapshot.listen_feed} /></div>
         <div class="hs__hero">
           {#if hero.mode === "keyed"}
             <button class="hs__keyed" type="button" onclick={() => selectChannel(hero.id)}>
@@ -414,21 +452,17 @@
           {:else if hero.mode === "idle"}
             <span class="hs__k">LAST KEY-UP</span><span class="hs__age">{fmt.age(hero.ageS)}</span><span class="hs__k">· {hero.aar}</span>
           {:else}
-            <span class="hs__k">{hero.mode === "empty" ? "NO CHANNELS IN THIS BANK" : "NO KEY-UPS YET"}</span>
+            <span class="hs__k">{hero.mode === "empty" ? "NOTHING ENABLED" : "NO KEY-UPS YET"}</span>
           {/if}
           <span class="hs__grow"></span>
           <button class="chip hs__spec" data-chip="nominal" type="button" onclick={openSpectrum}>SPECTRUM</button>
         </div>
       </div>
 
-      <div bind:this={tilesBox} class="hs__list" class:has-solo={prefs.solo.size > 0} role="group" aria-label="Channels" inert={!!selectedId || spectrumOpen}>
+      <div bind:this={tilesBox} class="hs__list" class:has-solo={prefs.solo.size > 0} role="group" aria-label="Channels" inert={!!selectedId || spectrumOpen || !!editId}>
         {#if tiles.length === 0}
           <div class="hs__empty">
-            {#if bank.id === "bank-live"}
-              <EmptyState title="LIVE BANK EMPTY" detail="Open Live Ops on a wider screen and click a channel on the waterfall." />
-            {:else}
-              <EmptyState title="BANK EMPTY" detail="Add channels in Feeds & Banks." />
-            {/if}
+            {@render emptyTiles(false)}
           </div>
         {:else}
           <TileGrid>
@@ -440,12 +474,12 @@
       </div>
 
       {#if spectrumOpen}
-        <SpectrumView state={snapshot} bankChannels={bankChannelNumbers} {dropAge} feed={displayed!} onback={closeSpectrum} />
+        <SpectrumView state={snapshot} bankChannels={channelNumbers} {dropAge} feed={displayed!} onback={closeSpectrum} />
       {/if}
 
       {#if selectedId}
         <div class="hs__layer">
-          <FrequencyPane bind:this={pane} variant="layer" frequencyId={selectedId} backLabel={bank.name.toUpperCase()} onback={back} onclose={clearSelection} />
+          <FrequencyPane bind:this={pane} variant="layer" frequencyId={selectedId} backLabel={nodeShort} onback={back} onclose={clearSelection} />
         </div>
       {/if}
     {/if}
@@ -459,7 +493,7 @@
     style:--wall-frac={liveOpsPrefs.wall ?? undefined}
     style:--pane-frac={liveOpsPrefs.pane ?? undefined}
   >
-    {#if blank || !snapshot || !bank || !displayed}
+    {#if blank || !snapshot || !displayed}
       <!-- nothing has arrived yet: the same boxes, empty -->
       <div class="lo__hero hero lo-hero">
         <span class="hero__text c-ink-2">LAST KEY-UP</span><span class="hero__big is-2">{fmt.BLANK}</span>
@@ -471,17 +505,23 @@
         <div class="lo-cell lo-cell--strip"></div>
       </div>
       <div class="lo__lower">
-        <div class="lo__bank br"><div class="lo-blank"><span class="t-panel">CHANNELS</span><span class="mono">{fmt.BLANK}</span></div></div>
+        <div class="lo__bank br">
+          {#if snapshot && !blank}
+            <div class="lo-empty br">{@render emptyTiles(true)}</div>
+          {:else}
+            <div class="lo-blank"><span class="t-panel">CHANNELS</span><span class="mono">{fmt.BLANK}</span></div>
+          {/if}
+        </div>
         <div class="lo__gutter"></div>
         <div class="lo__pane br"></div>
       </div>
     {:else}
       <div class="lo__hero">
-        <HeroStrip {hero} onselect={selectChannel} feeds={snapshot.feeds} {displayed} faults={snapshot.faults} {offBank} {elsewhere} onshowfeed={showFeed} oninspectfeed={inspectFeedId} liveBank={bank.id === "bank-live"} />
+        <HeroStrip {hero} onselect={selectChannel} {displayed} faults={snapshot.faults} {elsewhere} onshowfeed={showFeed} oninspectfeed={inspectFeedId} />
       </div>
 
       <div class="lo__wall">
-        <FrontWall state={snapshot} bankChannels={bankChannelNumbers} {dropAge} feed={displayed} resizing={dragging === "wall"} {selectedChannel} />
+        <FrontWall state={snapshot} bankChannels={channelNumbers} {dropAge} feed={displayed} resizing={dragging === "wall"} {selectedChannel} />
       </div>
       <Divider
         class="lo__dv-wall"
@@ -501,7 +541,7 @@
       <div class="lo__lower">
         <div class="lo__bank">
           <div class="lo__tabs">
-            <BankTabs banks={bankList} active={bank.id} density={densityChip} />
+            <NodeTabs nodes={snapshot.feeds_listenable} feeds={snapshot.feeds} active={snapshot.listen_feed} density={densityChip} />
           </div>
 
           <div class="lo__tilebox">
@@ -515,13 +555,7 @@
           <div bind:this={tilesBox} bind:clientHeight={tilesH} onscroll={measureEdges} class="lo__tiles" class:has-solo={prefs.solo.size > 0} role="group" aria-label="Channels" onkeydown={tileKeys} ondblclick={tileDoubleClick} onfocusout={(e) => !(e.relatedTarget as HTMLElement | null)?.closest(".tile") && (targetedId = null)}>
             {#if tiles.length === 0}
               <div class="lo-empty br">
-                {#if bank.id === "bank-live"}
-                  <EmptyState title="LIVE BANK EMPTY" detail="Click a channel on the waterfall to listen." />
-                {:else}
-                  <EmptyState title="BANK EMPTY">
-                    <span class="t-body">Add channels in <a href="/feeds" onclick={(e) => (e.preventDefault(), router.go("/feeds"))}>Feeds &amp; Banks</a>.</span>
-                  </EmptyState>
-                {/if}
+                {@render emptyTiles(true)}
               </div>
             {:else}
               <TileGrid>
@@ -570,4 +604,12 @@
     {/if}
   </div>
 </div>
+{/if}
+
+{#if editId}
+  {#if viewport.handset}
+    <FrequencyLayer frequencyId={editId} listenedFeedId={displayed?.id} onclose={() => (editId = null)} ondone={edited} />
+  {:else if editAnchor}
+    <FrequencyWindow bind:this={editWindow} frequencyId={editId} anchor={editAnchor} kind="tile" listenedFeedId={displayed?.id} onclose={() => (editId = null)} ondone={edited} />
+  {/if}
 {/if}

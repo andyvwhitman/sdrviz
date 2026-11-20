@@ -256,6 +256,7 @@
 
 <style>
   .ds { padding: 0 16px 8px; background: var(--bg-void); }
+  .ds--pane { padding-inline: 16px; }
   .ds__read { display: flex; flex-wrap: wrap; align-items: center; column-gap: 8px; min-height: 36px; row-gap: 6px; white-space: nowrap; }
   .ds__day { font: 500 var(--fs-13)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink); }
   .ds__steps { display: inline-flex; }
@@ -270,6 +271,7 @@
   .ds__svg:focus-visible { outline: var(--stroke-emph) solid var(--state-select); outline-offset: 4px; }
 
   .ds__bars { animation: ds-wipe 250ms linear 300ms both; }
+  .ds--pane .ds__bars { animation-delay: 0ms; } /* the lid has just opened: write in at once */
   @keyframes ds-wipe { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
   @media (prefers-reduced-motion: reduce) { .ds__bars { animation: none; } }
 

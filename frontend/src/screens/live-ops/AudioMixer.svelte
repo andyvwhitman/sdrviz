@@ -89,5 +89,7 @@
   .au__slider::-moz-range-thumb { width: 8px; height: 14px; background: var(--ink); border: 0; border-radius: 0; }
   .au__slider:focus-visible { outline: 1px solid var(--state-select); outline-offset: 2px; }
 
-  @container pane (max-width: 479px) { .au__slider { flex: none; width: 120px; } }
+  /* a narrow column keeps the slider and the levers; the level meter (the hero already shows the keyed timer) goes first */
+  @container pane (max-width: 479px) { .au__slider { flex: 1 1 64px; min-width: 64px; } .au__row { gap: 8px; } }
+  @container pane (max-width: 439px) { .au__meter { display: none; } }
 </style>

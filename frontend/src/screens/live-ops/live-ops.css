@@ -166,7 +166,7 @@ body.lo-resizing-row, body.lo-resizing-row * { cursor: row-resize !important; us
 .hs .tile.tile--compact .tile__status { top: 12px; right: 140px; }
 .hs .tile.tile--compact .tile__aar { top: 36px; }
 .hs .tile.tile--compact .tile__mhz { left: 84px; top: 40px; font-size: var(--fs-13); }
-.hs .tile.tile--compact .tile__timer { top: 16px; right: 140px; }
+.hs .tile.tile--compact .tile__timer { top: 33px; right: 140px; } /* keyed: row 2, where the MHz was */
 .hs .tile.tile--compact .tile__levers { top: 0; right: 0; height: 64px; }
 .hs .tile.tile--compact .lever { width: 44px; height: 64px; }
 .hs .tile.tile--compact .lever::before { left: 20px; top: 12px; }

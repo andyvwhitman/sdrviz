@@ -73,6 +73,7 @@
   <div class="fr-body">
     {#each rows as f (f.id)}
       {@const isKeyed = keyed.has(f.id)}
+      {@const glyph = glyphOf(f, columns, isKeyed)}
       <div
         class="fr-row fr-data"
         class:is-tx={isKeyed}
@@ -83,7 +84,7 @@
         onclick={() => onrow(f)}
         onkeydown={(event) => rowKeys(event, f)}
       >
-        <span role="presentation" class="fr-glyph"><PositionGlyph state={glyphOf(f, columns, isKeyed)} /></span>
+        <span role="presentation" class="fr-glyph">{#if glyph}<PositionGlyph state={glyph} />{/if}</span>
         <span role="cell" class="fr-mhz">{mhzText(f.freq_mhz)}</span>
         <span role="cell" class="fr-aar">{aarPair(f.aar_channel)}</span>
         <span role="cell" class="fr-label">{f.label}{#if shared.has(f.id)}<span class="fr-same">SAME FREQ</span>{/if}</span>

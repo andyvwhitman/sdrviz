@@ -104,10 +104,14 @@ export function countsOf(rows: Frequency[], columns: NodeColumn[], node: string 
   return { enabled: rows.filter((f) => viewedSlot(f, node) === "on").length, total: rows.length, perNode };
 }
 
-/** The row glyph: tx while keyed; idle when enabled on a node that is ok; stale when only on stale nodes; else offline. */
-export function glyphOf(f: Frequency, columns: NodeColumn[], keyed: boolean): GlyphState {
+/**
+ * The row glyph: tx while keyed; idle when enabled on a node that is ok; stale when only on stale nodes; offline when
+ * enabled but every enabling node is down. A disabled or unassigned row has no glyph (its slots already say so).
+ */
+export function glyphOf(f: Frequency, columns: NodeColumn[], keyed: boolean): GlyphState | null {
   if (keyed) return "tx";
   const states = f.assignments.filter((a) => a.enabled).map((a) => columns.find((c) => c.feedId === a.feed_id)?.state);
+  if (states.length === 0) return null;
   if (states.includes("ok")) return "idle";
   return states.includes("stale") ? "stale" : "offline";
 }

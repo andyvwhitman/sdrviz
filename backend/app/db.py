@@ -8,12 +8,12 @@ import sys
 from collections.abc import Iterator
 from pathlib import Path
 
-from sqlalchemy import event, text
+from sqlalchemy import event, inspect, text
 from sqlalchemy.engine import Engine
 from sqlmodel import Session, SQLModel, create_engine, select
 
 from .config import Settings
-from .models import Bank, Feed, FeedAck, FeedEvent, Frequency, Prefs, Transmission
+from .models import Assignment, Bank, Feed, FeedAck, FeedEvent, Frequency, Prefs, Transmission
 from .nodes import models as _node_tables  # noqa: F401  (registers the node tables for create_all)
 from .recordings import models as _recording_tables  # noqa: F401  (registers the recording table)
 from .sim.detector import detector_fields
@@ -61,9 +61,20 @@ def session_scope(engine: Engine) -> Iterator[Session]:
 
 
 def create_schema(engine: Engine) -> None:
+    first_assignments = not inspect(engine).has_table(Assignment.__tablename__)
     SQLModel.metadata.create_all(engine)
     with engine.begin() as conn:
         conn.execute(text(FTS_DDL))
+    if first_assignments:
+        _assign_from_hears(engine)
+
+
+def _assign_from_hears(engine: Engine) -> None:
+    """A database from before assignments: what each feed heard becomes its enabled assignments (once)."""
+    with open_session(engine) as session:
+        for feed in session.exec(select(Feed)):
+            session.add_all(Assignment(frequency_id=freq_id, feed_id=feed.id) for freq_id in feed.hears)
+        session.commit()
 
 
 def _read(path: Path) -> dict:
@@ -118,6 +129,7 @@ def seed_all(session: Session, settings: Settings) -> None:
                 sim=True,
             )
         )
+        session.add_all(Assignment(frequency_id=freq_id, feed_id=place["id"]) for freq_id in place["hears"])
         for ev in static["events"]:
             session.add(FeedEvent(feed_id=place["id"], t=ev["t"], state=ev["state"], label=ev["label"]))
         for ack in static["acks"]:

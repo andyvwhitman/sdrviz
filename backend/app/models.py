@@ -27,6 +27,14 @@ class Frequency(FrequencyBase, table=True):
     sources: list[str] = Field(default_factory=list, sa_column=Column(JSON))
 
 
+class Assignment(SQLModel, table=True):
+    """A frequency assigned to a feed (a node). A feed hears, decodes and records exactly its enabled assignments."""
+
+    frequency_id: str = Field(primary_key=True)
+    feed_id: str = Field(primary_key=True)
+    enabled: bool = True
+
+
 class BankBase(SQLModel):
     id: str
     name: str

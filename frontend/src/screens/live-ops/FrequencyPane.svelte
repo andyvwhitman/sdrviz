@@ -240,6 +240,13 @@
   const dayLabel = $derived(isToday ? "TODAY" : dayName(viewDate!));
   const heading = $derived(dayHeading(day?.date ?? viewDate ?? todayKey, todayKey));
   const lastHeardMs = $derived(store?.rows[0] ? Date.parse(store.rows[0].started_at) : null);
+  /** the newest recording's end, for the hero when the live snapshot has no last_heard for this channel */
+  const lastHeardFallback = $derived.by(() => {
+    const newest = store?.rows[0];
+    if (!newest) return null;
+    const endMs = Date.parse(newest.started_at) + newest.duration_s * 1000;
+    return { ageS: Math.max(0, (nowMs - endMs) / 1000), clock: clockOf(endMs, tz) };
+  });
   const floor = $derived.by(() => {
     const feed = snapshot?.feeds.find((f) => f.id === (channel?.tx?.primary_feed ?? channel?.heard_by[0]));
     return feed ? noiseFloor(feed) : null;
@@ -315,7 +322,7 @@
         <button class="chip" data-chip="nominal" type="button" onclick={onclose}>CLEAR</button>
       </section>
     {:else if info}
-      <Identity variant="pane" {info} {channel} {keyedElapsed} {offBank} />
+      <Identity variant="pane" {info} {channel} {keyedElapsed} {offBank} {lastHeardFallback} />
 
       {#if inAnyBank}
         <AudioMixer channelId={frequencyId} {floor} keyed={keyed} {offBank} />

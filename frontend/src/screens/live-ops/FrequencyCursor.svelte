@@ -25,6 +25,8 @@
   }
   let { x, spectrum, ruler, waterfall, channels, flash = null, listenable = true, readout }: Props = $props();
 
+  /** how far the cursor reaches into the ruler: a labelled tick (8 px) and 2 */
+  const STUB = 10;
   const [left, top, width] = $derived(spectrum);
   const height = $derived(waterfall[1] + waterfall[3] - top);
   const rulerTop = $derived(ruler[1] - top);
@@ -69,8 +71,10 @@
 
 <div class="lo-box lo-cursor" style={boxStyle([left, top, width, height])}>
   <svg class="hud" {width} {height} viewBox="0 0 {width} {height}">
-    <path class="s-hair k-select d-measure" d="M{px} 0V{rulerTop - 5}M{px} {rulerBottom}V{height}" />
-    <path class="f-void s-emph k-select" d="M{px} {rulerTop - 5}L{px + 5} {rulerTop}L{px} {rulerTop + 5}L{px - 5} {rulerTop}Z" />
+    <!-- column marks stop at the spectrum's bottom edge and resume at the waterfall's top; in the ruler the cursor
+         only reaches its own tick (E-2 section 8) -->
+    <path class="s-hair k-select d-measure" d="M{px} 0V{rulerTop}M{px} {rulerBottom}V{height}" />
+    <path class="s-hair k-select" d="M{px} {rulerBottom}V{rulerBottom - STUB}" />
     <path class="s-hair k-select" d="M{px - 4} {rulerBottom - 4}L{px} {rulerBottom}L{px + 4} {rulerBottom - 4}" />
     <rect class="f-void lo-cursor__back" x={backX} y={textY - 12} width={textW} height={hint ? 36 : 17} />
     <text class="tx-data lo-cursor__text" x={textX} y={textY} text-anchor={anchor}>{text}</text>

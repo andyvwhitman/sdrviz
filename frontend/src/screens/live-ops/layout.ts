@@ -5,8 +5,9 @@
  * the direction's figures.
  */
 
-/** The wall's plots: the spectrum takes a clamp of what the ruler leaves, the waterfall the rest. */
-export const RULER_PX = 56;
+/** The wall's plots (E-2): the spectrum takes a clamp of what the ruler and the scale strip leave, the waterfall the rest. */
+export const RULER_PX = 68;
+export const STRIP_PX = 14;
 const SPECTRUM = { min: 48, max: 144, share: 0.25 };
 export const MIN_WATERFALL_PX = 64;
 
@@ -16,7 +17,7 @@ const CHROME_PX = 128;
 const GAP_PX = 16;
 /** The lower half never gets shorter than this: two standard tile rows and the tabs. */
 const LOWER_MIN_PX = 240;
-export const WALL_MIN_PX = SPECTRUM.min + RULER_PX + MIN_WATERFALL_PX;
+export const WALL_MIN_PX = SPECTRUM.min + RULER_PX + MIN_WATERFALL_PX + STRIP_PX;
 
 export const PANE_MIN_PX = 360;
 const PANE_DEFAULT = { share: 0.4, min: 400, max: 880 };
@@ -45,8 +46,8 @@ export const wallPx = (fraction: number | null, height: number, heroH: number): 
 /** The fraction that makes the wall `px` tall. */
 export const wallFraction = (px: number, height: number): number => px / (height - CHROME_PX);
 
-export const spectrumPx = (wall: number): number => Math.round(clamp((wall - RULER_PX) * SPECTRUM.share, { min: SPECTRUM.min, max: SPECTRUM.max }));
-export const waterfallPx = (wall: number): number => wall - RULER_PX - spectrumPx(wall);
+export const spectrumPx = (wall: number): number => Math.round(clamp((wall - RULER_PX - STRIP_PX) * SPECTRUM.share, { min: SPECTRUM.min, max: SPECTRUM.max }));
+export const waterfallPx = (wall: number): number => wall - RULER_PX - STRIP_PX - spectrumPx(wall);
 
 export const paneBounds = (width: number): Bounds => ({ min: PANE_MIN_PX, max: Math.max(PANE_MIN_PX, width - GUTTER_PX - TILES_MIN_PX) });
 

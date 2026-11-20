@@ -18,7 +18,10 @@
   import SpectrumTrace from "./SpectrumTrace.svelte";
   import Waterfall from "./Waterfall.svelte";
   import { listenFlash } from "./listenFlash.svelte";
-  import { carriersOn, frameDbAt, heardChannels, noiseFloor, type Box } from "./wall";
+  import { carriersOn, channelNumber, frameDbAt, heardChannels, noiseFloor, type Box } from "./wall";
+  import { METRICS, phoneClass, type AxisClass } from "./freqRuler";
+  import ScaleStrip from "./ScaleStrip.svelte";
+  import SpectrumScale from "./SpectrumScale.svelte";
 
   interface Props {
     state: LiveState;
@@ -34,8 +37,10 @@
     resizing?: boolean;
     /** the phone's spectrum view: no click-to-listen; a touch held on a plot reads the cursor, and nothing else */
     viewOnly?: boolean;
+    /** the selected frequency's channel number, marked on the ruler */
+    selectedChannel?: number | null;
   }
-  let { state: snapshot, bankChannels, dropAge, blank = false, feed, resizing = false, viewOnly = false }: Props = $props();
+  let { state: snapshot, bankChannels, dropAge, blank = false, feed, resizing = false, viewOnly = false, selectedChannel = null }: Props = $props();
 
   // the server streams spectrum frames only for the feed being watched
   $effect(() => {
@@ -54,33 +59,43 @@
   const frozenAge = $derived(feed.last_sample_age_s == null ? null : fmt.age(feed.last_sample_age_s, "age"));
 
   /**
-   * The three plots are CSS boxes that fill the wall (the spectrum takes its clamp, the ruler its fixed height, the
-   * waterfall the rest); each reports its size once so the canvas and SVG can be drawn to it.
+   * The wall is CSS boxes: the spectrum takes its clamp, the ruler and the scale strip their fixed heights, the waterfall
+   * the rest. Each plot is the wall's width less E-2's right label margin; the heights are measured once for drawing.
    */
-  let spectrumW = $state(0);
+  let wallW = $state(0);
   let spectrumH = $state(0);
-  let rulerW = $state(0);
   let rulerH = $state(0);
-  let fallW = $state(0);
   let fallH = $state(0);
-  const spectrumBox = $derived<Box>([0, 0, spectrumW, spectrumH]);
-  const rulerBox = $derived<Box>([0, spectrumH, rulerW, rulerH]);
-  const waterfallBox = $derived<Box>([0, spectrumH + rulerH, fallW, fallH]);
+  /** the handset layer takes the phone forms: portrait under 600 px of wall, landscape above (the CSS asks the same) */
+  const cls = $derived<AxisClass>(viewOnly ? phoneClass(wallW) : "desktop");
+  const m = $derived(METRICS[cls]);
+  const plotW = $derived(Math.max(0, wallW - m.M));
+  const spectrumBox = $derived<Box>([0, 0, plotW, spectrumH]);
+  const rulerBox = $derived<Box>([0, spectrumH, plotW, rulerH]);
+  const waterfallBox = $derived<Box>([0, spectrumH + rulerH, plotW, fallH]);
+
+  /** what the ruler labels: the bank's channels this feed hears; off-bank keyed channels and the selection ride along as extras */
+  const labelled = $derived(blank ? [] : bankChannels.filter((ch) => heard.includes(ch)));
+  const keyedChannels = $derived(snapshot.active_transmissions.map((row) => channelNumber(row.aar)));
+  const inBand = (ch: number): boolean => ch >= BAND.first && ch <= BAND.last;
+  const extras = $derived(blank ? [] : [...keyedChannels, ...(selectedChannel === null ? [] : [selectedChannel])].filter((ch) => inBand(ch) && !labelled.includes(ch)));
 
   /** pointer x over the spectrum, ruler or waterfall (they share x), for the hover readout */
   let hoverX = $state<number | null>(null);
   const layoutX = (event: MouseEvent): number => event.clientX - (event.currentTarget as HTMLElement).getBoundingClientRect().left;
+  /** a pointer in the right margin is off the plot */
+  const onPlot = (x: number): boolean => x >= 0 && x <= plotW;
   const hover = {
-    onpointerdown: (event: PointerEvent) => viewOnly && (hoverX = layoutX(event)),
-    onpointermove: (event: PointerEvent) => (hoverX = layoutX(event)),
+    onpointerdown: (event: PointerEvent) => viewOnly && (hoverX = onPlot(layoutX(event)) ? layoutX(event) : null),
+    onpointermove: (event: PointerEvent) => (hoverX = onPlot(layoutX(event)) ? layoutX(event) : null),
     onpointerleave: () => (hoverX = null),
     onpointercancel: () => (hoverX = null),
     onclick: (event: MouseEvent) => !viewOnly && listen(event),
   };
   /** the readout of a held touch: channel, frequency and the level under the finger */
   const touchReadout = $derived.by(() => {
-    if (!viewOnly || hoverX === null || spectrumW < 2) return undefined;
-    const mhz = BAND.lo + (Math.min(spectrumW - 1, Math.max(0, hoverX)) / (spectrumW - 1)) * (BAND.hi - BAND.lo);
+    if (!viewOnly || hoverX === null || plotW < 2) return undefined;
+    const mhz = BAND.lo + (Math.min(plotW - 1, Math.max(0, hoverX)) / (plotW - 1)) * (BAND.hi - BAND.lo);
     const ch = channelAt(hoverX);
     const frame = spectrum.latest;
     const level = frame && delivering ? ` · ${fmt.dbfs(frameDbAt(frame, mhz))}` : "";
@@ -89,7 +104,7 @@
 
   /** the AAR channel under the pointer, or null between channel slots and outside the band */
   function channelAt(x: number): number | null {
-    const width = spectrumW;
+    const width = plotW;
     const mhz = BAND.lo + (Math.min(width - 1, Math.max(0, x)) / (width - 1)) * (BAND.hi - BAND.lo);
     const ch = mhzToCh(mhz);
     const onSlot = ch >= BAND.first && ch <= BAND.last && Math.abs(mhz - chToMhz(ch)) <= BAND.step / 2;
@@ -124,20 +139,21 @@
   }
 </script>
 
-<div class="lo-wall" class:is-view={viewOnly}>
-  <div class="lo-cell lo-cell--spectrum" bind:clientWidth={spectrumW} bind:clientHeight={spectrumH} {...hover} role="presentation">
-    {#if spectrumW > 0 && spectrumH > 0}
-      <SpectrumTrace width={spectrumW} height={spectrumH} {floor} {heard} {carriers} live={delivering && !blank} sweeping={listening} {frozenAge} {blank} hideScale={viewOnly} />
+<div class="lo-wall" class:is-view={viewOnly} bind:clientWidth={wallW}>
+  <div class="lo-cell lo-cell--spectrum" bind:clientHeight={spectrumH} {...hover} role="presentation">
+    {#if plotW > 0 && spectrumH > 0}
+      <SpectrumTrace width={plotW} height={spectrumH} {floor} {heard} {carriers} live={delivering && !blank} sweeping={listening} {frozenAge} {blank} />
+      {#if m.M > 0}<SpectrumScale plotWidth={plotW} margin={m.M} height={spectrumH} fontPx={m.f} />{/if}
     {/if}
   </div>
-  <div class="lo-cell lo-cell--ruler" bind:clientWidth={rulerW} bind:clientHeight={rulerH} {...hover} role="presentation">
-    {#if rulerW > 0}
-      <FrequencyRuler width={rulerW} height={rulerH} hears={blank ? [] : heard} bank={blank ? [] : bankChannels} dimmed={!delivering} />
+  <div class="lo-cell lo-cell--ruler" bind:clientHeight={rulerH} {...hover} role="presentation">
+    {#if plotW > 0}
+      <FrequencyRuler width={plotW} {cls} hears={blank ? [] : heard} {labelled} {extras} keyed={keyedChannels} selected={selectedChannel} stale={!delivering} />
     {/if}
   </div>
-  <div class="lo-cell lo-cell--fall" bind:clientWidth={fallW} bind:clientHeight={fallH} {...hover} role="presentation">
-    {#if fallW > 0 && fallH > 0}
-      <Waterfall width={fallW} height={fallH} feedId={feed.id} {floor} {carriers} live={delivering} {dropAge} frozen={resizing}>
+  <div class="lo-cell lo-cell--fall" bind:clientHeight={fallH} {...hover} role="presentation">
+    {#if plotW > 0 && fallH > 0}
+      <Waterfall width={plotW} height={fallH} feedId={feed.id} {floor} {carriers} live={delivering} {dropAge} frozen={resizing}>
         {#if !delivering}
           <FrontWallMessage
             feedShort={feed.short}
@@ -150,6 +166,9 @@
         {/if}
       </Waterfall>
     {/if}
+  </div>
+  <div class="lo-cell lo-cell--strip">
+    {#if plotW > 0}<ScaleStrip width={plotW} height={m.strip} fontPx={m.f} />{/if}
   </div>
 
   {#if hoverX !== null && !blank}

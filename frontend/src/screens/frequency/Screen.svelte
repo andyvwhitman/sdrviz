@@ -307,6 +307,13 @@
   const dayLabel = $derived(isToday ? "TODAY" : dayName(viewDate!));
   const countToday = $derived(day && day.date === todayKey ? totalsOf(day.buckets).count : null);
   const heading = $derived(dayHeading(day?.date ?? viewDate ?? todayKey, todayKey));
+  /** the newest recording's end, for the hero when the live snapshot has no last_heard for this channel */
+  const lastHeardFallback = $derived.by(() => {
+    const newest = store?.rows[0];
+    if (!newest) return null;
+    const endMs = Date.parse(newest.started_at) + newest.duration_s * 1000;
+    return { ageS: Math.max(0, (nowMs - endMs) / 1000), clock: clockOf(endMs, tz) };
+  });
   const lastHeardMs = $derived(store?.rows[0] ? Date.parse(store.rows[0].started_at) : null);
   $effect(() => {
     if (!info) return;
@@ -323,7 +330,7 @@
     </section>
   {:else if info}
     <div class="fq__top" bind:clientHeight={topHeight}>
-      <Identity variant={viewport.width < PAGE_MIN_PX ? "phone" : "page"} {info} {channel} {keyedElapsed} {lidOpen} ontogglelid={() => (lidOpen = !lidOpen)} />
+      <Identity variant={viewport.width < PAGE_MIN_PX ? "phone" : "page"} {info} {channel} {keyedElapsed} {lastHeardFallback} {lidOpen} ontogglelid={() => (lidOpen = !lidOpen)} />
       {#if compact && range === "week"}
         <WeekGrid week={activity?.week ?? null} {tz} {nowMs} shownDate={viewDate ?? todayKey} {range} {dayLabel} onrange={(next) => (range = next)} onpick={(date, hour) => void pick(date, hour)} />
       {:else}

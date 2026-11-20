@@ -8,15 +8,16 @@ describe("the wall's height", () => {
     expect(wallPx(null, 1368, 64)).toBe(446);
   });
 
-  it("splits into the spectrum clamp, the ruler's 56 px and the waterfall", () => {
-    expect([spectrumPx(317), waterfallPx(317)]).toEqual([65, 196]);
-    expect([spectrumPx(216), waterfallPx(216)]).toEqual([48, 112]);
+  it("splits into the spectrum clamp, the ruler's 68 px, the waterfall and the 14 px scale strip", () => {
+    expect([spectrumPx(317), waterfallPx(317)]).toEqual([59, 176]);
+    expect([spectrumPx(216), waterfallPx(216)]).toEqual([48, 86]);
+    expect([spectrumPx(446), waterfallPx(446)]).toEqual([91, 273]);
     expect(spectrumPx(2000)).toBe(144);
   });
 
   it("never goes under the three plots' minimum nor leaves the lower half under 240 px", () => {
-    expect(wallBounds(1008, 64)).toEqual({ min: 168, max: 640 });
-    expect(wallPx(0.01, 1008, 64)).toBe(168);
+    expect(wallBounds(1008, 64)).toEqual({ min: 194, max: 640 });
+    expect(wallPx(0.01, 1008, 64)).toBe(194);
     expect(wallPx(0.99, 1008, 64)).toBe(640);
   });
 

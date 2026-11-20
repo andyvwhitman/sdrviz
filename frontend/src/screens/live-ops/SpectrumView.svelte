@@ -57,11 +57,11 @@
   .sv__foot { flex: none; height: 28px; display: flex; align-items: center; justify-content: space-between; padding: 0 8px 0 12px; font: 400 var(--fs-11)/1 var(--font-data); color: var(--ink-3); }
   .sv__foot b { font-weight: 400; color: var(--ink-2); }
 
-  /* landscape phone: a 32 px bar, a 72 px spectrum, no status line; the corner mute floats at the bottom right */
+  /* landscape phone: a 32 px bar, a 56 px spectrum, no status line; the corner mute floats at the bottom right */
   @media (max-height: 559px) {
-    .sv { --spectrum-h: 72px; }
+    .sv { --spectrum-h: 56px; }
     .sv__bar, .sv__back { height: 32px; }
-    .sv__plot { padding-bottom: 8px; }
+    .sv__plot { padding-top: 0; padding-bottom: 0; }
     .sv__foot { position: absolute; right: calc(8px + env(safe-area-inset-right)); bottom: 8px; height: auto; padding: 0; }
     .sv__foot span { display: none; }
   }

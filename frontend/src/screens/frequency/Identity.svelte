@@ -32,13 +32,16 @@
     variant?: "page" | "pane" | "phone";
     /** pane: the frequency is in a bank, but not the active one */
     offBank?: boolean;
+    /** when the channel last spoke, from its newest recording, for a channel the live snapshot has no last_heard for */
+    lastHeardFallback?: { ageS: number; clock: string } | null;
   }
-  let { info, channel, keyedElapsed, lidOpen = false, ontogglelid, variant = "page", offBank = false }: Props = $props();
+  let { info, channel, keyedElapsed, lidOpen = false, ontogglelid, variant = "page", offBank = false, lastHeardFallback = null }: Props = $props();
 
   const snapshot = $derived(live.state);
   const keyed = $derived(keyedElapsed !== null);
   const lastHeard = $derived(channel?.last_heard ?? null);
-  const ageS = $derived(lastHeard ? cyclicAge(simClock.now, lastHeard.end_t) : null);
+  /** the snapshot may know nothing of this channel (it is not in the active bank): the newest recording says when it spoke */
+  const heard = $derived(lastHeard ? { ageS: cyclicAge(simClock.now, lastHeard.end_t), clock: lastHeard.clock } : (lastHeardFallback ?? null));
   const via = $derived(channel?.tx?.via ?? "");
 
   const aar4 = $derived(info.aar_channel != null ? fmt.aar(info.aar_channel) : (channel?.aar4 ?? fmt.BLANK));
@@ -55,9 +58,9 @@
     {#if keyed}
       <PositionGlyph state="tx" /><span class="idp__k">KEYED</span>
       <span class="idp__big is-tx">{fmt.dur(keyedElapsed ?? 0)}</span>
-    {:else if lastHeard && ageS != null}
+    {:else if heard}
       <span class="idp__k">LAST HEARD</span>
-      <span class="idp__big">{fmt.age(ageS)}</span>
+      <span class="idp__big">{fmt.age(heard.ageS)}</span>
     {:else}
       <span class="idp__k">NOT HEARD YET</span>
     {/if}
@@ -81,7 +84,7 @@
     <div class="idp__l2">
       <span class="idp__mhz"><span>{fmt.freq(info.freq_mhz)}</span> <span class="idp__unit">MHz</span><span class="idp__sub"> · {[info.railroad, info.use].filter(Boolean).join(" · ")}{#if info.line}<span class="idp__route"> · {info.line}</span>{/if}</span></span>
       <span class="idp__r">
-        {#if keyed}<span class="idp__k idp__k2">KEYED</span>{#if via}VIA {via}{/if}{:else if lastHeard}<span class="idp__k idp__k2">LAST HEARD</span><PositionGlyph state="idle" dim /> <span class="mono">{lastHeard.clock}</span>{/if}
+        {#if keyed}<span class="idp__k idp__k2">KEYED</span>{#if via}VIA {via}{/if}{:else if heard}<span class="idp__k idp__k2">LAST HEARD</span><PositionGlyph state="idle" dim /> <span class="mono">{heard.clock}</span>{/if}
       </span>
     </div>
     {#if feeds.length}
@@ -121,10 +124,10 @@
         <span class="id__k"><PositionGlyph state="tx" /> KEYED</span>
         <span class="id__big is-tx">{fmt.dur(keyedElapsed ?? 0)}</span>
         {#if via}<span class="id__via">VIA {via}</span>{/if}
-      {:else if lastHeard && ageS != null}
+      {:else if heard}
         <span class="id__k">LAST HEARD</span>
-        <span class="id__big">{fmt.age(ageS)}</span>
-        <span class="id__via"><PositionGlyph state="idle" dim /> <span class="mono">{lastHeard.clock}</span></span>
+        <span class="id__big">{fmt.age(heard.ageS)}</span>
+        <span class="id__via"><PositionGlyph state="idle" dim /> <span class="mono">{heard.clock}</span></span>
       {:else}
         <span class="id__k">NOT HEARD YET</span>
       {/if}

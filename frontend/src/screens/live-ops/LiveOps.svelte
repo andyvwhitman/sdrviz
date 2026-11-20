@@ -42,7 +42,7 @@
   import SpectrumView from "./SpectrumView.svelte";
   import type { LiveOpsLink } from "./types";
   import { waveEnvelope, WAVE_WIDTH } from "./wave";
-  import { noiseFloor } from "./wall";
+  import { channelNumber, noiseFloor } from "./wall";
   import "./live-ops.css";
 
   interface Props {
@@ -107,6 +107,8 @@
   const selectedId = $derived(router.query("select") ?? (inspectId && channelById.has(inspectId) ? inspectId : null));
   const inspectFeed = $derived(inspectId ? feedById.get(inspectId) : undefined);
   let pane = $state<ReturnType<typeof FrequencyPane>>();
+  /** the selected frequency's AAR channel number, for the ruler's mark */
+  const selectedChannel = $derived(selectedId && channelById.has(selectedId) ? channelNumber(channelById.get(selectedId)!.aar) : null);
 
   /** Select a frequency into the pane. Selecting the selected one again does nothing: a mis-click must not empty the pane. */
   function selectChannel(id: string): void {
@@ -466,6 +468,7 @@
         <div class="lo-cell lo-cell--spectrum"><div class="lo-plot"><span class="lo-bezel"></span></div></div>
         <div class="lo-cell lo-cell--ruler"></div>
         <div class="lo-cell lo-cell--fall"><div class="lo-plot lo-fall"><span class="lo-bezel"></span></div></div>
+        <div class="lo-cell lo-cell--strip"></div>
       </div>
       <div class="lo__lower">
         <div class="lo__bank br"><div class="lo-blank"><span class="t-panel">CHANNELS</span><span class="mono">{fmt.BLANK}</span></div></div>
@@ -478,7 +481,7 @@
       </div>
 
       <div class="lo__wall">
-        <FrontWall state={snapshot} bankChannels={bankChannelNumbers} {dropAge} feed={displayed} resizing={dragging === "wall"} />
+        <FrontWall state={snapshot} bankChannels={bankChannelNumbers} {dropAge} feed={displayed} resizing={dragging === "wall"} {selectedChannel} />
       </div>
       <Divider
         class="lo__dv-wall"

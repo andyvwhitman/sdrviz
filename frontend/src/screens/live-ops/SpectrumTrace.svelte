@@ -5,8 +5,7 @@
    * binary frames; when the feed delivers none (fault, stale, first paint) it is drawn at the noise
    * floor with the same deterministic ripple the mockup uses, in the stale tone.
    */
-  import * as fmt from "$lib/hud/fmt";
-  import { BAND } from "$lib/hud/band";
+    import { BAND } from "$lib/hud/band";
   import { SQUELCH_OVER_FLOOR_DB } from "$lib/hud/tile";
   import { spectrum } from "$lib/stores/spectrum.svelte";
     import RegMark from "./RegMark.svelte";
@@ -27,10 +26,8 @@
     frozenAge?: string | null;
     /** no data yet: graticule and bezel only */
     blank?: boolean;
-    /** the phone's spectrum view prints the scale in its own footer */
-    hideScale?: boolean;
   }
-  let { width, height, floor, heard, carriers, live, sweeping, frozenAge = null, blank = false, hideScale = false }: Props = $props();
+  let { width, height, floor, heard, carriers, live, sweeping, frozenAge = null, blank = false }: Props = $props();
 
   const snap = (v: number) => Math.round(v) + 0.5;
   const yDb = (db: number) => ((REF_DBFS - db) / (DB_DIVS * 10)) * height;
@@ -77,22 +74,6 @@
 
   const open = (channel: number) => carriers.some((c) => c.channel === channel);
   const squelchY = $derived(snap(yDb(floor + SQUELCH_OVER_FLOOR_DB)));
-
-  /* M3 scale label in a plot corner, never over a TX slot (no text on a plot wash) */
-  const LABEL_W = 250;
-  const corner = $derived.by(() => {
-    const slots = carriers.map((c) => {
-      const x = bandX(c.mhz, width);
-      return [x - slot / 2 - 4, x + slot / 2 + 4] as const;
-    });
-    const clear = (a: number, b: number) => slots.every(([u, v]) => b < u || a > v);
-    const options = [
-      { css: "right:6px;bottom:5px", a: width - LABEL_W, b: width },
-      { css: "left:16px;bottom:5px", a: 0, b: LABEL_W },
-      { css: "right:6px;top:5px", a: width - LABEL_W, b: width },
-    ];
-    return (options.find((o) => clear(o.a, o.b)) ?? options[0]).css;
-  });
 </script>
 
 <div class="lo-plot lo-spec" class:lo-wall-frozen={!live}>
@@ -122,7 +103,6 @@
   </svg>
   {#if live}<div class="sweep" class:is-paused={!sweeping} style:--sweep-w="{width}px"></div>{/if}
   <span class="lo-bezel"></span>
-  {#if !hideScale}<span class="lo-scale" style={corner}>REF <span class="mono">{fmt.num(REF_DBFS, 0)}</span> dBFS · <span class="mono">10</span> dB/div · <span class="mono">135</span> kHz/div</span>{/if}
   {#if !live && frozenAge}
     <span class="lo-scale" style="left:16px;top:5px">FROZEN · AGE <span class="mono">{frozenAge}</span></span>
   {/if}

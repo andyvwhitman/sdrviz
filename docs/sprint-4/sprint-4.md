@@ -29,4 +29,6 @@ deployed and checked on the live site (decision 60); a block that breaks product
 | F-5 | **Axis labels** built per E-2. | GMUNK approves the build. |
 | F-6 | **GMUNK review** of the whole of Live Ops (desktop + phone); fix the must-fix list. | APPROVE. |
 
+Noticed: Brightline's static GTFS download currently has no routes.txt; the provider logs a traceback and skips that agency (transit owner to make it a one-line warning and retry later).
+
 Later: Feeds & Banks, Settings and the Map desktop go fluid too (owner likes "fluid everywhere").

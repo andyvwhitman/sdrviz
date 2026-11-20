@@ -6,6 +6,7 @@
 import { BAND, chToMhz } from "$lib/hud/band";
 import { DEFAULT_NOISE_FLOOR_DBFS } from "$lib/hud/tile";
 import type { Channel, Feed, TxRow } from "$lib/types/live";
+import type { SpectrumFrame } from "$lib/ws/protocol";
 
 /** A placed rectangle [x, y, w, h], in plot pixels. */
 export type Box = readonly [x: number, y: number, w: number, h: number];
@@ -76,4 +77,12 @@ export function heardChannels(feed: Pick<Feed, "hears">, channels: readonly Chan
 /** Waterfall / LOFAR ramp clamp: just under the floor, just over the strongest signal in view. */
 export function rampClamp(floor: number, strongest: number | null): { lo: number; hi: number } {
   return { lo: Math.floor(floor - 4), hi: Math.ceil(Math.max(strongest ?? -Infinity, floor + 30) + 2) };
+}
+
+/** The level of a spectrum frame at a frequency: a 3-bin running mean, which keeps the baseline calm while carriers (several bins wide) stand up. */
+export function frameDbAt(frame: SpectrumFrame, mhz: number): number {
+  const lo = frame.centerMhz - frame.spanMhz / 2;
+  const bin = Math.min(frame.bins.length - 1, Math.max(0, Math.round(((mhz - lo) / frame.spanMhz) * frame.bins.length)));
+  const near = frame.bins.slice(Math.max(0, bin - 1), bin + 2);
+  return near.reduce((sum, db) => sum + db, 0) / near.length;
 }

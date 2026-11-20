@@ -20,8 +20,10 @@
     channels: Channel[];
     /** the result of the last click, if recent */
     flash?: string | null;
+    /** replaces the frequency readout (the phone's held touch also reads the level) */
+    readout?: string;
   }
-  let { x, spectrum, ruler, waterfall, channels, flash = null, listenable = true }: Props = $props();
+  let { x, spectrum, ruler, waterfall, channels, flash = null, listenable = true, readout }: Props = $props();
 
   const [left, top, width] = $derived(spectrum);
   const height = $derived(waterfall[1] + waterfall[3] - top);
@@ -35,7 +37,7 @@
   const aar = $derived(fmt.ch(ch));
   const channel = $derived(onSlot ? channels.find((c) => c.aar === aar) : undefined);
   const label = $derived(channel && channel.label.toUpperCase() !== aar ? channel.label : undefined);
-  const text = $derived(`${mhz.toFixed(4)} MHz` + (onSlot ? ` \u00b7 ${aar}` : "") + (label ? ` ${label.toUpperCase()}` : ""));
+  const text = $derived(readout ?? `${mhz.toFixed(4)} MHz` + (onSlot ? ` \u00b7 ${aar}` : "") + (label ? ` ${label.toUpperCase()}` : ""));
 
   /* the instruction appears after a short dwell on a slot, so a sweep across the band reads only the frequency */
   const DWELL_MS = 600;

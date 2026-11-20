@@ -18,7 +18,7 @@
   import SpectrumTrace from "./SpectrumTrace.svelte";
   import Waterfall from "./Waterfall.svelte";
   import { listenFlash } from "./listenFlash.svelte";
-  import { carriersOn, heardChannels, noiseFloor, type Box } from "./wall";
+  import { carriersOn, frameDbAt, heardChannels, noiseFloor, type Box } from "./wall";
 
   interface Props {
     state: LiveState;
@@ -32,8 +32,10 @@
     feed: Feed;
     /** the wall is being resized: the waterfall stays as drawn (stretched) until the release */
     resizing?: boolean;
+    /** the phone's spectrum view: no click-to-listen; a touch held on a plot reads the cursor, and nothing else */
+    viewOnly?: boolean;
   }
-  let { state: snapshot, bankChannels, dropAge, blank = false, feed, resizing = false }: Props = $props();
+  let { state: snapshot, bankChannels, dropAge, blank = false, feed, resizing = false, viewOnly = false }: Props = $props();
 
   // the server streams spectrum frames only for the feed being watched
   $effect(() => {
@@ -69,10 +71,21 @@
   let hoverX = $state<number | null>(null);
   const layoutX = (event: MouseEvent): number => event.clientX - (event.currentTarget as HTMLElement).getBoundingClientRect().left;
   const hover = {
+    onpointerdown: (event: PointerEvent) => viewOnly && (hoverX = layoutX(event)),
     onpointermove: (event: PointerEvent) => (hoverX = layoutX(event)),
     onpointerleave: () => (hoverX = null),
-    onclick: (event: MouseEvent) => listen(event),
+    onpointercancel: () => (hoverX = null),
+    onclick: (event: MouseEvent) => !viewOnly && listen(event),
   };
+  /** the readout of a held touch: channel, frequency and the level under the finger */
+  const touchReadout = $derived.by(() => {
+    if (!viewOnly || hoverX === null || spectrumW < 2) return undefined;
+    const mhz = BAND.lo + (Math.min(spectrumW - 1, Math.max(0, hoverX)) / (spectrumW - 1)) * (BAND.hi - BAND.lo);
+    const ch = channelAt(hoverX);
+    const frame = spectrum.latest;
+    const level = frame && delivering ? ` · ${fmt.dbfs(frameDbAt(frame, mhz))}` : "";
+    return `${ch === null ? "" : `${fmt.ch(ch)} · `}${fmt.freq(mhz)} MHz${level}`;
+  });
 
   /** the AAR channel under the pointer, or null between channel slots and outside the band */
   function channelAt(x: number): number | null {
@@ -111,10 +124,10 @@
   }
 </script>
 
-<div class="lo-wall">
+<div class="lo-wall" class:is-view={viewOnly}>
   <div class="lo-cell lo-cell--spectrum" bind:clientWidth={spectrumW} bind:clientHeight={spectrumH} {...hover} role="presentation">
     {#if spectrumW > 0 && spectrumH > 0}
-      <SpectrumTrace width={spectrumW} height={spectrumH} {floor} {heard} {carriers} live={delivering && !blank} sweeping={listening} {frozenAge} {blank} />
+      <SpectrumTrace width={spectrumW} height={spectrumH} {floor} {heard} {carriers} live={delivering && !blank} sweeping={listening} {frozenAge} {blank} hideScale={viewOnly} />
     {/if}
   </div>
   <div class="lo-cell lo-cell--ruler" bind:clientWidth={rulerW} bind:clientHeight={rulerH} {...hover} role="presentation">
@@ -140,8 +153,8 @@
   </div>
 
   {#if hoverX !== null && !blank}
-    <FrequencyCursor listenable={session.isAdmin} x={hoverX} spectrum={spectrumBox} ruler={rulerBox} waterfall={waterfallBox} channels={snapshot.channels} flash={listenFlash.text} />
-  {:else if listenFlash.text}
+    <FrequencyCursor listenable={session.isAdmin && !viewOnly} readout={touchReadout} x={hoverX} spectrum={spectrumBox} ruler={rulerBox} waterfall={waterfallBox} channels={snapshot.channels} flash={listenFlash.text} />
+  {:else if listenFlash.text && !viewOnly}
     <!-- the confirmation outlives the pointer: a tap or a mouse that moved away still sees what happened -->
     <div class="lo-box lo-flash" style="left:{FLASH_X}px;top:{spectrumH + rulerH + 4}px" role="status">{listenFlash.text}</div>
   {/if}

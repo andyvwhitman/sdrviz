@@ -10,7 +10,7 @@
   import { SQUELCH_OVER_FLOOR_DB } from "$lib/hud/tile";
   import { spectrum } from "$lib/stores/spectrum.svelte";
     import RegMark from "./RegMark.svelte";
-  import { bandX, DB_DIVS, hash, nfmShape, REF_DBFS, slotWidth, xToMhz, type Carrier } from "./wall";
+  import { bandX, DB_DIVS, frameDbAt, hash, nfmShape, REF_DBFS, slotWidth, xToMhz, type Carrier } from "./wall";
 
   interface Props {
     width: number;
@@ -27,8 +27,10 @@
     frozenAge?: string | null;
     /** no data yet: graticule and bezel only */
     blank?: boolean;
+    /** the phone's spectrum view prints the scale in its own footer */
+    hideScale?: boolean;
   }
-  let { width, height, floor, heard, carriers, live, sweeping, frozenAge = null, blank = false }: Props = $props();
+  let { width, height, floor, heard, carriers, live, sweeping, frozenAge = null, blank = false, hideScale = false }: Props = $props();
 
   const snap = (v: number) => Math.round(v) + 0.5;
   const yDb = (db: number) => ((REF_DBFS - db) / (DB_DIVS * 10)) * height;
@@ -55,15 +57,7 @@
   /* The carrier in a mockup frame stands in for a real one only when no frames arrive. */
   const dbAt = $derived.by(() => {
     const frame = live ? spectrum.latest : null;
-    if (frame) {
-      const lo = frame.centerMhz - frame.spanMhz / 2;
-      return (x: number) => {
-        const bin = Math.min(frame.bins.length - 1, Math.max(0, Math.round(((xToMhz(x, width) - lo) / frame.spanMhz) * frame.bins.length)));
-        // a 3-bin running mean keeps the baseline calm; carriers are several bins wide and still stand up
-        const near = frame.bins.slice(Math.max(0, bin - 1), bin + 2);
-        return near.reduce((sum, db) => sum + db, 0) / near.length;
-      };
-    }
+    if (frame) return (x: number) => frameDbAt(frame, xToMhz(x, width));
     let smooth = 0;
     return (x: number) => {
       smooth = x === 0 ? (hash(x, 7) - 0.5) * 3.2 : smooth + 0.4 * ((hash(x, 7) - 0.5) * 3.2 - smooth) * 1.1;
@@ -128,7 +122,7 @@
   </svg>
   {#if live}<div class="sweep" class:is-paused={!sweeping} style:--sweep-w="{width}px"></div>{/if}
   <span class="lo-bezel"></span>
-  <span class="lo-scale" style={corner}>REF <span class="mono">{fmt.num(REF_DBFS, 0)}</span> dBFS · <span class="mono">10</span> dB/div · <span class="mono">135</span> kHz/div</span>
+  {#if !hideScale}<span class="lo-scale" style={corner}>REF <span class="mono">{fmt.num(REF_DBFS, 0)}</span> dBFS · <span class="mono">10</span> dB/div · <span class="mono">135</span> kHz/div</span>{/if}
   {#if !live && frozenAge}
     <span class="lo-scale" style="left:16px;top:5px">FROZEN · AGE <span class="mono">{frozenAge}</span></span>
   {/if}

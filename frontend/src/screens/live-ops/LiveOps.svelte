@@ -39,6 +39,7 @@
   import { LEVER_LIST, type LeverKey } from "./mixer";
   
   import PaneEmpty from "./PaneEmpty.svelte";
+  import SpectrumView from "./SpectrumView.svelte";
   import type { LiveOpsLink } from "./types";
   import { waveEnvelope, WAVE_WIDTH } from "./wave";
   import { noiseFloor } from "./wall";
@@ -123,6 +124,21 @@
   $effect(() => {
     if (!selectedId) pushedSelect = false;
   });
+  /* the spectrum view: `?view=spectrum`, a layer of its own, closed by Back */
+  const spectrumOpen = $derived(viewport.handset && router.query("view") === "spectrum");
+  let pushedSpectrum = false;
+  function openSpectrum(): void {
+    pushedSpectrum = true;
+    router.go("/live?view=spectrum");
+  }
+  function closeSpectrum(): void {
+    if (pushedSpectrum) history.back();
+    else router.setQuery({ view: null });
+  }
+  $effect(() => {
+    if (!spectrumOpen) pushedSpectrum = false;
+  });
+
   /** The layer's back button: pop the entry the tap pushed, or (after a reload straight into a layer) clear `?select=`. */
   function back(): void {
     if (pushedSelect) history.back();
@@ -130,7 +146,7 @@
   }
   // while a layer covers the list the document does not scroll underneath, and the list keeps its place
   $effect(() => {
-    const locked = viewport.handset && !!selectedId;
+    const locked = viewport.handset && (!!selectedId || spectrumOpen);
     document.documentElement.classList.toggle("lo-locked", locked);
     return () => document.documentElement.classList.remove("lo-locked");
   });
@@ -337,10 +353,11 @@
             <span class="hs__k">{hero.mode === "empty" ? "NO CHANNELS IN THIS BANK" : "NO KEY-UPS YET"}</span>
           {/if}
           <span class="hs__grow"></span>
+          <button class="chip hs__spec" data-chip="nominal" type="button" onclick={openSpectrum}>SPECTRUM</button>
         </div>
       </div>
 
-      <div bind:this={tilesBox} class="hs__list" class:has-solo={prefs.solo.size > 0} role="group" aria-label="Channels" inert={!!selectedId}>
+      <div bind:this={tilesBox} class="hs__list" class:has-solo={prefs.solo.size > 0} role="group" aria-label="Channels" inert={!!selectedId || spectrumOpen}>
         {#if tiles.length === 0}
           <div class="hs__empty">
             {#if bank.id === "bank-live"}
@@ -357,6 +374,10 @@
           </TileGrid>
         {/if}
       </div>
+
+      {#if spectrumOpen}
+        <SpectrumView state={snapshot} bankChannels={bankChannelNumbers} {dropAge} feed={displayed!} onback={closeSpectrum} />
+      {/if}
 
       {#if selectedId}
         <div class="hs__layer">

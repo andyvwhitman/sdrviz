@@ -219,8 +219,8 @@
             <div class="kv" class:is-blank={value == null}>
               <span class="k">{t.label}</span>
               <span class="v">
-                {#if value == null}{fmt.BLANK}{#if value === undefined}<span class="fb-nr">NOT REPORTED</span>{:else} <span class="tag-sim">SIM</span>{/if}
-                {:else}{telemetryText(t.key, value)}{#if t.unit}<span class="u">{t.unit}</span>{/if} <span class="tag-sim">SIM</span>{/if}
+                {#if value == null}{fmt.BLANK}{#if value === undefined}<span class="fb-nr">NOT REPORTED</span>{:else if feed.sim} <span class="tag-sim">SIM</span>{/if}
+                {:else}{telemetryText(t.key, value)}{#if t.unit}<span class="u">{t.unit}</span>{/if}{#if feed.sim} <span class="tag-sim">SIM</span>{/if}{/if}
               </span>
               {#if t.gauge}<Gauge w={HALF_W} v={value ?? null} {...t.gauge} stale={!measured} />{/if}
             </div>

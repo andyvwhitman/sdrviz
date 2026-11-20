@@ -8,6 +8,7 @@ import hashlib
 import hmac
 import secrets
 import string
+import time
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
@@ -55,6 +56,38 @@ class NodeLive:
     link_quality: int | None = None
     lag_ms: int | None = None
     health: dict | None = None
+    feed_id: str | None = None  # the node's feed, set once the node is known
+
+
+@dataclass(frozen=True)
+class NodeFeedStatus:
+    """What the live feed card shows of a node: its real state and the telemetry its health reports."""
+
+    state: str  # ok | stale | offline, as the feed states
+    label: str
+    in_state_s: float
+    telemetry: dict[str, float | None]
+
+
+# Node health key -> feed telemetry key. The one place the two vocabularies meet. The node reports the Pi's
+# temperature (not the dongle's), so `device_temp_c` is left out: the card shows "not reported", not a made-up value.
+HEALTH_TO_TELEMETRY = {"cpu_pct": "host_cpu_pct", "temp_c": "host_temp_c", "dropped_blocks": "device_drops"}
+
+
+def feed_telemetry(health: dict | None) -> dict[str, float | None]:
+    """The feed's telemetry from a node's health; every key blank when there is no health or the node reports None."""
+    health = health or {}
+    return {telemetry: health.get(key) for key, telemetry in HEALTH_TO_TELEMETRY.items()}
+
+
+def feed_state(online: bool, health: dict | None) -> tuple[str, str]:
+    """The feed state and label of a node: the node's own report, not the replay's."""
+    if not online:
+        return "offline", "OFFLINE"
+    rtl_tcp = (health or {}).get("rtl_tcp")
+    if rtl_tcp in (None, "connected"):  # no health yet: the link is up and nothing is wrong that we know of
+        return "ok", ""
+    return "stale", f"STALE · RTL_TCP {rtl_tcp}".upper()
 
 
 @dataclass(frozen=True)
@@ -95,6 +128,7 @@ class NodeRegistry:
         self.public_url = public_url
         self.limiter = limiter or LoginLimiter()  # failed authentications per client address
         self.live: dict[str, NodeLive] = {}
+        self._feed_since: dict[str, tuple[str, float]] = {}  # feed id -> (state, monotonic time it began)
         # BE-5 sets this to send a command to a connected node and wait for its ack.
         self.command_sender: Callable[[str, CommandIn], Awaitable[CommandResult]] | None = None
         # Set by the runtime: called after a change that adds, changes or removes a node's feed row.
@@ -151,6 +185,21 @@ class NodeRegistry:
                 )
             )
         return feeds
+
+    def feed_status(self, feed_id: str) -> NodeFeedStatus | None:
+        """The live state and telemetry of node feed `feed_id`; None for a feed that is not a node."""
+        if not feed_id.startswith("node-"):
+            return None
+        live = next((live for live in self.live.values() if live.feed_id == feed_id), NodeLive())
+        state, label = feed_state(live.online, live.health)
+        key = f"{state}/{label}"
+        now = time.monotonic()
+        began_key, began = self._feed_since.get(feed_id, (key, now))
+        if began_key != key:
+            began = now
+        self._feed_since[feed_id] = (key, began)
+        telemetry = feed_telemetry(live.health if live.online else None)
+        return NodeFeedStatus(state, label, now - began, telemetry)
 
     # --- Settings actions --------------------------------------------------------------------------------------
 

@@ -23,6 +23,7 @@ from .types import ROLE_TAGS, Tx
 from .world import World
 
 if TYPE_CHECKING:
+    from ..nodes.service import NodeRegistry
     from ..radio.events import LiveEvents
 
 CHANNEL_RANGES = {"recent": 120, "recent-dim": 600}
@@ -49,6 +50,7 @@ class SimInputs:
     world: World
     data: SimData
     health: Health
+    nodes: "NodeRegistry | None" = None  # live state of the remote nodes' feeds
 
 
 # ---------------------------------------------------------------------------
@@ -290,10 +292,22 @@ def feed_view(inputs: SimInputs, fid: str, t: float) -> dict:
         values = series.get(key)
         return values[(minute + offset) % 1440] if values else None
 
-    degraded = st["state"] != "ok"
     telemetry = None
-    if feed.driver == "sdrviz-agent" and series:
+    node = inputs.nodes.feed_status(fid) if inputs.nodes else None
+    if node:  # a real node: its own report replaces the replay's state and telemetry
+        age = node.in_state_s if node.state != "ok" else 0.2
+        st = {
+            "state": node.state,
+            "label": node.label,
+            "since": (t - node.in_state_s) % DAY,
+            "episode_start": None,
+            "acked": False,
+            "acked_at": None,
+        }
+        telemetry = node.telemetry
+    elif feed.driver == "sdrviz-agent" and series:
         telemetry = {k: at(k) for k in ("device_temp_c", "host_cpu_pct", "device_drops")}
+    degraded = st["state"] != "ok"
     return {
         "id": fid,
         "short": feed.short,

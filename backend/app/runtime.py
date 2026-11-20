@@ -133,7 +133,7 @@ class Runtime:
 
     @property
     def inputs(self) -> SimInputs:
-        return SimInputs(self.world, self.data, self.health)
+        return SimInputs(self.world, self.data, self.health, self.nodes)
 
     @property
     def active_bank(self) -> Bank:

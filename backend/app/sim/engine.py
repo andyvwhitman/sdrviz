@@ -327,7 +327,16 @@ class ReplayEngine:
     def _feed_signature(feed: dict) -> tuple:
         """What a `feed` delta must carry: the state, plus the readouts that move (the age of a feed that is not ok)."""
         measured = (feed["sample_rate_measured_msps"], feed["snr_db"], feed["noise_floor_dbfs"])
-        return feed["state"], feed["label"], feed["acked"], feed["enabled"], feed["in_state_label"], *measured
+        telemetry = tuple(sorted((k, v) for k, v in (feed["telemetry"] or {}).items()))
+        return (
+            feed["state"],
+            feed["label"],
+            feed["acked"],
+            feed["enabled"],
+            feed["in_state_label"],
+            *measured,
+            telemetry,
+        )
 
     @staticmethod
     def _fault_signature(feeds: list[dict]) -> tuple:

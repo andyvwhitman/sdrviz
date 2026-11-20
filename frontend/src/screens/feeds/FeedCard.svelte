@@ -29,10 +29,11 @@
   const noTelemetry = $derived(feed.driver === "rtl_tcp" || !feed.telemetry);
   const agentTelemetry = $derived(
     [
-      ["device_temp_c", "DEV TEMP", " °C"],
+      // a node reports its host's temperature, not the dongle's
+      feed.telemetry && !("device_temp_c" in feed.telemetry) && "host_temp_c" in feed.telemetry ? (["host_temp_c", "HOST TEMP", " °C"] as const) : (["device_temp_c", "DEV TEMP", " °C"] as const),
       ["host_cpu_pct", "HOST CPU", " %"],
       ["device_drops", "DROPS", ""],
-    ] as const,
+    ],
   );
   /** receptions of this feed in the live key-ups, strongest first */
   const receptions = $derived(
@@ -94,7 +95,7 @@
         {@const value = feed.telemetry?.[key]}
         <span><span class="k">{label}</span><span class="v" class:is-blank={value == null}>{value == null ? fmt.BLANK : telemetryValue(key, value) + unit}</span></span>
       {/each}
-      <span class="tag-sim">SIM</span>
+      {#if feed.sim}<span class="tag-sim">SIM</span>{/if}
     {/if}
   </div>
 

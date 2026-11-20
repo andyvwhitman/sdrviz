@@ -536,3 +536,40 @@ def test_live_channel_rejects_unknown_feeds_and_channels_outside_the_band(client
     assert client.post("/api/banks/live/channels", json={"aar_channel": 98}).status_code == 422
     assert client.post("/api/banks/live/channels", json={"aar_channel": 33, "feed_id": "bogus"}).status_code == 422
     assert client.get("/api/banks/bank-live").status_code == 404
+
+
+# --- the node's health fills its feed's telemetry --------------------------------------------------
+
+
+def node_health(rtl_tcp="connected", temp_c=51.5):
+    return wire.Health(
+        t=1, cpu_pct=37.4, temp_c=temp_c, rtl_tcp=rtl_tcp, dropped_blocks=3, audio_age_ms=40, uptime_s=9, channels=4,
+        tune=wire.Tune(center_hz=160_890_000, rate=1_536_000, gain_db=None, squelch_db=8),
+    )  # fmt: skip
+
+
+def node_feed(client) -> dict:
+    return next(f for f in client.get("/api/live/state").json()["feeds"] if f["id"] == "node-1")
+
+
+def test_node_health_fills_the_feed_telemetry_and_state(client):
+    node, node_id = enrolled_node(client)
+    assert node_feed(client)["telemetry"] == {"host_cpu_pct": None, "host_temp_c": None, "device_drops": None}
+    node.send(node_health())
+    wait_for(lambda: node_feed(client)["telemetry"]["host_cpu_pct"] == 37.4)
+    feed = node_feed(client)
+    assert feed["telemetry"] == {"host_cpu_pct": 37.4, "host_temp_c": 51.5, "device_drops": 3}
+    assert "device_temp_c" not in feed["telemetry"]  # the node does not report the dongle's temperature
+    assert feed["state"] == "ok" and feed["sim"] is False
+
+    node.send(node_health(rtl_tcp="down", temp_c=None))
+    wait_for(lambda: node_feed(client)["state"] == "stale")
+    feed = node_feed(client)
+    assert feed["label"] == "STALE · RTL_TCP DOWN" and feed["telemetry"]["host_temp_c"] is None
+
+    node.close()
+    wait_for(lambda: node_status(client, node_id) == "OFFLINE")
+    feed = node_feed(client)
+    assert feed["state"] == "offline" and feed["telemetry"] == {
+        "host_cpu_pct": None, "host_temp_c": None, "device_drops": None,
+    }  # fmt: skip

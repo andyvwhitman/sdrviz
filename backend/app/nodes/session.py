@@ -116,6 +116,7 @@ class NodeSession:
         await self.send(welcome)
         registry = self.rt.nodes
         registry.mark_seen(node.id, hello.agent_version)
+        self.live.feed_id = self.feed_id
         registry.live[node.id] = self.live
         if self.connections.seen_before(node.id):
             self.link.reconnected()

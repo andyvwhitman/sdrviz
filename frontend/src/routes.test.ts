@@ -5,8 +5,9 @@ import { layoutFor, navFor, routeFor, type Route } from "./routes";
 const route = (path: string): Route => routeFor(path)!;
 
 describe("layoutFor", () => {
-  it("keeps every route on the stage in a wide window, except the page routes", () => {
-    expect(layoutFor(route("/live"), false)).toBe("stage");
+  it("keeps most routes on the stage in a wide window; Live Ops is fluid and SPOT is a page", () => {
+    expect(layoutFor(route("/live"), false)).toBe("fluid");
+    expect(layoutFor(route("/feeds"), false)).toBe("stage");
     expect(layoutFor(route("/map"), false)).toBe("stage");
     expect(layoutFor(route("/spot"), false)).toBe("page");
   });

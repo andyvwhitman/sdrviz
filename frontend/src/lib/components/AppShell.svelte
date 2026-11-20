@@ -14,6 +14,7 @@
   import { session } from "$lib/stores/session.svelte";
   import { shell } from "$lib/stores/shell.svelte";
   import { stage } from "$lib/stores/stage.svelte";
+  import { viewport } from "$lib/stores/viewport.svelte";
   import { transit } from "$lib/stores/transit.svelte";
   import { ui } from "$lib/stores/ui.svelte";
   import { FIRST_DATA_WAIT_S, retryInfo } from "$lib/ws/link";
@@ -39,7 +40,7 @@
   const blank = $derived(params.force === "loading" || params.force === "connecting");
 
   // the same chips on every screen, the orange KEYED chip included
-  const narrow = $derived(stage.width <= NARROW_HEADER_PX);
+  const narrow = $derived((route.layout === "fluid" ? viewport.width : stage.width) <= NARROW_HEADER_PX);
   const chips = $derived.by((): ChipSpec[] => {
     if (blank) return [{ text: `FEEDS ${fmt.BLANK}`, kind: "nominal" }, { text: `ASR ${fmt.BLANK}`, kind: "nominal" }];
     if (!state) return [];

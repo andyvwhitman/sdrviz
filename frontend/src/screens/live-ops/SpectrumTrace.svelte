@@ -9,9 +9,8 @@
   import { BAND } from "$lib/hud/band";
   import { SQUELCH_OVER_FLOOR_DB } from "$lib/hud/tile";
   import { spectrum } from "$lib/stores/spectrum.svelte";
-  import { DB_DIVS, REF_DBFS } from "./geometry";
-  import RegMark from "./RegMark.svelte";
-  import { bandX, hash, nfmShape, slotWidth, xToMhz, type Carrier } from "./wall";
+    import RegMark from "./RegMark.svelte";
+  import { bandX, DB_DIVS, hash, nfmShape, REF_DBFS, slotWidth, xToMhz, type Carrier } from "./wall";
 
   interface Props {
     width: number;
@@ -105,7 +104,7 @@
 <div class="lo-plot lo-spec" class:lo-wall-frozen={!live}>
   <svg class="hud" {width} {height} viewBox="0 0 {width} {height}">
     <path class="s-hair k-grid graticule" d={grid} />
-    <path class="s-hair k-faint graticule" d={minor} />
+    {#if height >= 64}<path class="s-hair k-faint graticule" d={minor} />{/if}
 
     {#each carriers as c (c.channel)}
       {@const x0 = slotX(c.mhz)}

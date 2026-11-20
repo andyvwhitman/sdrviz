@@ -42,7 +42,7 @@
 
   // a page-layout route scrolls like a document; the stage routes stay fixed to the window
   $effect(() => {
-    document.documentElement.dataset.layout = layout === "stage" ? "stage" : "page";
+    document.documentElement.dataset.layout = layout === "stage" || layout === "fluid" ? "stage" : "page";
   });
 
   let Screen = $state.raw<Component | null>(null);
@@ -94,6 +94,13 @@
     <PageShell {route}>
       {#if Screen}<Screen />{/if}
     </PageShell>
+  {:else if layout === "fluid"}
+    <!-- the shell at 1:1 CSS pixels: the window is the stage -->
+    <div class="hud-stage hud-stage--fluid">
+      <AppShell {route}>
+        {#if Screen}<Screen />{/if}
+      </AppShell>
+    </div>
   {:else}
     <Stage>
       {#if route.shell}

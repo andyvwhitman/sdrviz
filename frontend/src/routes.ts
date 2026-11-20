@@ -20,8 +20,9 @@ export interface Route {
   /**
    * "stage" (default): the fixed-height stage scaled to the window, for the wall displays.
    * "page": an ordinary responsive document that scrolls, for phones (the shell becomes PageShell).
+   * "fluid": the desktop shell at 1:1 CSS pixels, content filling the window (Live Ops, decision 62).
    */
-  layout?: "stage" | "page";
+  layout?: "stage" | "page" | "fluid";
   /**
    * What a phone (under 768 px) gets for a stage route: "page" renders the screen as a responsive document,
    * "plate" shows a "needs a wider screen" notice instead. A route with layout "page" is already phone-ready.
@@ -34,14 +35,14 @@ export interface Route {
 }
 
 /** How a route is laid out in a window of this kind: its own layout, or the phone version of a stage route. */
-export function layoutFor(route: Route, phone: boolean): "stage" | "page" | "plate" {
+export function layoutFor(route: Route, phone: boolean): "stage" | "page" | "fluid" | "plate" {
   if (route.layout === "page") return "page";
-  if (!phone) return "stage";
+  if (!phone) return route.layout === "fluid" ? "fluid" : "stage";
   return route.phone ?? "stage";
 }
 
 export const ROUTES: Route[] = [
-  { id: "live-ops", path: "/live", name: "LIVE OPS", dir: "live-ops", shell: true, phone: "plate" },
+  { id: "live-ops", path: "/live", name: "LIVE OPS", dir: "live-ops", shell: true, layout: "fluid", phone: "plate" },
   { id: "feeds", path: "/feeds", name: "FEEDS & BANKS", dir: "feeds", shell: true, phone: "plate" },
   { id: "map", path: "/map", name: "MAP", dir: "map", shell: true, phone: "page" },
   { id: "settings", path: "/settings", name: "SETTINGS", dir: "settings", shell: true, phone: "plate", adminOnly: true },

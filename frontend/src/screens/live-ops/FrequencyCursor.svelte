@@ -7,7 +7,7 @@
   import { BAND, chToMhz, mhzToCh } from "$lib/hud/band";
   import * as fmt from "$lib/hud/fmt";
   import type { Channel } from "$lib/types/live";
-  import { boxStyle, type Box } from "./geometry";
+  import { boxStyle, type Box } from "./wall";
 
   interface Props {
     /** false for a viewer: the hint that a click listens is not shown */

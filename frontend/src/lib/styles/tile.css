@@ -109,7 +109,9 @@
 .tile--strip[data-coverage="partial"] .tile__pips2 { display: inline-flex; }
 
 /* tile grid: re-pack with ease-in-out 400 ms */
-.tile-grid { display: grid; gap: var(--gap-cell); grid-template-columns: repeat(var(--tile-cols, 5), auto); justify-content: start; align-content: start; }
+.tile-grid { display: grid; gap: var(--gap-cell); grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); align-content: start; }
+.tile-grid--fixed { grid-template-columns: repeat(var(--tile-cols, 5), auto); justify-content: start; }
+.tile-grid:not(.tile-grid--fixed) > .tile { width: auto; } /* tiles stretch to the column; their internals anchor left and right */
 .tile-grid > .tile { transition: transform var(--t-settle) var(--ease-in-out); }
 
 /* --------------------------------------------------------------------------

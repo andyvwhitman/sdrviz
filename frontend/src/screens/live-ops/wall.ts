@@ -7,6 +7,16 @@ import { BAND, chToMhz } from "$lib/hud/band";
 import { DEFAULT_NOISE_FLOOR_DBFS } from "$lib/hud/tile";
 import type { Channel, Feed, TxRow } from "$lib/types/live";
 
+/** A placed rectangle [x, y, w, h], in plot pixels. */
+export type Box = readonly [x: number, y: number, w: number, h: number];
+
+/** CSS for an absolutely placed box. */
+export const boxStyle = ([x, y, w, h]: Box): string => `left:${x}px;top:${y}px;width:${w}px;height:${h}px`;
+
+/** Spectrum vertical scale: M3 graticule, 10 dB per division, reference level at the top. */
+export const REF_DBFS = -10;
+export const DB_DIVS = 6;
+
 /** "CH54" -> 54 */
 export const channelNumber = (aar: string): number => Number(aar.replace(/\D/g, ""));
 

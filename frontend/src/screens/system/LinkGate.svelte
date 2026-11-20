@@ -9,7 +9,6 @@
   import { link } from "$lib/stores/link.svelte";
   import { live } from "$lib/stores/live.svelte";
   import { LiveOps } from "../live-ops";
-  import ConnectingOverlay from "./ConnectingOverlay.svelte";
   import { gateState } from "./gate";
 
   const snapshot = $derived(live.state);
@@ -24,9 +23,7 @@
   const dropAge = $derived(Math.round(link.shownDropAgeS ?? 0));
 </script>
 
-{#if gate === "loading" || gate === "connecting"}
-  <ConnectingOverlay />
-{:else if gate === "live"}
+{#if gate === "live"}
   <LiveOps />
 {:else}
   <LiveOps link={{ state: gate, dropAge, bank: gate === "empty-bank" ? emptyBank : undefined }} />

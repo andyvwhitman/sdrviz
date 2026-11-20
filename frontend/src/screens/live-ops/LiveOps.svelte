@@ -1,7 +1,7 @@
 <script lang="ts">
   /**
-   * Live Ops (spec 4.3, brief 9.1): hero strip, front wall, bank tabs and tile wall, transcript log
-   * and the channel / feed inspectors. The system screens reuse this wall: `link` renders
+   * Live Ops (brief 9.1, docs/sprint-4/liveops-direction.md): hero strip and front wall across the top; below, the
+   * bank (tabs over a scrolling tile grid) beside the selected frequency's pane. A fluid CSS grid in real pixels. The system screens reuse this wall: `link` renders
    * it blank (loading, connecting), voided and AGE-stamped after a link drop (reconnecting), dimmed
    * under the NO LINK alarm, or with an empty bank (spec 11.17).
    */
@@ -13,8 +13,7 @@
   import { BLANK } from "$lib/hud/fmt";
   import { feedName } from "$lib/hud/roles";
   import { identityFrom, sharedFrequencySuffix, tileInputFrom, type TileInput } from "$lib/hud/tile";
-  import { params } from "$lib/params";
-  import { router } from "$lib/router.svelte";
+    import { router } from "$lib/router.svelte";
   import { cyclicAge } from "$lib/time";
   import { levels } from "$lib/stores/levels.svelte";
   import { link as linkStore } from "$lib/stores/link.svelte";
@@ -28,16 +27,12 @@
   import ChannelInspector from "./ChannelInspector.svelte";
   import FeedInspector from "./FeedInspector.svelte";
   import FrontWall from "./FrontWall.svelte";
-  import { boxStyle, geometryFor } from "./geometry";
-  import { stage } from "$lib/stores/stage.svelte";
-  import { elsewhereLabel, heroFor, offBankLabel } from "./hero";
-  import { liveRowInstant } from "../frequency/frequency";
-  import type { TxRow } from "$lib/types/live";
+    import { elsewhereLabel, heroFor, offBankLabel } from "./hero";
   import HeroStrip from "./HeroStrip.svelte";
   import { KeyupMotion } from "./keyup.svelte";
   import { LEVER_LIST, type LeverKey } from "./mixer";
   
-  import TranscriptLog from "./TranscriptLog.svelte";
+  import PaneEmpty from "./PaneEmpty.svelte";
   import type { LiveOpsLink } from "./types";
   import { waveEnvelope, WAVE_WIDTH } from "./wave";
   import { noiseFloor } from "./wall";
@@ -48,7 +43,6 @@
   }
   let { link: forced }: Props = $props();
 
-  const geometry = $derived(geometryFor(params.size, stage.width));
   const snapshot = $derived(live.state);
 
   /* the link: the prop when a system screen forces a state, else what the socket is doing */
@@ -171,12 +165,18 @@
     prefs.toggle(LEVER_LIST[key], channelId).catch((error) => console.warn("lever not saved", error));
   }
 
+  /** The columns the tile grid has right now (it re-flows with the window). */
+  const columnCount = (area: HTMLElement): number => {
+    const grid = area.querySelector(".tile-grid");
+    return grid ? getComputedStyle(grid).gridTemplateColumns.split(" ").length : 1;
+  };
+
   /** Arrow keys move focus between tiles; M, S and R work the levers of the focused tile. */
   function tileKeys(event: KeyboardEvent): void {
     const tilesEl = [...(event.currentTarget as HTMLElement).querySelectorAll<HTMLElement>(".tile")];
     const at = tilesEl.indexOf((event.target as HTMLElement).closest(".tile") as HTMLElement);
     if (at < 0) return;
-    const cols = geometry.tileCols;
+    const cols = columnCount(event.currentTarget as HTMLElement);
     const step: Record<string, number> = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: cols, ArrowUp: -cols };
     if (event.key in step) {
       event.preventDefault();
@@ -189,13 +189,6 @@
       event.preventDefault(); // R is also a tab hotkey: the focused tile's lever wins
       leverPressed(tiles[at].id, event.key.toLowerCase() as LeverKey);
     }
-  }
-
-  /** A transcript row's channel label opens the frequency page with that transmission selected (`?at=` its UTC start). */
-  function channelHref(row: TxRow): string | null {
-    if (!snapshot) return null;
-    const at = new Date(liveRowInstant(row.t_offset_s, snapshot.t_offset_s, snapshot.tz.iana)).toISOString();
-    return `/frequency/${row.frequency_id}?at=${encodeURIComponent(at)}`;
   }
 
   /** A double-click on a tile goes straight to its frequency page. */
@@ -245,88 +238,89 @@
 <svelte:window onkeydown={globalKeys} />
 
 <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-<div class="lo-root" class:is-down={linkState === "no-link"} data-link={linkState ?? undefined} onclick={clickAway}>
-  {#if blank || !snapshot || !bank || !displayed}
-    <!-- nothing has arrived yet: the same boxes, empty -->
-    <div class="lo-box hero lo-hero" style={boxStyle(geometry.hero)}>
-      <span class="hero__text c-ink-2">LAST KEY-UP</span><span class="hero__big is-2">{BLANK}</span>
-    </div>
-    <div class="lo-box lo-plot" style={boxStyle(geometry.spectrum)}><span class="lo-bezel"></span></div>
-    <div class="lo-box lo-plot" style={boxStyle(geometry.ruler)}></div>
-    <div class="lo-box lo-plot lo-fall" style={boxStyle(geometry.waterfall)}><span class="lo-bezel"></span></div>
-    <div class="lo-box br" style={boxStyle(geometry.tiles)}>
-      <div class="lo-blank"><span class="t-panel">CHANNELS</span><span class="mono">{BLANK}</span></div>
-    </div>
-    <div class="lo-box txlog lo-log" style={boxStyle(geometry.log)}>
-      <div class="txlog__head"><span class="t-panel">TRANSCRIPT</span><span class="grow"></span></div>
-      <div class="txrow-empty">{BLANK}</div>
-    </div>
-  {:else}
-    <div class="lo-box" style={boxStyle(geometry.hero)}>
-      <HeroStrip {hero} feeds={snapshot.feeds} {displayed} faults={snapshot.faults} {offBank} {elsewhere} onshowfeed={showFeed} oninspectfeed={inspectFeedId} liveBank={bank.id === "bank-live"} />
-    </div>
+<div class="lo-frame" data-link={linkState ?? undefined} onclick={clickAway}>
+  <div class="lo" class:is-down={linkState === "no-link"}>
+    {#if blank || !snapshot || !bank || !displayed}
+      <!-- nothing has arrived yet: the same boxes, empty -->
+      <div class="lo__hero hero lo-hero">
+        <span class="hero__text c-ink-2">LAST KEY-UP</span><span class="hero__big is-2">{BLANK}</span>
+      </div>
+      <div class="lo__wall lo-wall lo-wall--blank">
+        <div class="lo-cell lo-cell--spectrum"><div class="lo-plot"><span class="lo-bezel"></span></div></div>
+        <div class="lo-cell lo-cell--ruler"></div>
+        <div class="lo-cell lo-cell--fall"><div class="lo-plot lo-fall"><span class="lo-bezel"></span></div></div>
+      </div>
+      <div class="lo__lower">
+        <div class="lo__bank br"><div class="lo-blank"><span class="t-panel">CHANNELS</span><span class="mono">{BLANK}</span></div></div>
+        <div class="lo__gutter"></div>
+        <div class="lo__pane br"></div>
+      </div>
+    {:else}
+      <div class="lo__hero">
+        <HeroStrip {hero} feeds={snapshot.feeds} {displayed} faults={snapshot.faults} {offBank} {elsewhere} onshowfeed={showFeed} oninspectfeed={inspectFeedId} liveBank={bank.id === "bank-live"} />
+      </div>
 
-    <FrontWall state={snapshot} bankChannels={bankChannelNumbers} {geometry} {dropAge} feed={displayed} />
+      <div class="lo__wall">
+        <FrontWall state={snapshot} bankChannels={bankChannelNumbers} {dropAge} feed={displayed} />
+      </div>
 
-    <div class="lo-box" style={boxStyle(geometry.tabs)}>
-      <BankTabs banks={bankList} active={bank.id} tileCount={tiles.length} variant={geometry.tileVariant} />
-    </div>
+      <div class="lo__lower">
+        <div class="lo__bank">
+          <div class="lo__tabs">
+            <BankTabs banks={bankList} active={bank.id} tileCount={tiles.length} variant="standard" />
+          </div>
 
-    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-    <div bind:this={tilesBox} class="lo-box lo-tiles" class:has-solo={prefs.solo.size > 0} style={boxStyle(geometry.tiles)} role="group" aria-label="Channels" onkeydown={tileKeys} ondblclick={tileDoubleClick} onfocusout={(e) => !(e.relatedTarget as HTMLElement | null)?.closest(".tile") && (targetedId = null)}>
-      {#if tiles.length === 0}
-        <div class="lo-empty br">
-          {#if bank.id === "bank-live"}
-            <EmptyState title="LIVE BANK EMPTY" detail="Click a channel on the waterfall to listen." />
-          {:else}
-            <EmptyState title="BANK EMPTY">
-              <span class="t-body">Add channels in <a href="/feeds" onclick={(e) => (e.preventDefault(), router.go("/feeds"))}>Feeds &amp; Banks</a>.</span>
-            </EmptyState>
+          <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+          <div bind:this={tilesBox} class="lo__tiles" class:has-solo={prefs.solo.size > 0} role="group" aria-label="Channels" onkeydown={tileKeys} ondblclick={tileDoubleClick} onfocusout={(e) => !(e.relatedTarget as HTMLElement | null)?.closest(".tile") && (targetedId = null)}>
+            {#if tiles.length === 0}
+              <div class="lo-empty br">
+                {#if bank.id === "bank-live"}
+                  <EmptyState title="LIVE BANK EMPTY" detail="Click a channel on the waterfall to listen." />
+                {:else}
+                  <EmptyState title="BANK EMPTY">
+                    <span class="t-body">Add channels in <a href="/feeds" onclick={(e) => (e.preventDefault(), router.go("/feeds"))}>Feeds &amp; Banks</a>.</span>
+                  </EmptyState>
+                {/if}
+              </div>
+            {:else}
+              <TileGrid>
+                {#each tiles as c, i (c.id)}
+                  {#snippet wave()}
+                    <Waveform env={waveOf(c)} width={WAVE_WIDTH} height={16} live />
+                  {/snippet}
+                  <ChannelTile
+                    variant="standard"
+                    identity={identityFrom(c, sharedFrequencySuffix(c, snapshot.channels, feedName))}
+                    state={tileState(c)}
+                    wave={c.tx || motion.held.has(c.id) ? wave : undefined}
+                    onselect={() => selectChannel(c.id)}
+                    onlever={(key) => leverPressed(c.id, key)}
+                    index={i + 1}
+                  />
+                {/each}
+              </TileGrid>
+            {/if}
+          </div>
+        </div>
+
+        <div class="lo__gutter"></div>
+
+        <div class="lo__pane br">
+          <PaneEmpty />
+          {#if inspectChannel}
+            <ChannelInspector channel={inspectChannel} state={snapshot} {now} {logCount} onclose={closeInspector} />
+          {:else if inspectFeed}
+            <FeedInspector feed={inspectFeed} state={snapshot} {logCount} onclose={closeInspector} />
           {/if}
         </div>
-      {:else}
-        <TileGrid cols={geometry.tileCols}>
-          {#each tiles as c, i (c.id)}
-            {#snippet wave()}
-              <Waveform env={waveOf(c)} width={WAVE_WIDTH} height={16} live />
-            {/snippet}
-            <ChannelTile
-              variant={geometry.tileVariant}
-              identity={identityFrom(c, sharedFrequencySuffix(c, snapshot.channels, feedName))}
-              state={tileState(c)}
-              wave={(c.tx || motion.held.has(c.id)) && geometry.tileVariant === "standard" ? wave : undefined}
-              onselect={() => selectChannel(c.id)}
-              onlever={(key) => leverPressed(c.id, key)}
-              index={i + 1}
-            />
-          {/each}
-        </TileGrid>
-      {/if}
-    </div>
-
-    <div class="lo-box" style={boxStyle(geometry.log)}>
-      <TranscriptLog
-        rows={snapshot.transcript.rows}
-        countToday={snapshot.transcript.count_today}
-        colWidth={geometry.log[2] - 360}
-        {bankIds}
-        {now}
-        onselect={(row) => selectChannel(row.frequency_id)}
-        {channelHref}
-      />
-    </div>
-
-    {#if inspectChannel}
-      <ChannelInspector channel={inspectChannel} state={snapshot} {now} {logCount} onclose={closeInspector} />
-    {:else if inspectFeed}
-      <FeedInspector feed={inspectFeed} state={snapshot} {logCount} onclose={closeInspector} />
+      </div>
     {/if}
-  {/if}
 
-  {#if linkState === "no-link"}
-    <div class="alarm" role="alert">
-      <span class="t-alarm">NO LINK</span>
-      <span class="t-body">Backend unreachable for {Math.round(dropAge ?? 0)} s; retrying every {downCap} s.</span>
-    </div>
-  {/if}
+    {#if linkState === "no-link"}
+      <div class="alarm" role="alert">
+        <span class="t-alarm">NO LINK</span>
+        <span class="t-body">Backend unreachable for {Math.round(dropAge ?? 0)} s; retrying every {downCap} s.</span>
+      </div>
+    {/if}
+  </div>
 </div>

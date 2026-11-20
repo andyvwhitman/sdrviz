@@ -12,20 +12,18 @@
   import { api } from "$lib/api/client";
   import { BAND, mhzToCh, chToMhz } from "$lib/hud/band";
   import type { Channel, Feed, LiveState } from "$lib/types/live";
-  import { boxStyle, type Geometry } from "./geometry";
-  import FrequencyCursor from "./FrequencyCursor.svelte";
+    import FrequencyCursor from "./FrequencyCursor.svelte";
   import FrequencyRuler from "./FrequencyRuler.svelte";
   import FrontWallMessage from "./FrontWallMessage.svelte";
   import SpectrumTrace from "./SpectrumTrace.svelte";
   import Waterfall from "./Waterfall.svelte";
   import { listenFlash } from "./listenFlash.svelte";
-  import { carriersOn, channelNumber, heardChannels, noiseFloor } from "./wall";
+  import { carriersOn, heardChannels, noiseFloor, type Box } from "./wall";
 
   interface Props {
     state: LiveState;
     /** channel numbers of the displayed bank */
     bankChannels: number[];
-    geometry: Geometry;
     /** seconds since the link dropped, null while it is up */
     dropAge: number | null;
     /** no data yet (loading, connecting): empty boxes */
@@ -33,8 +31,7 @@
     /** the displayed feed, when the bank has none of its own */
     feed: Feed;
   }
-  let { state: snapshot, bankChannels, geometry, dropAge, blank = false, feed }: Props = $props();
-
+  let { state: snapshot, bankChannels, dropAge, blank = false, feed }: Props = $props();
 
   // the server streams spectrum frames only for the feed being watched
   $effect(() => {
@@ -52,18 +49,23 @@
   );
   const frozenAge = $derived(feed.last_sample_age_s == null ? null : fmt.age(feed.last_sample_age_s, "age"));
 
-  const [, , spectrumW, spectrumH] = $derived(geometry.spectrum);
-  const [, , fallW, fallH] = $derived(geometry.waterfall);
-  const [, , rulerW, rulerH] = $derived(geometry.ruler);
+  /**
+   * The three plots are CSS boxes that fill the wall (the spectrum takes its clamp, the ruler its fixed height, the
+   * waterfall the rest); each reports its size once so the canvas and SVG can be drawn to it.
+   */
+  let spectrumW = $state(0);
+  let spectrumH = $state(0);
+  let rulerW = $state(0);
+  let rulerH = $state(0);
+  let fallW = $state(0);
+  let fallH = $state(0);
+  const spectrumBox = $derived<Box>([0, 0, spectrumW, spectrumH]);
+  const rulerBox = $derived<Box>([0, spectrumH, rulerW, rulerH]);
+  const waterfallBox = $derived<Box>([0, spectrumH + rulerH, fallW, fallH]);
 
   /** pointer x over the spectrum, ruler or waterfall (they share x), for the hover readout */
   let hoverX = $state<number | null>(null);
-  /** the stage is scaled to fit the window: convert screen pixels back to layout pixels */
-  function layoutX(event: MouseEvent): number {
-    const box = event.currentTarget as HTMLElement;
-    const rect = box.getBoundingClientRect();
-    return ((event.clientX - rect.left) * box.offsetWidth) / rect.width;
-  }
+  const layoutX = (event: MouseEvent): number => event.clientX - (event.currentTarget as HTMLElement).getBoundingClientRect().left;
   const hover = {
     onpointermove: (event: PointerEvent) => (hoverX = layoutX(event)),
     onpointerleave: () => (hoverX = null),
@@ -72,7 +74,7 @@
 
   /** the AAR channel under the pointer, or null between channel slots and outside the band */
   function channelAt(x: number): number | null {
-    const width = geometry.spectrum[2];
+    const width = spectrumW;
     const mhz = BAND.lo + (Math.min(width - 1, Math.max(0, x)) / (width - 1)) * (BAND.hi - BAND.lo);
     const ch = mhzToCh(mhz);
     const onSlot = ch >= BAND.first && ch <= BAND.last && Math.abs(mhz - chToMhz(ch)) <= BAND.step / 2;
@@ -107,48 +109,41 @@
   }
 </script>
 
-<div class="lo-box" style={boxStyle(geometry.spectrum)} {...hover} role="presentation">
-  <SpectrumTrace
-    width={spectrumW}
-    height={spectrumH}
-    {floor}
-    {heard}
-    {carriers}
-    live={delivering && !blank}
-    sweeping={listening}
-    {frozenAge}
-    {blank}
-  />
-</div>
-<div class="lo-box lo-plot" style={boxStyle(geometry.ruler)} {...hover} role="presentation">
-  <FrequencyRuler width={rulerW} height={rulerH} hears={blank ? [] : heard} bank={blank ? [] : bankChannels} dimmed={!delivering} />
-</div>
-
-{#if blank}
-  <div class="lo-box lo-plot lo-fall" style={boxStyle(geometry.waterfall)}><span class="lo-bezel"></span></div>
-{:else}
-  <div class="lo-box" style={boxStyle(geometry.waterfall)} {...hover} role="presentation">
-    <Waterfall width={fallW} height={fallH} feedId={feed.id} {floor} {carriers} live={delivering} {dropAge}>
-      {#if !delivering}
-        <FrontWallMessage
-          feedShort={feed.short}
-          label={fault ? fault.label : feed.label}
-          kind={fault ? "fault" : "stale"}
-          acked={!!fault?.acked}
-          frozenAt={snapshot.t_offset_s - (feed.last_sample_age_s ?? 0)}
-          sampleAgeS={feed.last_sample_age_s}
-        />
-      {/if}
-    </Waterfall>
+<div class="lo-wall">
+  <div class="lo-cell lo-cell--spectrum" bind:clientWidth={spectrumW} bind:clientHeight={spectrumH} {...hover} role="presentation">
+    {#if spectrumW > 0 && spectrumH > 0}
+      <SpectrumTrace width={spectrumW} height={spectrumH} {floor} {heard} {carriers} live={delivering && !blank} sweeping={listening} {frozenAge} {blank} />
+    {/if}
   </div>
-{/if}
+  <div class="lo-cell lo-cell--ruler" bind:clientWidth={rulerW} bind:clientHeight={rulerH} {...hover} role="presentation">
+    {#if rulerW > 0}
+      <FrequencyRuler width={rulerW} height={rulerH} hears={blank ? [] : heard} bank={blank ? [] : bankChannels} dimmed={!delivering} />
+    {/if}
+  </div>
+  <div class="lo-cell lo-cell--fall" bind:clientWidth={fallW} bind:clientHeight={fallH} {...hover} role="presentation">
+    {#if fallW > 0 && fallH > 0}
+      <Waterfall width={fallW} height={fallH} feedId={feed.id} {floor} {carriers} live={delivering} {dropAge}>
+        {#if !delivering}
+          <FrontWallMessage
+            feedShort={feed.short}
+            label={fault ? fault.label : feed.label}
+            kind={fault ? "fault" : "stale"}
+            acked={!!fault?.acked}
+            frozenAt={snapshot.t_offset_s - (feed.last_sample_age_s ?? 0)}
+            sampleAgeS={feed.last_sample_age_s}
+          />
+        {/if}
+      </Waterfall>
+    {/if}
+  </div>
 
-{#if hoverX !== null && !blank}
-  <FrequencyCursor listenable={session.isAdmin} x={hoverX} spectrum={geometry.spectrum} ruler={geometry.ruler} waterfall={geometry.waterfall} channels={snapshot.channels} flash={listenFlash.text} />
-{:else if listenFlash.text}
-  <!-- the confirmation outlives the pointer: a tap or a mouse that moved away still sees what happened -->
-  <div class="lo-box lo-flash" style="left:{geometry.spectrum[0] + FLASH_X}px;top:{geometry.ruler[1] + geometry.ruler[3] + 4}px" role="status">{listenFlash.text}</div>
-{/if}
+  {#if hoverX !== null && !blank}
+    <FrequencyCursor listenable={session.isAdmin} x={hoverX} spectrum={spectrumBox} ruler={rulerBox} waterfall={waterfallBox} channels={snapshot.channels} flash={listenFlash.text} />
+  {:else if listenFlash.text}
+    <!-- the confirmation outlives the pointer: a tap or a mouse that moved away still sees what happened -->
+    <div class="lo-box lo-flash" style="left:{FLASH_X}px;top:{spectrumH + rulerH + 4}px" role="status">{listenFlash.text}</div>
+  {/if}
+</div>
 
 <style>
   .lo-flash { font: 500 var(--fs-11)/20px var(--font-label); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--ink-2); background: var(--bg-void); padding: 0 6px; white-space: nowrap; pointer-events: none; z-index: 2; }

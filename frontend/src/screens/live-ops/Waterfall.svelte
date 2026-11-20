@@ -10,10 +10,11 @@
   import { spectrum } from "$lib/stores/spectrum.svelte";
   import { BAND } from "$lib/hud/band";
   import type { Snippet } from "svelte";
-  import { WaterfallModel, NO_SAMPLE_DBFS, ROWS, WINDOW_S } from "./waterfallModel.svelte";
+  import { WaterfallModel, NO_SAMPLE_DBFS, PX_PER_S, ROW_PX, rowsFor, secondsFor } from "./waterfallModel.svelte";
   import { bandX, hash, rampClamp, slotWidth, type Carrier } from "./wall";
 
   interface Props {
+    /** the box, in CSS px (the parent measures it once) */
     width: number;
     height: number;
     feedId: string;
@@ -35,66 +36,78 @@
     return rampRgb[i].map((v, k) => v + (rampRgb[i + 1][k] - v) * (x - i));
   };
 
-  const model = new WaterfallModel(ROWS);
-  /** screen pixels per second of history */
-  const pxPerS = $derived(height / WINDOW_S);
+  const model = new WaterfallModel();
   let canvas = $state<HTMLCanvasElement>();
+  /** device pixels per CSS pixel: the canvas backing store is `css px x ratio` */
+  let ratio = $state(devicePixelRatio || 1);
+  const backW = $derived(Math.max(1, Math.round(width * ratio)));
+  const backH = $derived(Math.max(1, Math.round(height * ratio)));
 
   $effect(() => {
     model.load(feedId);
+  });
+  $effect(() => {
+    model.grow(rowsFor(height));
   });
   $effect(() => {
     const frame = spectrum.latest;
     if (frame && live) untrack(() => model.push(frame));
   });
 
-  /** `height` rows in the canvas; the backend provides oldest first, row 0 on screen is the newest. */
+  /** One source row is ROW_PX CSS pixels tall; the backend provides oldest first, row 0 on screen is the newest. */
   function draw(): void {
     const ctx = canvas?.getContext("2d");
-    if (!ctx || !canvas) return;
-    const image = ctx.createImageData(width, height);
+    if (!ctx || !canvas || width < 2 || height < 2) return;
+    const image = ctx.createImageData(backW, backH);
     const rows = model.rows;
-    const void0 = rampRgb[0];
-    const gap = dropAge == null ? 0 : Math.min(height, Math.ceil(dropAge * pxPerS));
+    const rowH = ROW_PX * ratio;
+    const gap = dropAge == null ? 0 : Math.min(backH, Math.ceil(dropAge * PX_PER_S * ratio));
 
-    // band x -> bin of the feed's span
+    // canvas x -> bin of the feed's span
     const lo = model.centerMhz - model.spanMhz / 2;
     const binCount = rows[0]?.bins.length ?? 0;
-    const binOf = Int16Array.from({ length: width }, (_, x) => {
-      const mhz = BAND.lo + (x / (width - 1)) * (BAND.hi - BAND.lo);
+    const cssX = (x: number) => Math.min(width - 1, Math.floor(x / ratio));
+    const binOf = Int16Array.from({ length: backW }, (_, x) => {
+      const mhz = BAND.lo + (cssX(x) / (width - 1)) * (BAND.hi - BAND.lo);
       return Math.min(binCount - 1, Math.max(0, Math.round(((mhz - lo) / model.spanMhz) * binCount)));
     });
 
     let strongest = -Infinity;
-    for (const row of rows) for (let x = 0; x < width; x += 4) strongest = Math.max(strongest, row.bins[binOf[x]]);
+    for (const row of rows) for (let x = 0; x < backW; x += 4 * ratio) strongest = Math.max(strongest, row.bins[binOf[Math.floor(x)]]);
     const { lo: low, hi: high } = rampClamp(floor, Number.isFinite(strongest) ? strongest : null);
     if (clamp.lo !== low || clamp.hi !== high) clamp = { lo: low, hi: high };
 
-    for (let r = 0; r < height; r++) {
-      const row = rows[rows.length - 1 - Math.floor((r * ROWS) / height)];
-      for (let x = 0; x < width; x++) {
-        const p = (r * width + x) * 4;
-        let rgb = void0;
-        if (r >= gap) {
-          let v = row ? row.bins[binOf[x]] : floor + (hash(x, r) - 0.5) * 4;
-          if (v <= NO_SAMPLE_DBFS) v = floor + (hash(x, r) - 0.5) * 4; // a frozen feed shows its floor, not black
-          rgb = colour((v - low) / (high - low));
-        }
-        image.data[p] = rgb[0];
-        image.data[p + 1] = rgb[1];
-        image.data[p + 2] = rgb[2];
-        image.data[p + 3] = 255;
+    // each source row is coloured once, then copied into the pixel rows it covers
+    const line = new Uint8ClampedArray(backW * 4);
+    const void0 = rampRgb[0];
+    const fillLine = (source: number): void => {
+      const row = rows[rows.length - 1 - source];
+      for (let x = 0; x < backW; x++) {
+        let v = row ? row.bins[binOf[x]] : floor + (hash(cssX(x), source) - 0.5) * 4;
+        if (v <= NO_SAMPLE_DBFS) v = floor + (hash(cssX(x), source) - 0.5) * 4; // a frozen feed shows its floor, not black
+        const rgb = colour((v - low) / (high - low));
+        line.set([rgb[0], rgb[1], rgb[2], 255], x * 4);
       }
+    };
+    let filled = -1;
+    for (let y = 0; y < backH; y++) {
+      if (y < gap) {
+        for (let x = 0; x < backW; x++) image.data.set([void0[0], void0[1], void0[2], 255], (y * backW + x) * 4);
+        continue;
+      }
+      const source = Math.floor(y / rowH);
+      if (source !== filled) (fillLine(source), (filled = source));
+      image.data.set(line, y * backW * 4);
     }
     ctx.putImageData(image, 0, 0);
     if (gap) {
       ctx.save();
       ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue("--state-stale").trim();
-      ctx.lineWidth = 1;
-      ctx.setLineDash([1, 5]);
+      ctx.lineWidth = ratio;
+      ctx.setLineDash([ratio, 5 * ratio]);
       ctx.beginPath();
-      ctx.moveTo(0, gap + 0.5);
-      ctx.lineTo(width, gap + 0.5);
+      ctx.moveTo(0, gap + 0.5 * ratio);
+      ctx.lineTo(backW, gap + 0.5 * ratio);
       ctx.stroke();
       ctx.restore();
     }
@@ -105,29 +118,43 @@
     void floor;
     void dropAge;
     void canvas;
+    void backW;
+    void backH;
     draw();
   });
 
+  // dragging a window between monitors changes the ratio
+  $effect(() => {
+    const query = matchMedia(`(resolution: ${ratio}dppx)`);
+    const changed = () => (ratio = devicePixelRatio || 1);
+    query.addEventListener("change", changed, { once: true });
+    return () => query.removeEventListener("change", changed);
+  });
+
   const slot = $derived(slotWidth(width));
-  const ticks = $derived(Array.from({ length: Math.floor((WINDOW_S - 1) / 5) }, (_, i) => (i + 1) * 5));
+  /** time ticks: every 5 s (labelled every 10 s) while under a minute shows, then every 10 s (labelled every 30 s) */
+  const ticks = $derived.by(() => {
+    const long = secondsFor(height) >= 60;
+    const [minor, major] = long ? [10, 30] : [5, 10];
+    return Array.from({ length: Math.floor((secondsFor(height) - 1) / minor) }, (_, i) => ({ sec: (i + 1) * minor, major: ((i + 1) * minor) % major === 0 }));
+  });
   const snap = (v: number) => Math.round(v) + 0.5;
 </script>
 
 <div class="lo-plot lo-fall" class:lo-wall-frozen={!live}>
-  <canvas bind:this={canvas} {width} {height}></canvas>
+  <canvas bind:this={canvas} width={backW} height={backH}></canvas>
   <svg class="hud" {width} {height}>
     {#each carriers as c (c.channel)}
       {@const x0 = Math.round(bandX(c.mhz, width) - slot / 2)}
-      {@const rows = Math.min(height, Math.round(c.elapsedS * pxPerS))}
+      {@const rows = Math.min(height, Math.round(c.elapsedS * PX_PER_S))}
       {#if rows > 0}
         <rect class="f-wash-tx-plot" x={x0} y="0" width={Math.round(slot)} height={rows} />
         <rect class="s-hair k-tx" x={x0 + 0.5} y="0.5" width={Math.round(slot) - 1} height={Math.max(0, rows - 1)} />
       {/if}
     {/each}
-    {#each ticks as sec}
-      {@const major = sec % 10 === 0}
-      <path class="s-hair {major ? 'k-line' : 'k-faint'}" d="M1 {snap(sec * pxPerS)}H{major ? 9 : 5}" />
-      {#if major}<text class="tx-num" x="13" y={snap(sec * pxPerS) + 4}>{sec} S</text>{/if}
+    {#each ticks as { sec, major }}
+      <path class="s-hair {major ? 'k-line' : 'k-faint'}" d="M1 {snap(sec * PX_PER_S)}H{major ? 9 : 5}" />
+      {#if major}<text class="tx-num" x="13" y={snap(sec * PX_PER_S) + 4}>{sec} S</text>{/if}
     {/each}
   </svg>
   <span class="lo-bezel"></span>

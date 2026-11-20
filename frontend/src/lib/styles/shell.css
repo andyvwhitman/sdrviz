@@ -49,3 +49,7 @@
 .span-tiles { grid-column: 1 / span 7; }
 .span-log   { grid-column: 8 / span 5; }
 
+
+/* fluid layout (Live Ops): the window is the stage, in real CSS pixels. The screen owns its margins and gaps. */
+.hud-stage--fluid { position: fixed; inset: 0; width: auto; height: auto; }
+.hud-stage--fluid .hud-content { top: var(--header-h); bottom: var(--status-h); }

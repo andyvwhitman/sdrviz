@@ -72,6 +72,15 @@
     return () => controller.abort();
   });
 
+  /** after a save in the editor: fetch the identity again, keeping the page as it is */
+  async function refreshInfo(): Promise<void> {
+    try {
+      info = await api.frequencies.info(frequencyId);
+    } catch {
+      // the old identity stays
+    }
+  }
+
   // ---- the log
   let store = $state.raw<LogStore | null>(null);
   let selectedId = $state<number | null>(null);
@@ -330,7 +339,7 @@
     </section>
   {:else if info}
     <div class="fq__top" bind:clientHeight={topHeight}>
-      <Identity variant={viewport.width < PAGE_MIN_PX ? "phone" : "page"} {info} {channel} {keyedElapsed} {lastHeardFallback} {lidOpen} ontogglelid={() => (lidOpen = !lidOpen)} />
+      <Identity variant={viewport.width < PAGE_MIN_PX ? "phone" : "page"} {info} {channel} {keyedElapsed} {lastHeardFallback} onsaved={refreshInfo} {lidOpen} ontogglelid={() => (lidOpen = !lidOpen)} />
       {#if compact && range === "week"}
         <WeekGrid week={activity?.week ?? null} {tz} {nowMs} shownDate={viewDate ?? todayKey} {range} {dayLabel} onrange={(next) => (range = next)} onpick={(date, hour) => void pick(date, hour)} />
       {:else}

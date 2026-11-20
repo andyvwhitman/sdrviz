@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="SDRVIZ_")
 
     password: str = "sdrviz"  # the viewer password: read and listen
-    # The admin password: nodes, sources, banks, frequencies, settings. Unset: the one password above is admin.
+    # The admin password: nodes, sources, frequencies, assignments, settings. Unset: the one password above is admin.
     admin_password: str | None = None
     secret: str = "dev-secret-change-me"
     data_dir: Path = REPO_ROOT / "data"

@@ -199,7 +199,6 @@ class ReplayEngine:
         self._ensure_clip(tx)
         world = self.rt.world
         freq = world.freqs[tx.channel]
-        bank_ids = set(self.rt.active_bank.frequency_ids)
         self.hub.broadcast(
             protocol.message(
                 "keyup",
@@ -214,10 +213,9 @@ class ReplayEngine:
                 speaker=tx.speaker,
                 train_id=tx.train_id,
                 place_id=tx.place_id,
-                off_bank=tx.channel not in bank_ids,
                 t=tx.t,
                 clock_tenths=hms(tx.t, tenths=True),
-                row=row_view(world, tx, tx.t, bank_ids) | {"elapsed_s": 0.0, "receptions": list(tx.receptions)},
+                row=row_view(world, tx, tx.t) | {"elapsed_s": 0.0, "receptions": list(tx.receptions)},
             )
         )
         self._send_channel(tx.channel, t)

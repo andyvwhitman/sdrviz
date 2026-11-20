@@ -121,7 +121,6 @@ export interface Channel {
   railroad: string;
   use: string;
   monitored: boolean;
-  banks: string[];
   heard_by: string[];
   coverage: { state: CoverageState; healthy: number; total: number; label: string; pips: CoveragePip[] };
   state: ChannelState;
@@ -156,7 +155,6 @@ export interface TxRow {
   aar4: string;
   frequency_id: string;
   label: string;
-  off_bank: boolean;
   feed_id: string;
   feed_label: string;
   role: string;
@@ -177,26 +175,11 @@ export interface TxRow {
   receptions?: Reception[];
 }
 
-export interface BankView {
-  bank_id: string;
+export interface ListenableFeed {
+  feed_id: string;
   name: string;
-  tile_ids: string[];
-  tile_count: number;
-  hero: { mode: string; age_label: string | null; aar: string | null; label: string | null; line: string };
-  displayed_feed: string;
-  displayed_feed_label: string;
-  off_bank_active: string[];
-  off_bank_label: string | null;
-  not_on_displayed_feed: string[];
-  selector_extra_label: string | null;
-}
-
-export interface Bank {
-  id: string;
-  name: string;
-  home_feed: string;
-  frequency_ids: string[];
-  sim: boolean;
+  short: string;
+  online: boolean;
 }
 
 export interface SystemInfo {
@@ -254,17 +237,21 @@ export interface LiveState {
   t_offset_s: number;
   clock: string;
   clock_tenths: string;
-  active_bank: string;
-  displayed_feed: string;
-  banks: Bank[];
+  /** the node Live Ops listens to (feed id); null only when there is no feed at all */
+  listen_feed: string | null;
+  /** the node picker: every feed, online = ok or stale */
+  feeds_listenable: ListenableFeed[];
+  /** the feed the Feeds page inspects first, and why */
+  displayed_feed_admin: string | null;
+  displayed_feed_admin_why: string;
   header: Header;
   status_line: string[];
   faults: Fault[];
   degraded: Degraded[];
   feeds: Feed[];
   system: SystemInfo;
+  /** the listened feed's enabled frequencies, low to high by freq_mhz */
   channels: Channel[];
-  views: Record<string, BankView>;
   active_transmissions: TxRow[];
   transcript: { rows: TxRow[]; count_today: number };
   trains: { tracked_count: number; positions: TrainPosition[] };

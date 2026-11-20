@@ -35,7 +35,7 @@ def test_hello_then_snapshot(client):
         assert hello["sim"]["clock"] == "14:07:30" and hello["sim"]["speed"] == 0.0 and hello["server_time"]
         snapshot = json.loads(ws.receive_text())
         assert snapshot["type"] == "snapshot" and snapshot["state"]["clock"] == "14:07:30"
-        assert len(snapshot["state"]["channels"]) == 31
+        assert snapshot["state"]["listen_feed"] == "feed-alx" and len(snapshot["state"]["channels"]) == 9
 
 
 def test_ping_is_answered(client):
@@ -72,15 +72,15 @@ def test_jump_pushes_a_new_snapshot_to_connected_clients(client):
         assert snapshot["state"]["scenario"] == "listening" and snapshot["state"]["active_transmissions"] == []
 
 
-def test_bank_activation_pushes_a_snapshot(client):
+def test_choosing_a_node_pushes_a_snapshot(client):
     with client.websocket_connect("/ws/live") as ws:
         receive_until(ws, is_type("snapshot"))
-        client.patch("/api/prefs", json={"active_bank": "bank-freight", "displayed_feed": "feed-bay"})
+        client.patch("/api/prefs", json={"listen_feed": "feed-bay"})
         snapshot = receive_until(
             ws,
-            lambda m: isinstance(m, dict) and m["type"] == "snapshot" and m["state"]["active_bank"] == "bank-freight",
+            lambda m: isinstance(m, dict) and m["type"] == "snapshot" and m["state"]["listen_feed"] == "feed-bay",
         )
-        assert snapshot["state"]["displayed_feed"] == "feed-bay"
+        assert len(snapshot["state"]["channels"]) == 11
 
 
 def test_an_ack_is_echoed_as_feed_and_faults_messages(client):

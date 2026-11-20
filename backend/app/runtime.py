@@ -14,7 +14,7 @@ from .config import Settings
 from .db import create_schema, make_engine, open_session, seed_if_empty
 from .live import protocol
 from .live.hub import Hub
-from .models import Bank, FeedAck, Prefs, Receiver
+from .models import FeedAck, Prefs, Receiver
 from .nodes.schemas import ChannelsIn
 from .nodes.service import ASSIGNED_PRESET, NodeOffline, NodeRegistry
 from .nodes.session import NodeConnections
@@ -53,7 +53,7 @@ class Runtime:
         self.nodes = NodeRegistry(self.db, settings.public_url)  # remote receiver nodes (docs/node-protocol.md)
         self.nodes.migrate()
         self.nodes.on_feeds_changed = self.reload_node_feeds
-        self.loop: asyncio.AbstractEventLoop | None = None  # set by start(); bank edits arrive on worker threads
+        self.loop: asyncio.AbstractEventLoop | None = None  # set by start(); frequency edits arrive on worker threads
         self._node_channels = self._wanted_channels()  # the list each node on the assigned preset last got
         self._tasks: set[asyncio.Task] = set()
         self._retention: asyncio.Task | None = None
@@ -137,19 +137,20 @@ class Runtime:
         return SimInputs(self.world, self.data, self.health, self.nodes)
 
     @property
-    def active_bank(self) -> Bank:
-        """The active bank; falls back to the first one if the chosen bank was deleted."""
-        if self.world.has_bank(self.prefs.active_bank):
-            return self.world.bank(self.prefs.active_bank)
-        return self.world.banks[0]
+    def listen_feed(self) -> str | None:
+        """The node Live Ops listens to: the chosen one, else the first online node, else the first feed."""
+        feeds = self.world.feeds
+        if self.prefs.listen_feed in feeds:
+            return self.prefs.listen_feed
+        online = [feed_id for feed_id in self.nodes.online_feed_ids() if feed_id in feeds]
+        return (online or list(feeds) or [None])[0]
 
     def live_state(self) -> dict:
         return live_state.build(
             self.inputs,
             self.clock.now(),
-            self.active_bank.id,
+            self.listen_feed,
             live=self.radio.events,
-            displayed_feed=self.prefs.displayed_feed if self.prefs.displayed_feed in self.world.feeds else None,
             scenario=self.scenario,
             speed=self.clock.speed,
         )
@@ -232,7 +233,7 @@ class Runtime:
         return self.prefs
 
     def jump(self, scenario: str | None = None, clock: str | None = None, speed: float | None = None) -> None:
-        """Move the sim clock. A scenario also selects its bank and clears user acknowledgements."""
+        """Move the sim clock. A scenario also selects its node and clears user acknowledgements."""
         if scenario:
             spec = SCENARIOS[scenario]
             self.scenario = spec
@@ -240,7 +241,7 @@ class Runtime:
                 session.exec(delete(FeedAck).where(col(FeedAck.source) == "user"))
                 session.commit()
             self.reload_health()
-            self.save_prefs(self.prefs.model_copy(update={"active_bank": spec.bank, "displayed_feed": None}))
+            self.save_prefs(self.prefs.model_copy(update={"listen_feed": spec.feed}))
             self.clock.jump(spec.t, self._speed_or_default(speed))
         elif clock:
             self.scenario = None

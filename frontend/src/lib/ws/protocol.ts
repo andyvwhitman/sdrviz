@@ -40,7 +40,6 @@ export interface KeyupMessage {
   speaker: string;
   train_id: string | null;
   place_id: string | null;
-  off_bank: boolean;
   t: number;
   /** the new transcript row, state "decoding" */
   row: TxRow;

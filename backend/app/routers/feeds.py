@@ -1,12 +1,12 @@
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query, Response
-from sqlmodel import col, delete, select
+from sqlmodel import col, delete
 
 from ..auth import ADMIN
 from ..db import feed_short
 from ..deps import DB, RT
-from ..models import Assignment, Bank, Feed, FeedBase
+from ..models import Assignment, Feed, FeedBase
 from ..schemas import AckIn
 from ..sim import live_state, spectrum
 from ..sim.timefmt import DAY, hms
@@ -74,9 +74,6 @@ def update_feed(feed_id: str, body: FeedBase, session: DB, rt: RT) -> dict[str, 
 @router.delete("/{feed_id}", status_code=204, dependencies=[ADMIN])
 def delete_feed(feed_id: str, session: DB, rt: RT) -> Response:
     feed = get_or_404(session, feed_id)
-    homes = [b.id for b in session.exec(select(Bank)).all() if b.home_feed == feed_id]
-    if homes:
-        raise HTTPException(status_code=409, detail=f"Home feed of bank(s) {', '.join(homes)}")
     session.exec(delete(Assignment).where(col(Assignment.feed_id) == feed_id))
     session.delete(feed)
     session.commit()

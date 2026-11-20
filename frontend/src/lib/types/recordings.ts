@@ -8,6 +8,9 @@ export interface Recording {
   frequency_id: string;
   aar_channel: number | null;
   feed_id: string;
+  /** the node that heard it; null for the LAN receiver and rows from before nodes */
+  node_id: string | null;
+  /** the node's position at the time */
   feed_lat: number | null;
   feed_lon: number | null;
   /** UTC, to the millisecond, with a Z */

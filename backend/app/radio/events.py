@@ -49,9 +49,6 @@ class LiveEvents:
     def _now(self) -> float:
         return self.rt.clock.now()
 
-    def _bank_ids(self) -> list[str]:
-        return self.rt.active_bank.frequency_ids
-
     # --- transitions -----------------------------------------------------------
 
     def owns(self, channel_id: str, feed_id: str) -> bool:
@@ -83,7 +80,6 @@ class LiveEvents:
                 speaker=None,
                 train_id=None,
                 place_id=None,
-                off_bank=row["off_bank"],
                 t=t,
                 clock_tenths=hms(t, tenths=True),
                 row=row,
@@ -139,7 +135,6 @@ class LiveEvents:
             "aar4": aar4(freq.aar_channel),
             "frequency_id": tx.channel_id,
             "label": freq.label,
-            "off_bank": tx.channel_id not in self._bank_ids(),
             "feed_id": tx.feed_id,
             "feed_label": self.world.feed_short(tx.feed_id),
             "role": "unknown",

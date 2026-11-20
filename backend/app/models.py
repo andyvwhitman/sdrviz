@@ -35,22 +35,6 @@ class Assignment(SQLModel, table=True):
     enabled: bool = True
 
 
-class BankBase(SQLModel):
-    id: str
-    name: str
-    description: str = ""
-    home_feed: str
-    short: str | None = None  # derived from the name when omitted
-    sim: bool = False
-    frequency_ids: list[str] = []  # ordered: the tile order of the bank
-
-
-class Bank(BankBase, table=True):
-    id: str = Field(primary_key=True)
-    short: str = ""
-    frequency_ids: list[str] = Field(default_factory=list, sa_column=Column(JSON))
-
-
 class FeedBase(SQLModel):
     id: str
     name: str
@@ -59,7 +43,7 @@ class FeedBase(SQLModel):
     lat: float
     lon: float
     coverage_radius_km: float
-    hears: list[str] = []  # frequency ids this feed can receive
+    hears: list[str] = []  # frequency ids enabled on this feed; filled from its assignments when the world loads
     driver: str = "rtl_tcp"  # rtl_tcp | sdrviz-agent | file
     driver_sim: bool = False
     host: str = ""
@@ -147,8 +131,7 @@ class Prefs(SQLModel, table=True):
     """The single row of operator preferences."""
 
     id: int = Field(default=1, primary_key=True)
-    active_bank: str = "bank-nec"
-    displayed_feed: str | None = None  # None: the active bank's home feed
+    listen_feed: str | None = None  # the node Live Ops listens to; None: the first online node, else the first feed
     muted: list[str] = Field(default_factory=list, sa_column=Column(JSON))
     solo: list[str] = Field(default_factory=list, sa_column=Column(JSON))
     record: list[str] = Field(default_factory=list, sa_column=Column(JSON))

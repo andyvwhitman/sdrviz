@@ -28,21 +28,44 @@ class TestAuth:
 class TestLiveState:
     def test_live_state_is_the_keyed_moment(self, client):
         state = client.get("/api/live/state").json()
-        assert state["clock"] == "14:07:30" and state["active_bank"] == "bank-nec"
+        assert state["clock"] == "14:07:30" and state["listen_feed"] == "feed-alx"  # the first feed
+        assert not {"active_bank", "banks", "views", "displayed_feed"} & set(state)
         assert {
             "header",
             "feeds",
             "channels",
-            "views",
+            "feeds_listenable",
             "active_transmissions",
             "transcript",
             "trains",
             "ctc",
             "lofar_60m",
         } <= set(state)
-        assert len(state["channels"]) == 31 and len(state["feeds"]) == 4
+        assert len(state["feeds"]) == 4
         assert sorted(t["aar"] for t in state["active_transmissions"]) == ["CH08", "CH54", "CH66"]
         assert len(state["channels"][0]["spark_60m"]) == 60
+        assert "banks" not in state["channels"][0] and "off_bank" not in state["transcript"]["rows"][0]
+
+    def test_channels_are_the_listened_feeds_enabled_frequencies_low_to_high(self, client):
+        rt = client.app.state.rt
+        state = client.get("/api/live/state").json()
+        feed = rt.world.feeds[state["listen_feed"]]
+        mhz = [c["freq_mhz"] for c in state["channels"]]
+        assert {c["id"] for c in state["channels"]} == set(feed.hears) and mhz == sorted(mhz)
+        client.put("/api/prefs", json={**client.get("/api/prefs").json(), "listen_feed": "feed-bay"})
+        state = client.get("/api/live/state").json()
+        assert state["listen_feed"] == "feed-bay"
+        assert {c["id"] for c in state["channels"]} == set(rt.world.feeds["feed-bay"].hears)
+        client.put("/api/frequencies/amtk-nec-road/assignments/feed-bay", json={"enabled": False})
+        assert "amtk-nec-road" not in [c["id"] for c in client.get("/api/live/state").json()["channels"]]
+
+    def test_the_node_picker_lists_every_feed(self, client):
+        listed = client.get("/api/live/state").json()["feeds_listenable"]
+        assert [f["feed_id"] for f in listed] == ["feed-alx", "feed-lnd", "feed-bwi", "feed-bay"]
+        assert listed[0] == {"feed_id": "feed-alx", "name": listed[0]["name"], "short": "ALX-01", "online": True}
+        client.post("/api/sim/jump", json={"scenario": "fault", "speed": 0})
+        online = {f["feed_id"]: f["online"] for f in client.get("/api/live/state").json()["feeds_listenable"]}
+        assert online["feed-lnd"] is False and online["feed-bay"] is True  # LINK LOST; STALE still counts as up
 
     def test_system(self, client):
         body = client.get("/api/system").json()
@@ -56,10 +79,10 @@ class TestLiveState:
 
 
 class TestSim:
-    def test_jump_to_a_scenario_sets_clock_bank_and_state(self, client):
+    def test_jump_to_a_scenario_sets_clock_node_and_state(self, client):
         response = client.post("/api/sim/jump", json={"scenario": "fault", "speed": 0})
         assert response.json() == {"scenario": "fault", "clock": "14:06:22", "speed": 0.0}
-        assert client.get("/api/prefs").json()["active_bank"] == "bank-commuter"
+        assert client.get("/api/prefs").json()["listen_feed"] == "feed-lnd"
         state = client.get("/api/live/state").json()
         assert state["header"]["feeds_chip"] == "FEEDS 2/4" and state["scenario"] == "fault"
         assert [f["object"] for f in state["faults"]] == ["feed-lnd"]
@@ -68,7 +91,7 @@ class TestSim:
         client.post("/api/sim/jump", json={"clock": "03:40", "speed": 0})
         assert client.get("/api/sim").json()["clock"] == "03:40:00"
         state = client.get("/api/live/state").json()
-        assert state["active_transmissions"] == [] and state["views"]["bank-nec"]["hero"]["mode"] == "idle"
+        assert state["active_transmissions"] == [] and not any(c["tx"] for c in state["channels"])
 
     def test_bad_jumps_are_rejected(self, client):
         assert client.post("/api/sim/jump", json={"scenario": "nope"}).status_code == 422
@@ -83,15 +106,21 @@ class TestPrefs:
         assert client.put("/api/prefs", json=prefs).json()["volume"] == {"amtk-nec-road": 0.4}
         assert client.get("/api/prefs").json()["muted"] == ["amtk-nec-road"]
 
-    def test_unknown_bank_or_feed_is_rejected(self, client):
+    def test_unknown_feed_is_rejected(self, client):
         prefs = client.get("/api/prefs").json()
-        assert client.put("/api/prefs", json={**prefs, "active_bank": "bank-x"}).status_code == 422
-        assert client.put("/api/prefs", json={**prefs, "displayed_feed": "feed-x"}).status_code == 422
+        assert client.put("/api/prefs", json={**prefs, "listen_feed": "feed-x"}).status_code == 422
+        assert "active_bank" not in prefs and "displayed_feed" not in prefs
 
-    def test_displayed_feed_override_reaches_the_live_state(self, client):
+    def test_listen_feed_reaches_the_live_state(self, client):
         prefs = client.get("/api/prefs").json()
-        client.put("/api/prefs", json={**prefs, "displayed_feed": "feed-bay"})
-        assert client.get("/api/live/state").json()["displayed_feed"] == "feed-bay"
+        assert prefs["listen_feed"] == "feed-alx"  # the default is shown resolved
+        client.put("/api/prefs", json={**prefs, "listen_feed": "feed-bay"})
+        assert client.get("/api/live/state").json()["listen_feed"] == "feed-bay"
+
+    def test_sending_the_default_back_does_not_pin_it(self, client):
+        rt = client.app.state.rt
+        client.put("/api/prefs", json=client.get("/api/prefs").json())
+        assert rt.prefs.listen_feed is None
 
 
 class TestFrequencies:
@@ -107,6 +136,7 @@ class TestFrequencies:
         created = client.post("/api/frequencies", json=self.NEW)
         assert created.status_code == 201 and created.json()["aar_channel"] == 54
         assert client.post("/api/frequencies", json=self.NEW).status_code == 409
+        client.put("/api/frequencies/test-ch/assignments/feed-alx", json={"enabled": True})
         assert any(c["id"] == "test-ch" for c in client.get("/api/live/state").json()["channels"])
 
     def test_a_wrong_aar_channel_is_rejected(self, client):
@@ -192,13 +222,16 @@ class TestFeeds:
             "lat": 39.0,
             "lon": -76.8,
             "coverage_radius_km": 10,
-            "hears": ["csx-road"],
+            "hears": ["csx-road"],  # ignored: a feed hears its enabled assignments
         }
         created = client.post("/api/feeds", json=body)
         assert created.status_code == 201 and created.json()["short"] == "NEW-05" and created.json()["state"] == "ok"
+        assert created.json()["hears"] == []
+        client.put("/api/frequencies/csx-road/assignments/feed-new", json={"enabled": True})
         assert client.put("/api/feeds/feed-new", json={**body, "gain_db": 20}).json()["gain_db"] == 20
         assert client.delete("/api/feeds/feed-new").status_code == 204
-        assert client.delete("/api/feeds/feed-lnd").status_code == 409  # home feed of a bank
+        csx = client.get("/api/frequencies/csx-road").json()
+        assert all(a["feed_id"] != "feed-new" for a in csx["assignments"])  # its assignments went with it
 
     def test_ack_needs_an_unacknowledged_fault(self, client):
         assert client.post("/api/feeds/feed-lnd/ack").status_code == 409  # healthy at 14:07:30
@@ -278,9 +311,9 @@ class TestOther:
 
 def test_prefs_patch_changes_only_the_fields_sent(client):
     start = client.get("/api/prefs").json()
-    client.patch("/api/prefs", json={"active_bank": "bank-commuter"})
+    client.patch("/api/prefs", json={"listen_feed": "feed-bay"})
     saved = client.patch("/api/prefs", json={"muted": ["amtk-nec-road"]}).json()
     assert saved["muted"] == ["amtk-nec-road"]
-    assert saved["active_bank"] == "bank-commuter"  # a stale copy of the bank is not re-sent
+    assert saved["listen_feed"] == "feed-bay"  # a stale copy of the node is not re-sent
     assert saved["solo"] == start["solo"]
-    assert client.patch("/api/prefs", json={"active_bank": "bank-x"}).status_code == 422
+    assert client.patch("/api/prefs", json={"listen_feed": "feed-x"}).status_code == 422

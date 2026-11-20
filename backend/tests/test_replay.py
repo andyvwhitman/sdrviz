@@ -51,7 +51,7 @@ def test_a_transmission_is_keyed_up_decoded_and_released_in_order(rt):
     kinds = [kind for kind, _ in messages_for(events, "sim-0647")]
     assert kinds == ["keyup", "keydown", "words", "words"]
     keyup, keydown, draft, final = (p for _, p in messages_for(events, "sim-0647"))
-    assert keyup["channel_id"] == "csx-be-disp" and keyup["aar"] == "CH66" and keyup["off_bank"] is True
+    assert keyup["channel_id"] == "csx-be-disp" and keyup["aar"] == "CH66" and "off_bank" not in keyup
     assert keyup["row"]["state"] == "decoding" and keyup["row"]["transcript"] == ""
     assert keyup["row"]["receptions"] == keyup["receptions"]  # the row lights the feeds at once
     assert keydown["duration_s"] == 11.2

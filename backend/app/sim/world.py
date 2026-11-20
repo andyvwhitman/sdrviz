@@ -1,4 +1,4 @@
-"""The world the replay runs in: frequencies, banks and feeds (from the database), places and routes."""
+"""The world the replay runs in: frequencies and feeds (from the database), places and routes."""
 
 import json
 from dataclasses import dataclass, field
@@ -10,7 +10,7 @@ from sqlmodel import select
 
 from ..config import Settings
 from ..db import open_session
-from ..models import Assignment, Bank, Feed, Frequency, Receiver
+from ..models import Assignment, Feed, Frequency, Receiver
 
 if TYPE_CHECKING:
     from ..nodes.service import NodeRegistry
@@ -19,7 +19,6 @@ if TYPE_CHECKING:
 @dataclass
 class World:
     freqs: dict[str, Frequency]
-    banks: list[Bank]
     feeds: dict[str, Feed]
     places: dict[str, dict]  # seed places by id (stations, landmarks, detectors, feeds)
     routes: dict[str, dict]  # data/sim/routes.json by route id
@@ -36,15 +35,6 @@ class World:
     def heard_by(self, channel: str) -> list[str]:
         return self._heard_by.get(channel, [])
 
-    def banks_of(self, channel: str) -> list[str]:
-        return [b.id for b in self.banks if channel in b.frequency_ids]
-
-    def bank(self, bank_id: str) -> Bank:
-        return next(b for b in self.banks if b.id == bank_id)
-
-    def has_bank(self, bank_id: str) -> bool:
-        return any(b.id == bank_id for b in self.banks)
-
     def feed_short(self, feed_id: str) -> str:
         feed = self.feeds.get(feed_id)
         return feed.short if feed else feed_id
@@ -60,7 +50,6 @@ def load_world(
             return session.exec(select(model).order_by(literal_column("rowid"))).all()
 
         freqs = {f.id: f for f in table(Frequency)}
-        banks = list(table(Bank))
         feeds = {f.id: f for f in table(Feed)} if settings.sim else {}  # the seeded feeds are fictional
         enabled = enabled_assignments(table(Assignment), freqs)
     feeds = {fid: feed.model_copy(update={"hears": enabled.get(fid, [])}) for fid, feed in feeds.items()}
@@ -69,7 +58,7 @@ def load_world(
         feeds[feed.id] = feed
     if nodes:
         feeds |= {feed.id: feed for feed in nodes.feeds(freqs, enabled)}
-    return World(freqs, banks, feeds, load_places(settings), load_routes(settings), sim=settings.sim)
+    return World(freqs, feeds, load_places(settings), load_routes(settings), sim=settings.sim)
 
 
 LIVE_FEED_ID = "feed-live"

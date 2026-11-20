@@ -161,7 +161,7 @@ def known_frequency(rt: RT, frequency_id: str) -> str:
 
 @router.get("/frequencies/activity")
 def activity_of_all(session: DB, rt: RT, date: date | None = None) -> dict:
-    """Day buckets of every frequency that is in a bank, in one call (the /frequency index)."""
+    """Day buckets of every frequency that is enabled on some feed, in one call (the /frequency index)."""
     day = local_day(date)
     start, end = day_span(day)
     by_frequency: dict[str, list[tuple[datetime, float]]] = {}
@@ -179,7 +179,7 @@ def activity_of_all(session: DB, rt: RT, date: date | None = None) -> dict:
                 "buckets": buckets(by_frequency.get(frequency_id, []), start, end, BUCKET),
             }
             for frequency_id in rt.world.freqs
-            if rt.world.banks_of(frequency_id)
+            if rt.world.heard_by(frequency_id)
         ],
     }
 

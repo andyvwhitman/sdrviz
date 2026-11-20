@@ -613,3 +613,27 @@ def test_node_health_fills_the_feed_telemetry_and_state(client):
     assert feed["state"] == "offline" and feed["telemetry"] == {
         "host_cpu_pct": None, "host_temp_c": None, "device_drops": None,
     }  # fmt: skip
+
+
+def node_channels(client) -> list[dict]:
+    return [c for c in client.get("/api/live/state").json()["channels"] if "node-1" in c["heard_by"]]
+
+
+def test_tiles_follow_the_node_state_not_the_replay(client):
+    node, _ = enrolled_node(client)
+    try:
+        node.send(node_health())
+        wait_for(lambda: node_feed(client)["state"] == "ok")
+        client.patch("/api/prefs", json={"listen_feed": "node-1"})
+        channels = node_channels(client)
+        assert channels and all(c["coverage"]["state"] == "ok" for c in channels)
+
+        node.send(node_health(rtl_tcp="down"))
+        wait_for(lambda: node_feed(client)["state"] == "stale")
+        channels = node_channels(client)
+        pips = [p for c in channels for p in c["coverage"]["pips"] if p["feed_id"] == "node-1"]
+        assert pips and all(p["state"] == "stale" for p in pips)
+        only_node = [c for c in channels if c["heard_by"] == ["node-1"] and c["state"] != "tx"]
+        assert all(c["coverage"]["state"] == "stale" and c["status_readout"].startswith("AGE ") for c in only_node)
+    finally:
+        node.close()

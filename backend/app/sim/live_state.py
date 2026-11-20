@@ -96,9 +96,36 @@ def row_view(world: World, tx: Tx, t: float) -> dict:
 # ---------------------------------------------------------------------------
 
 
-def coverage(world: World, health: Health, channel: str, t: float) -> dict:
+def feed_state(inputs: SimInputs, fid: str, t: float) -> dict:
+    """A feed's state at `t`: a real node's own report, otherwise the replay's scripted timeline."""
+    node = inputs.nodes.feed_status(fid) if inputs.nodes else None
+    if node is None:
+        return inputs.health.state(fid, t)
+    return {
+        "state": node.state,
+        "label": node.label,
+        "since": (t - node.in_state_s) % DAY,
+        "episode_start": None,
+        "acked": False,
+        "acked_at": None,
+        "age_s": node.in_state_s if node.state != "ok" else 0.2,
+    }
+
+
+def receiving(inputs: SimInputs, fid: str, t: float) -> bool:
+    st = feed_state(inputs, fid, t)
+    return st["state"] == "ok" if "age_s" in st else inputs.health.receiving(fid, t)
+
+
+def sample_age(inputs: SimInputs, fid: str, t: float) -> float:
+    st = feed_state(inputs, fid, t)
+    return st["age_s"] if "age_s" in st else inputs.health.last_sample_age(fid, t)
+
+
+def coverage(inputs: SimInputs, channel: str, t: float) -> dict:
+    world = inputs.world
     pips = [
-        {"feed_id": fid, "short": world.feed_short(fid), "state": health.state(fid, t)["state"]}
+        {"feed_id": fid, "short": world.feed_short(fid), "state": feed_state(inputs, fid, t)["state"]}
         for fid in world.heard_by(channel)
     ]
     states = [p["state"] for p in pips]
@@ -122,33 +149,33 @@ def coverage(world: World, health: Health, channel: str, t: float) -> dict:
     }
 
 
-def stale_readout(health: Health, pips: list[dict], t: float) -> str:
+def stale_readout(inputs: SimInputs, pips: list[dict], t: float) -> str:
     """Tile status readout for a stale channel (spec 5.5).
 
     A feed that is stale on sample rate still delivers samples, so its age is about zero and
     "AGE 0S" would read as a dead zero. When every unhealthy feed is rate-stale the readout
     carries the rate instead ("RATE 84%"); otherwise it is the age of the freshest silent feed.
     """
-    causes = [(p, health.state(p["feed_id"], t)) for p in pips if p["state"] != "ok"]
+    causes = [(p, feed_state(inputs, p["feed_id"], t)) for p in pips if p["state"] != "ok"]
     rate = [
         st["label"].replace("STALE · ", "")
         for p, st in causes
-        if st["state"] == "stale" and "RATE" in st["label"] and health.receiving(p["feed_id"], t)
+        if st["state"] == "stale" and "RATE" in st["label"] and receiving(inputs, p["feed_id"], t)
     ]
     if rate and len(rate) == len(causes):
         return rate[0]
-    silent = [p for p in pips if not health.receiving(p["feed_id"], t)] or pips
-    return "AGE " + age_label(min(health.last_sample_age(p["feed_id"], t) for p in silent), "age")
+    silent = [p for p in pips if not receiving(inputs, p["feed_id"], t)] or pips
+    return "AGE " + age_label(min(sample_age(inputs, p["feed_id"], t) for p in silent), "age")
 
 
 def channel_view(inputs: SimInputs, cid: str, t: float) -> dict:
-    world, health, day = inputs.world, inputs.health, inputs.data.day
+    world, day = inputs.world, inputs.data.day
     freq = world.freqs[cid]
     mine = [tx for tx in day.channel_window(cid, t - DAY, t + 0.001) if tx.t <= t]
     done = [tx for tx in mine if tx.end <= t]
     now = next((tx for tx in mine if tx.end > t), None)
     last = done[-1] if done else None
-    cov = coverage(world, health, cid, t)
+    cov = coverage(inputs, cid, t)
     since_last = t - last.end if last else None
 
     if now:
@@ -163,10 +190,10 @@ def channel_view(inputs: SimInputs, cid: str, t: float) -> dict:
     if now:
         readout = None  # the promoted TX timer takes the zone
     elif cov["state"] == "offline":
-        all_offline = cov["pips"] and all(health.state(p["feed_id"], t)["state"] == "offline" for p in cov["pips"])
+        all_offline = cov["pips"] and all(p["state"] == "offline" for p in cov["pips"])
         readout = "RECONNECTING" if all_offline else "NO FEEDS"
     elif cov["state"] == "stale":
-        readout = stale_readout(health, cov["pips"], t)
+        readout = stale_readout(inputs, cov["pips"], t)
     elif last and since_last < CHANNEL_RANGES["recent-dim"]:
         readout = "LAST " + age_label(since_last)
     else:
@@ -255,15 +282,8 @@ def feed_view(inputs: SimInputs, fid: str, t: float) -> dict:
     telemetry = None
     node = inputs.nodes.feed_status(fid) if inputs.nodes else None
     if node:  # a real node: its own report replaces the replay's state and telemetry
-        age = node.in_state_s if node.state != "ok" else 0.2
-        st = {
-            "state": node.state,
-            "label": node.label,
-            "since": (t - node.in_state_s) % DAY,
-            "episode_start": None,
-            "acked": False,
-            "acked_at": None,
-        }
+        st = feed_state(inputs, fid, t)
+        age = st.pop("age_s")
         telemetry = node.telemetry
     elif feed.driver == "sdrviz-agent" and series:
         telemetry = {k: at(k) for k in ("device_temp_c", "host_cpu_pct", "device_drops")}

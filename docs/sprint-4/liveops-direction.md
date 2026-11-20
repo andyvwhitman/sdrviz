@@ -11,7 +11,8 @@
 - `docs/sprint-3/frequency-direction.md`: the frequency page and its parts (identity, hero, day strip L/M/S, log
   rows, playback). The pane is built from those parts.
 - `docs/sprint-3/c3-review.md`: the phone type floor (13 px data, 15 px row primaries, 44 px targets).
-- `docs/sprint-4/axis-brief.md`: E-2, the spectrograph labels. Its ruler height plugs into §3 here.
+- `docs/sprint-4/axis-labels.md`: E-2, the approved spectrograph label spec (ruler 68 / 76 px, scale strip, right
+  label margin). Its numbers are folded into §2, §3, §4 and §9.3 here (updated 2026-11-20).
 
 Owner choices I made on the owner's behalf are marked **[PICKED]**, each with the alternative in one line.
 
@@ -77,11 +78,12 @@ The hero and the wall span the full width. The tabs sit only over the tile colum
 - Wall: **36% of the space below the hero** (wall + divider + lower). At 1080 tall that is about 317 px, close to
   today's 304, so the first view feels familiar.
 - Pane: **clamp(400 px, 40% of the content width, 880 px)**. At 1920 that is 742 px, close to today's 760 px log.
-- Ruler: the height E-2 settles on. I plan for **56 px** below; if E-2 lands elsewhere, only the waterfall changes.
-- Spectrum: `clamp(48, 25% of (wall − ruler), 144)` px. The waterfall takes the rest of the wall.
+- Ruler: **68 px** (E-2, `axis-labels.md` §2). Scale strip under the waterfall: **14 px**. Right label margin inside
+  the bezel: **56 px**, so the plot is the wall's inner width − 56.
+- Spectrum: `clamp(48, 25% of (wall − ruler − strip), 144)` px. The waterfall takes the rest of the wall.
 
 ### 2.3 At 1280 × 800 (laptop; also iPad landscape at 1024 to 1366)
-Content 1216 × 728. Wall 216 (spectrum 48, ruler 56, waterfall 112 = 18 s). Lower 384. Pane 486. Tiles 706 = 3
+Content 1216 × 728. Wall 216 (spectrum 48, ruler 68, waterfall 86 = 14 s, strip 14). Lower 384. Pane 486. Tiles 706 = 3
 columns of 230 px, standard, 3 rows for an 8-tile bank, the third row scrolled into view.
 
 ```
@@ -90,9 +92,10 @@ columns of 230 px, standard, 3 rows for an 8-tile bank, the third row scrolled i
 ├────────────────────────────────────────────────────────────────────────────────────────────┤
 │ LAST KEY-UP 12M AGO · CH54 · AMTK NEC                                    ⌜FEED · LND-02 ▾⌟ │ 64 hero
 │ ┌──────────────────────────────────────────────────────────────────────────────────────┐   │
-│ │ spectrum ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ REF −10 dBFS · 10 dB/div    │   │ 48
-│ │ ╱54 160.920 … E-2 axis labels …                                                       │   │ 56 ruler
-│ │ waterfall ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ │   │ 112 (18 s)
+│ │ spectrum ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ │ −10    │   │ 48
+│ │ ╱54 160.920 … E-2 axis labels …                                             │╱ margin│   │ 68 ruler
+│ │ waterfall ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ │        │   │ 86 (14 s)
+│ │ 160.260 ……… scale strip ………………………………………………………………………………………………………………… 161.460 │        │   │ 14 strip
 │ └──────────────────────────────────────────────────────────────────────────────────────┘   │
 │ ─────────────────────────────────────── ┄┄┄ ─────────────────────────────────────────────  │ 16 H divider
 │ [NEC CORRIDOR 8][LIVE 0]   DENSITY STD ║ ◂ ▸                    [OPEN FULL PAGE ›]   ×    │
@@ -115,7 +118,7 @@ columns of 230 px, standard, 3 rows for an 8-tile bank, the third row scrolled i
 At a pane width under 560 px the log rows use the two-line anatomy (§6.2).
 
 ### 2.4 At 1920 × 1080 (the design canvas)
-Content 1856 × 1008. Wall 317 (spectrum 65, ruler 56, waterfall 196 = 32 s). Lower 563. Pane 742. Tiles 1090 = 5
+Content 1856 × 1008. Wall 317 (spectrum 59, ruler 68, waterfall 176 = 29 s, strip 14). Lower 563. Pane 742. Tiles 1090 = 5
 columns of 211 px; 4 standard rows visible.
 
 ```
@@ -123,9 +126,10 @@ columns of 211 px; 4 standard rows visible.
 │ header 44                                                                                                │
 │ LAST KEY-UP  12M  AGO · CH54 · AMTK NEC                                              ⌜FEED · LND-02 ▾⌟   │ 64
 │ ┌──────────────────────────────────────────────────────────────────────────────────────────────────────┐ │
-│ │ spectrum 65                                                                                          │ │
-│ │ ruler 56 (E-2)                                                                                       │ │
-│ │ waterfall 196  · 10 S · 20 S · 30 S                                                                  │ │
+│ │ spectrum 59 (dB numerals in the 56 px margin)                                                        │ │
+│ │ ruler 68 (E-2; labels may run into the margin)                                                       │ │
+│ │ waterfall 176  · 10 S · 20 S                                                                         │ │
+│ │ scale strip 14                                                                                       │ │
 │ └──────────────────────────────────────────────────────────────────────────────────────────────────────┘ │
 │ ───────────────────────────────────────────────── ┄┄┄ ────────────────────────────────────────────────── │ 16
 │ [NEC CORRIDOR 8][LIVE 0]           DENSITY STD ║ ◂ ▸                              [OPEN FULL PAGE ›]  ×  │
@@ -144,16 +148,17 @@ columns of 211 px; 4 standard rows visible.
 ```
 
 ### 2.5 At 2560 × 1440 (wall monitor)
-Content 2496 × 1368. Wall 446 (spectrum 98, ruler 56, waterfall 292 = 48 s). Lower 794. Pane 880 (the default
+Content 2496 × 1368. Wall 446 (spectrum 91, ruler 68, waterfall 273 = 45 s, strip 14). Lower 794. Pane 880 (the default
 cap). Tiles 1592 = 7 columns of 220 px; 6 standard rows visible, so a 40-channel bank is one short scroll.
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
 │ header 44 · hero 64                                                                                              │
 │ ┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────┐ │
-│ │ spectrum 98                                                                                                  │ │
-│ │ ruler 56 (E-2: at 27 px per channel every banked label fits on one lane)                                     │ │
-│ │ waterfall 292 (48 s)                                                                                         │ │
+│ │ spectrum 91                                                                                                  │ │
+│ │ ruler 68 (E-2: at 26 px per channel every label is a single)                                                 │ │
+│ │ waterfall 273 (45 s)                                                                                         │ │
+│ │ scale strip 14                                                                                               │ │
 │ └──────────────────────────────────────────────────────────────────────────────────────────────────────────────┘ │
 │ ──────────────────────────────────────────────────────── ┄┄┄ ─────────────────────────────────────────────────── │
 │ [NEC CORRIDOR 8][FREIGHT 15][COMMUTER 8][LIVE 0]        DENSITY STD ║ ◂ ▸                 [OPEN FULL PAGE ›]  ×  │
@@ -177,14 +182,17 @@ Bigger windows add history to the waterfall, rows to the tile area and lines to 
 
 ## 3. The front wall in a box that changes size
 
-The wall is three plots stacked in one bezel. When the horizontal divider moves, **the ruler keeps its height, the
-spectrum takes its clamp, and the waterfall takes the rest.** When the window gets wider, all three stretch: the AAR
-band always spans the full plot width, edge pixel to edge pixel (P8: frequency rises left to right).
+The wall is three plots stacked in one bezel. When the horizontal divider moves, **the ruler and the scale strip keep
+their heights, the spectrum takes its clamp, and the waterfall takes the rest.** When the window gets wider, all of
+them stretch: the AAR band always spans the full plot width, edge pixel to edge pixel (P8: frequency rises left to
+right). The plot is the wall's inner width minus E-2's right label margin (56 px desktop, 66 phone landscape, 0
+portrait).
 
 ### 3.1 Spectrum trace
-- Height `clamp(48, 25% of (wall − ruler), 144)`. Over 144 px a trace is a lot of ink for a single line.
+- Height `clamp(48, 25% of (wall − ruler − strip), 144)`. Over 144 px a trace is a lot of ink for a single line.
 - The vertical scale is fixed (`REF −10 dBFS · 10 dB/div`, 6 divisions). A taller box gives taller divisions, never
-  a different scale. The scale label stays at the bottom right.
+  a different scale. The scale is shown by **dB numerals in the right label margin** (`axis-labels.md` §5); the
+  in-plot REF caption is withdrawn. Phone portrait has no margin and shows it in the layer's status line.
 - Under 64 px tall, drop the minor ticks on the centre axis (they turn into a smear).
 
 ### 3.2 Waterfall
@@ -198,7 +206,10 @@ band always spans the full plot width, edge pixel to edge pixel (P8: frequency r
 - Row 0 is always the newest, at the top (P8).
 
 ### 3.3 Ruler
-- Fixed height, set by E-2. Label density is E-2's problem and its brief says how it must behave at every width.
+- Fixed height, set by E-2: **68 px desktop, 76 px phone**, plus the **scale strip** under the waterfall (14 / 18 px)
+  carrying the MHz numerals. Layout, states and tests: `docs/sprint-4/axis-labels.md`.
+- Column marks (TX slot outline and wash, selection marker, hover cursor) stop at the spectrum's bottom edge and resume
+  at the waterfall's top edge; inside the ruler they only reach their own tick (`axis-labels.md` §8).
 
 ### 3.4 Redraw rules
 - Each plot box has one `ResizeObserver`. It rounds to whole CSS px and sets the canvas backing store to
@@ -241,7 +252,7 @@ no space and the idle screen looks exactly as it does without them.
 ### 4.3 Limits and defaults
 | | Default | Min | Max |
 |---|---|---|---|
-| Wall height (H divider) | 36% of (wall + divider + lower) | spectrum 48 + ruler + waterfall 64 (≈ 168) | everything but 240 px for the lower half |
+| Wall height (H divider) | 36% of (wall + divider + lower) | spectrum 48 + ruler 68 + waterfall 64 + strip 14 (= 194) | everything but 240 px for the lower half |
 | Pane width (V divider) | clamp(400, 40% of content width, 880) | 360 | content width − 24 − 216 (one tile column plus the scrollbar) |
 
 - **Double-click** on a divider resets it to the default. So does `Enter` on a focused divider.
@@ -544,17 +555,20 @@ phone menu lists LIVE OPS as a real destination now, and the `WiderScreen` plate
   │ ‹ LIVE OPS   FEED LND-02   20:13:25  │ 44 bar (the PageShell header hides on this layer)
   │ ┌──────────────────────────────────┐ │
   │ │ spectrum 120                     │ │
-  │ │ ruler (E-2 phone form)           │ │
-  │ │ waterfall, the rest ≈ 560 px     │ │ ≈ 93 s at 6 px/s
+  │ │ ruler 76 (E-2 phone form)        │ │
+  │ │ waterfall, the rest ≈ 522 px     │ │ ≈ 87 s at 6 px/s
+  │ │ scale strip 18                   │ │
   │ │                                  │ │
   │ └──────────────────────────────────┘ │
   │ REF −10 dBFS · 10 dB/div      🔈     │ 28
   └──────────────────────────────────────┘
   ```
-  Plot width 374 (8 px margins: the bezel is the frame). 91 channels at about 4 px each. Only bank channels are
-  labelled, per E-2.
+  Plot width 374 (8 px margins: the bezel is the frame; no right label margin in portrait). 91 channels at about 4 px
+  each. Only bank channels are labelled, per E-2; labels that would cross the right edge (about CH83 and up) become
+  bare bank ticks, named by touch-and-hold.
 - **Landscape (844 × 390):** the bar is 32 px; no status line (the corner mute floats at the bottom right). Spectrum
-  72, ruler E-2's, waterfall the rest (about 230 px, 38 s). Respect `env(safe-area-inset-left/right)` for the notch.
+  **56**, ruler 76, waterfall the rest (about 208 px, 35 s), scale strip 18. Respect `env(safe-area-inset-left/right)`
+  for the notch: the 66 px right label margin sits inside the safe area, so the plot is about 726 px on an 844 phone.
 - The layer follows the device's rotation. No orientation lock (iOS does not allow it outside fullscreen).
 - The keyed channel's TX slot outline and wash show as on desktop (P6). Selected channel marked per E-2.
 - No pinch zoom this sprint (LATER).

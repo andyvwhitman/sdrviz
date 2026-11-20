@@ -24,7 +24,7 @@
 <div class="fr-hero">
   <div class="fr-big" aria-label="Enabled {counts && columns.length ? `${counts.enabled} of ${counts.total}` : 'unknown'}">
     <span class="fr-k">ENABLED</span>
-    <span class="fr-num">{#if counts}{columns.length ? counts.enabled : "—"}<span class="fr-of"> / {counts.total}</span>{:else}{BLANK}{/if}</span>
+    <span class="fr-num">{#if counts}{columns.length ? counts.enabled : "—"}<span class="fr-of">&nbsp;/&nbsp;{counts.total}</span>{:else}{BLANK}{/if}</span>
   </div>
   <div class="fr-stack">
     <span class="fr-line1">RECORDED + TRANSCRIBED</span>

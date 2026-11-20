@@ -59,5 +59,5 @@
 </div>
 
 <style>
-  .fl { position: fixed; top: var(--header-h); bottom: var(--status-h); left: 0; right: 0; z-index: 12; background: var(--bg-void); }
+  .fl { position: fixed; top: var(--header-h); bottom: 0; left: 0; right: 0; z-index: 12; background: var(--bg-void); }
 </style>

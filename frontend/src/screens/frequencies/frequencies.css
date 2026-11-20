@@ -37,7 +37,7 @@
 .fr-empty > :global(*) { pointer-events: auto; }
 .fr-table {
   --fr-cols: 24px 88px 56px minmax(120px, 1.2fr) 140px 120px minmax(0, 1fr) repeat(var(--nodes, 0), 72px) 32px;
-  flex: 1; min-height: 0; min-width: max-content; display: flex; flex-direction: column;
+  flex: 1; min-height: 0; min-width: calc(640px + var(--nodes, 0) * 80px); display: flex; flex-direction: column;
 }
 .fr-row { display: grid; grid-template-columns: var(--fr-cols); column-gap: 8px; align-items: center; border-bottom: 1px solid var(--grid); padding: 0 4px; }
 .fr-head { flex: none; height: 32px; border-bottom-color: var(--line-faint); }

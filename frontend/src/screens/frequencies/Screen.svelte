@@ -98,6 +98,10 @@
     document.getElementById(`fr-row-${id}`)?.scrollIntoView({ block: "nearest" });
   }
 
+  // the row being edited stays in view at the table's left
+  $effect(() => {
+    if (editId && frequencies.loaded) void tick().then(() => document.getElementById(`fr-row-${editId}`)?.scrollIntoView({ block: "nearest" }));
+  });
   // an `?edit=` that names nothing (a deleted frequency, an old link) is dropped once the table is known
   $effect(() => {
     if (editId && frequencies.loaded && !frequencies.byId(editId)) openEditor(null);

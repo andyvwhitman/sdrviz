@@ -278,6 +278,10 @@
     const target = event.target as HTMLElement;
     if (target.closest("input, textarea, select, [contenteditable]")) return;
     if (event.key === "Escape") return escapeKey(event);
+    if (event.key === "[" || event.key === "]") {
+      event.preventDefault();
+      return stepSelection(event.key === "[" ? -1 : 1);
+    }
     if (!/^[0-9]$/.test(event.key)) return;
     const now = performance.now();
     const pair = now - lastDigit.at < DIGIT_PAIR_MS ? Number(lastDigit.key + event.key) : NaN;
@@ -299,6 +303,64 @@
     event.preventDefault();
     if (!pane?.escape()) clearSelection();
   }
+
+  /* ---- tile density: the chip's choice, or compact when the tile area is shorter than two standard rows */
+  let tilesH = $state(0);
+  const AUTO_COMPACT_BELOW_PX = 232;
+  const autoCompact = $derived(tilesH > 0 && tilesH < AUTO_COMPACT_BELOW_PX);
+  const density = $derived<"std" | "cmp">(liveOpsPrefs.density === "cmp" || autoCompact ? "cmp" : "std");
+  const tileVariant = $derived(density === "cmp" ? "compact" : "standard");
+  const densityChip = $derived({
+    shown: density,
+    auto: autoCompact && liveOpsPrefs.density === "std",
+    ontoggle: () => {
+      liveOpsPrefs.density = liveOpsPrefs.density === "std" ? "cmp" : "std";
+      liveOpsPrefs.save();
+    },
+  });
+
+  /* ---- keyed channels out of view get an edge chip; the tile area never scrolls by itself on a key-up */
+  let keyedAbove = $state<string[]>([]);
+  let keyedBelow = $state<string[]>([]);
+  const tileEl = (id: string): HTMLElement | undefined => tilesBox?.querySelectorAll<HTMLElement>(".tile")[tiles.findIndex((c) => c.id === id)];
+  function measureEdges(): void {
+    if (!tilesBox || viewport.handset) return;
+    const box = tilesBox.getBoundingClientRect();
+    const above: string[] = [];
+    const below: string[] = [];
+    for (const c of tiles.filter((t) => t.tx)) {
+      const rect = tileEl(c.id)?.getBoundingClientRect();
+      if (!rect) continue;
+      if (rect.bottom <= box.top + 4) above.push(c.id);
+      else if (rect.top >= box.bottom - 4) below.push(c.id);
+    }
+    keyedAbove = above;
+    keyedBelow = below;
+  }
+  const keyedKey = $derived(tiles.filter((c) => c.tx).map((c) => c.id).join());
+  $effect(() => {
+    void keyedKey;
+    void tilesH;
+    void density;
+    void tiles.length;
+    void frameW;
+    measureEdges();
+  });
+  const showTile = (id: string): void => tileEl(id)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+
+  // the selected tile scrolls into view (a digit, [ ], the hero); a bank switch starts the area at the top
+  let lastBank = "";
+  $effect(() => {
+    const id = selectedId;
+    const bankId = bank?.id ?? "";
+    void tiles.length;
+    if (viewport.handset || !tilesBox) return;
+    const changed = untrack(() => lastBank) !== bankId;
+    lastBank = bankId;
+    const at = id ? tiles.findIndex((c) => c.id === id) : -1;
+    if (at >= 0) tilesBox.querySelectorAll(".tile")[at]?.scrollIntoView({ block: "nearest" });
+    else if (changed) tilesBox.scrollTop = 0;
+  });
 
   /* ---- the two dividers. The grid is CSS and resolves the saved fractions itself; the sizes measured here only feed a
      drag, a key step, the readout and the ARIA values. */
@@ -340,7 +402,7 @@
       <div class="hs__top"><div class="hs__hero"><span class="hs__k">LAST KEY-UP</span><span class="hs__age">{fmt.BLANK}</span></div></div>
     {:else}
       <div class="hs__top">
-        <div class="hs__tabs"><BankTabs banks={bankList} active={bank.id} tileCount={tiles.length} variant="standard" readout={false} /></div>
+        <div class="hs__tabs"><BankTabs banks={bankList} active={bank.id} /></div>
         <div class="hs__hero">
           {#if hero.mode === "keyed"}
             <button class="hs__keyed" type="button" onclick={() => selectChannel(hero.id)}>
@@ -412,7 +474,7 @@
       </div>
     {:else}
       <div class="lo__hero">
-        <HeroStrip {hero} feeds={snapshot.feeds} {displayed} faults={snapshot.faults} {offBank} {elsewhere} onshowfeed={showFeed} oninspectfeed={inspectFeedId} liveBank={bank.id === "bank-live"} />
+        <HeroStrip {hero} onselect={selectChannel} feeds={snapshot.feeds} {displayed} faults={snapshot.faults} {offBank} {elsewhere} onshowfeed={showFeed} oninspectfeed={inspectFeedId} liveBank={bank.id === "bank-live"} />
       </div>
 
       <div class="lo__wall">
@@ -436,11 +498,18 @@
       <div class="lo__lower">
         <div class="lo__bank">
           <div class="lo__tabs">
-            <BankTabs banks={bankList} active={bank.id} tileCount={tiles.length} variant="standard" />
+            <BankTabs banks={bankList} active={bank.id} density={densityChip} />
           </div>
 
+          <div class="lo__tilebox">
+          {#if keyedAbove.length}
+            <button class="lo-edge lo-edge--above" type="button" onclick={() => showTile(keyedAbove[0])}><PositionGlyph state="tx" />▲ {keyedAbove.length === 1 ? tiles.find((c) => c.id === keyedAbove[0])?.aar : `${keyedAbove.length}`} KEYED</button>
+          {/if}
+          {#if keyedBelow.length}
+            <button class="lo-edge lo-edge--below" type="button" onclick={() => showTile(keyedBelow[0])}><PositionGlyph state="tx" />▼ {keyedBelow.length === 1 ? tiles.find((c) => c.id === keyedBelow[0])?.aar : `${keyedBelow.length}`} KEYED</button>
+          {/if}
           <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-          <div bind:this={tilesBox} class="lo__tiles" class:has-solo={prefs.solo.size > 0} role="group" aria-label="Channels" onkeydown={tileKeys} ondblclick={tileDoubleClick} onfocusout={(e) => !(e.relatedTarget as HTMLElement | null)?.closest(".tile") && (targetedId = null)}>
+          <div bind:this={tilesBox} bind:clientHeight={tilesH} onscroll={measureEdges} class="lo__tiles" class:has-solo={prefs.solo.size > 0} role="group" aria-label="Channels" onkeydown={tileKeys} ondblclick={tileDoubleClick} onfocusout={(e) => !(e.relatedTarget as HTMLElement | null)?.closest(".tile") && (targetedId = null)}>
             {#if tiles.length === 0}
               <div class="lo-empty br">
                 {#if bank.id === "bank-live"}
@@ -454,10 +523,11 @@
             {:else}
               <TileGrid>
                 {#each tiles as c, i (c.id)}
-                  {@render tileItem(c, i, "standard")}
+                  {@render tileItem(c, i, tileVariant)}
                 {/each}
               </TileGrid>
             {/if}
+          </div>
           </div>
         </div>
 

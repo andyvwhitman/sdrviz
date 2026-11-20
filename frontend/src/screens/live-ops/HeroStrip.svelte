@@ -19,12 +19,14 @@
     faults: readonly Fault[];
     offBank: string | null;
     elsewhere: string | null;
+    /** a keyed channel's name was chosen: select it into the pane */
+    onselect?: (frequencyId: string) => void;
     onshowfeed: (feedId: string) => void;
     oninspectfeed: (feedId: string) => void;
     /** the live bank is the one on the wall: its empty state is told by the tile area, so the title is short */
     liveBank?: boolean;
   }
-  let { hero, feeds, displayed, faults, offBank, elsewhere, onshowfeed, oninspectfeed, liveBank = false }: Props = $props();
+  let { hero, feeds, displayed, faults, offBank, elsewhere, onselect, onshowfeed, oninspectfeed, liveBank = false }: Props = $props();
 
   const fault = $derived(faults.find((f) => f.object === displayed.id));
   const selectorKind = $derived<ChipKind>(fault ? (fault.acked ? "acked" : "fault") : displayed.state === "stale" ? "degraded" : "active");
@@ -41,10 +43,14 @@
 
 <div class="hero lo-hero">
   {#if hero.mode === "keyed"}
-    <span class="hero__big is-tx">{hero.aar4}</span>
-    <span class="hero__stack"><span class="a">{hero.label}</span><span class="b">KEYED · VIA {hero.via}</span></span>
+    <button class="lo-herosel" type="button" title="Select {hero.label}" onclick={() => onselect?.(hero.id)}>
+      <span class="hero__big is-tx">{hero.aar4}</span>
+      <span class="hero__stack"><span class="a">{hero.label}</span><span class="b">KEYED · VIA {hero.via}</span></span>
+    </button>
     <span class="hero__big is-tx">{fmt.dur(hero.elapsedS)}</span>
-    {#if hero.othersLabel}<span class="hero__list">{hero.othersLabel}</span>{/if}
+    {#if hero.others.length}
+      <span class="hero__list">+{hero.others.length}{#each hero.others as other (other.id)}{" · "}<button class="lo-herolink" type="button" title="Select {other.aar4}" onclick={() => onselect?.(other.id)}>{other.aar4}</button>{/each}</span>
+    {/if}
   {:else if hero.mode === "idle"}
     <span class="hero__text c-ink-2">LAST KEY-UP</span>
     <span class="hero__big is-2">{fmt.age(hero.ageS)}</span>

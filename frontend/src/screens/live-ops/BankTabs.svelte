@@ -1,5 +1,5 @@
 <script lang="ts">
-  /** Bank tabs (spec 5.24) and the tile-count readout. A click activates the bank (POST /banks/{id}/activate). */
+  /** Bank tabs (spec 5.24) and, on the desktop, the density chip. A click activates the bank (POST /banks/{id}/activate). */
   import { api } from "$lib/api/client";
   import { session } from "$lib/stores/session.svelte";
   import Tabs from "$lib/components/Tabs.svelte";
@@ -8,12 +8,10 @@
   interface Props {
     banks: readonly Bank[];
     active: string;
-    tileCount: number;
-    variant: string;
-    /** the tile-count readout at the right of the tabs (desktop) */
-    readout?: boolean;
+    /** the tile density chip at the right of the tabs (desktop); omit on the phone */
+    density?: { shown: "std" | "cmp"; auto: boolean; ontoggle: () => void };
   }
-  let { banks, active, tileCount, variant, readout = true }: Props = $props();
+  let { banks, active, density }: Props = $props();
 
   const items = $derived(banks.map((b) => ({ id: b.id, name: b.name, n: b.frequency_ids.length })));
   const activate = (id: string) => {
@@ -23,5 +21,9 @@
 
 <div class="lo-tabs">
   <Tabs {items} selected={active} onselect={session.isAdmin ? activate : undefined} />
-  {#if readout}<span class="t-micro"><span class="mono">{tileCount}</span> TILES · {variant.toUpperCase()}</span>{/if}
+  {#if density}
+    <button class="chip lo-density" class:is-auto={density.auto} data-chip="nominal" type="button" title="Tile density: standard or compact" onclick={density.ontoggle}>
+      DENSITY {density.shown.toUpperCase()}{density.auto ? " · AUTO" : ""}
+    </button>
+  {/if}
 </div>

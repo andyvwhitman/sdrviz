@@ -75,7 +75,8 @@
     {@render children()}
   </main>
 
-  {#if viewport.phone}<PhoneOnAir />{/if}
+  <!-- Live Ops has its own hero line for this -->
+  {#if viewport.phone && route.id !== "live-ops"}<PhoneOnAir />{/if}
 
   <footer class="pg__status">
     <!-- whole fields drop off the right when the line is too narrow: the wrapped ones are clipped, never cut mid-word -->
@@ -113,6 +114,8 @@
     display: flex; align-items: center; gap: 16px; min-height: var(--status-h); padding: 6px 16px;
     border-top: 1px solid var(--grid); font: 400 var(--fs-11)/1.2 var(--font-data); color: var(--ink-2);
   }
+  /* Live Ops keeps its status line (and the corner mute) on screen under the list and its full-screen layers */
+  .pg__main[data-route="live-ops"] ~ .pg__status { position: sticky; bottom: 0; z-index: 14; background: var(--bg-void); }
   .pg__status-text { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; column-gap: 0.6em; height: 1.2em; overflow: hidden; }
   .pg__status-text span { white-space: nowrap; }
   .pg__status-tb { display: none; white-space: nowrap; color: var(--ink-3); }

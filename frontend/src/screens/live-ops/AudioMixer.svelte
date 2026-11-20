@@ -74,11 +74,14 @@
   .au__v { flex: none; min-width: 3ch; text-align: right; font: 400 var(--fs-12)/1 var(--font-data); color: var(--ink-2); }
   .au__meter { flex: none; display: inline-flex; }
   .au__row :global(.au__levers) { flex: none; }
+  /* on a phone the levers are 44 px targets */
+  .au__row :global(.lever) { width: var(--lever, 24px); height: var(--lever, 24px); }
+  .au__row :global(.lever::before) { left: calc(50% - 2px); }
   .au__note { margin: 0; padding-bottom: 6px; font: 500 var(--fs-11)/1.2 var(--font-label); letter-spacing: var(--track-label); color: var(--ink-3); }
   .au__n { font-family: var(--font-data); }
 
   /* volume slider: a 1 px rail in line-faint, the filled part in line, an 8 x 14 thumb in ink */
-  .au__slider { -webkit-appearance: none; appearance: none; flex: 1; min-width: 80px; max-width: 320px; height: 24px; margin: 0; background: transparent; cursor: pointer; }
+  .au__slider { -webkit-appearance: none; appearance: none; flex: 1; min-width: 80px; max-width: 320px; height: var(--pane-row-h, 32px); margin: 0; background: transparent; cursor: pointer; }
   .au__slider::-webkit-slider-runnable-track { height: 1px; background: linear-gradient(90deg, var(--line) var(--fill, 0%), var(--line-faint) var(--fill, 0%)); }
   .au__slider::-moz-range-track { height: 1px; background: var(--line-faint); }
   .au__slider::-moz-range-progress { height: 1px; background: var(--line); }

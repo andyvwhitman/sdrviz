@@ -10,8 +10,10 @@
     active: string;
     tileCount: number;
     variant: string;
+    /** the tile-count readout at the right of the tabs (desktop) */
+    readout?: boolean;
   }
-  let { banks, active, tileCount, variant }: Props = $props();
+  let { banks, active, tileCount, variant, readout = true }: Props = $props();
 
   const items = $derived(banks.map((b) => ({ id: b.id, name: b.name, n: b.frequency_ids.length })));
   const activate = (id: string) => {
@@ -21,5 +23,5 @@
 
 <div class="lo-tabs">
   <Tabs {items} selected={active} onselect={session.isAdmin ? activate : undefined} />
-  <span class="t-micro"><span class="mono">{tileCount}</span> TILES · {variant.toUpperCase()}</span>
+  {#if readout}<span class="t-micro"><span class="mono">{tileCount}</span> TILES · {variant.toUpperCase()}</span>{/if}
 </div>

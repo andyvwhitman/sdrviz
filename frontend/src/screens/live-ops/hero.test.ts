@@ -15,7 +15,7 @@ describe("heroFor", () => {
     const active = [row("t2", "b", "0808", 1010, ["feed-lnd"]), row("t1", "a", "5454", 1000, ["feed-bwi"])];
     const channels = [channel("a", "CH54", null, { via: "BWI-03" } as Channel["tx"]), channel("b", "CH08", null)];
     const hero = heroFor({ channels, active, bankIds: bank, now: 1007.4 });
-    expect(hero).toMatchObject({ mode: "keyed", aar4: "5454", via: "BWI-03", othersLabel: "+1 · 0808" });
+    expect(hero).toMatchObject({ mode: "keyed", id: "a", aar4: "5454", via: "BWI-03", othersLabel: "+1 · 0808", others: [{ id: "b", aar4: "0808" }] });
     expect(hero.mode === "keyed" && hero.elapsedS).toBeCloseTo(7.4);
   });
 

@@ -8,7 +8,18 @@ import { cyclicAge } from "$lib/time";
 import type { Channel, TxRow } from "$lib/types/live";
 
 export type Hero =
-  | { mode: "keyed"; aar4: string; label: string; via: string; elapsedS: number; othersLabel: string | null }
+  | {
+      mode: "keyed";
+      /** the frequency id, so the name can select it */
+      id: string;
+      aar4: string;
+      label: string;
+      via: string;
+      elapsedS: number;
+      othersLabel: string | null;
+      /** the other keyed channels of the bank, for the "+2 · 0808 · 2828" items */
+      others: { id: string; aar4: string }[];
+    }
   | { mode: "idle"; aar: string; label: string; ageS: number }
   | { mode: "empty" }
   | { mode: "none" };
@@ -32,10 +43,12 @@ export function heroFor({ channels, active, bankIds, now }: HeroInput): Hero {
     const channel = channels.find((c) => c.id === first.frequency_id);
     return {
       mode: "keyed",
+      id: first.frequency_id,
       aar4: first.aar4,
       label: first.label,
       via: channel?.tx?.via ?? feedName(first.feed_id),
       elapsedS: Math.max(0, cyclicAge(now, first.t_offset_s)),
+      others: others.map((row) => ({ id: row.frequency_id, aar4: row.aar4 })),
       othersLabel: others.length ? `+${others.length} · ${others.map((row) => row.aar4).join(" · ")}` : null,
     };
   }

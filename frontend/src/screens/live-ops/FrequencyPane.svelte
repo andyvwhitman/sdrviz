@@ -37,8 +37,11 @@
     onstep?: (direction: -1 | 1) => void;
     /** column: clear the selection */
     onclose?: () => void;
+    /** layer: the bank's name for the back button, and what it does */
+    backLabel?: string;
+    onback?: () => void;
   }
-  let { frequencyId, variant = "column", onstep, onclose }: Props = $props();
+  let { frequencyId, variant = "column", onstep, onclose, backLabel = "", onback }: Props = $props();
 
   const CONTINUOUS_KEY = "sdrviz.frequency.continuous";
   const GAP_MS = 400;
@@ -209,7 +212,9 @@
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <div class="pane" class:pane--layer={variant === "layer"} bind:clientWidth={width} role="region" aria-label="Frequency" onkeydown={keys}>
   <div class="pane__bar">
-    {#if variant === "column"}
+    {#if variant === "layer"}
+      <button class="pane__back" type="button" onclick={onback}>‹ {backLabel}</button>
+    {:else}
       <span class="pane__steps">
         <button type="button" aria-label="Previous frequency" onclick={() => onstep?.(-1)}>◂</button>
         <button type="button" aria-label="Next frequency" onclick={() => onstep?.(1)}>▸</button>
@@ -245,7 +250,7 @@
           <span class="pane__lid-k">▸ TODAY · NO RECORDINGS YET</span>
         {:else if day}
           <span class="pane__lid-k">▸ TODAY</span>
-          <MiniStrip buckets={day.buckets} recordingSince={day.recording_since} {nowMs} {keyed} lastS={lastHeardMs === null ? null : (nowMs - lastHeardMs) / 1000} label={info.label} />
+          <MiniStrip buckets={day.buckets} recordingSince={day.recording_since} {nowMs} {keyed} lastS={lastHeardMs === null || width < 440 ? null : (nowMs - lastHeardMs) / 1000} label={info.label} />
         {/if}
       </div>
 
@@ -275,13 +280,17 @@
 
 <style>
   .pane { container: pane / inline-size; position: absolute; inset: 0; display: flex; flex-direction: column; --pane-row-h: 32px; }
-  .pane--layer { --pane-row-h: 44px; --fq-line-h: 44px; }
+  .pane--layer { --pane-row-h: 44px; --fq-line-h: 44px; --lever: 44px; }
   .pane__bar { flex: none; height: 32px; display: flex; align-items: center; gap: 8px; padding: 0 8px 0 12px; border-bottom: 1px solid var(--grid); }
   .pane--layer .pane__bar { height: 44px; }
   .pane__grow { flex: 1; }
   .pane__steps { display: inline-flex; }
   .pane__steps button, .pane__x { width: 32px; height: 32px; font: 400 var(--fs-15)/1 var(--font-label); color: var(--ink-2); }
   .pane__steps button:hover, .pane__x:hover { color: var(--ink); }
+  .pane__back { height: 44px; min-width: 44px; padding: 0 8px 0 0; font: 500 var(--fs-13)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pane__back:hover { color: var(--ink); }
+  .pane--layer .pane__open { height: 44px; display: inline-flex; align-items: center; }
+  .pane--layer :global(.lr__play) { height: 44px; }
   .pane__open { height: 24px; font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); border: 0; }
   .pane__scroll { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; scrollbar-width: thin; scrollbar-color: var(--line-faint) transparent; }
 

@@ -10,7 +10,8 @@
   import EmptyState from "$lib/components/EmptyState.svelte";
   import TileGrid from "$lib/components/TileGrid.svelte";
   import Waveform from "$lib/components/Waveform.svelte";
-  import { BLANK } from "$lib/hud/fmt";
+  import * as fmt from "$lib/hud/fmt";
+  import PositionGlyph from "$lib/components/PositionGlyph.svelte";
   import { feedName } from "$lib/hud/roles";
   import { identityFrom, sharedFrequencySuffix, tileInputFrom, type TileInput } from "$lib/hud/tile";
     import { router } from "$lib/router.svelte";
@@ -89,7 +90,7 @@
   const bankChannelNumbers = $derived(tiles.map((c) => Number(c.aar.replace(/\D/g, ""))));
 
   $effect(() => {
-    shell.scope = bank ? ["BANK", bank.name.toUpperCase()] : ["BANK", BLANK];
+    shell.scope = bank ? ["BANK", bank.name.toUpperCase()] : ["BANK", fmt.BLANK];
   });
 
   /* ---- hero */
@@ -109,8 +110,35 @@
   /** Select a frequency into the pane. Selecting the selected one again does nothing: a mis-click must not empty the pane. */
   function selectChannel(id: string): void {
     if (selectedId === id && !inspectId) return;
-    router.setQuery({ select: id, inspect: null });
+    if (viewport.handset) {
+      // a tap opens the pane as a layer and pushes a history entry, so the system Back closes it
+      pushedSelect = true;
+      router.go(`/live?select=${encodeURIComponent(id)}`);
+    } else {
+      router.setQuery({ select: id, inspect: null });
+    }
   }
+  /** the open layer was opened by a push, so Back can pop it */
+  let pushedSelect = false;
+  $effect(() => {
+    if (!selectedId) pushedSelect = false;
+  });
+  /** The layer's back button: pop the entry the tap pushed, or (after a reload straight into a layer) clear `?select=`. */
+  function back(): void {
+    if (pushedSelect) history.back();
+    else clearSelection();
+  }
+  // while a layer covers the list the document does not scroll underneath, and the list keeps its place
+  $effect(() => {
+    const locked = viewport.handset && !!selectedId;
+    document.documentElement.classList.toggle("lo-locked", locked);
+    return () => document.documentElement.classList.remove("lo-locked");
+  });
+  // the handset status line reads the bank
+  $effect(() => {
+    if (!viewport.handset) return;
+    shell.statusFallback = bank ? `BANK ${bank.name.toUpperCase()} · ${tiles.length} CH` : undefined;
+  });
   function clearSelection(): void {
     liveOpsPrefs.selected = null;
     liveOpsPrefs.save();
@@ -133,6 +161,7 @@
   $effect(() => {
     if (restored || !snapshot) return;
     restored = true;
+    if (viewport.handset) return; // a phone opens on the list, not on a layer
     const last = liveOpsPrefs.selected;
     const known = last && (channelById.has(last) || snapshot.banks.some((b) => b.frequency_ids.includes(last)));
     if (known && !untrack(() => router.query("select")) && !untrack(() => router.query("inspect"))) router.setQuery({ select: last });
@@ -274,6 +303,69 @@
 
 <svelte:window onkeydown={globalKeys} />
 
+{#snippet tileItem(c: Channel, i: number, variant: "standard" | "compact")}
+  {#snippet wave()}
+    <Waveform env={waveOf(c)} width={WAVE_WIDTH} height={16} live />
+  {/snippet}
+  <ChannelTile
+    {variant}
+    identity={identityFrom(c, sharedFrequencySuffix(c, snapshot!.channels, feedName))}
+    state={tileState(c)}
+    wave={(c.tx || motion.held.has(c.id)) && variant === "standard" ? wave : undefined}
+    onselect={() => selectChannel(c.id)}
+    onlever={(key) => leverPressed(c.id, key)}
+    index={i + 1}
+  />
+{/snippet}
+
+{#if viewport.handset}
+  <div class="hs" class:is-down={linkState === "no-link"} data-link={linkState ?? undefined}>
+    {#if !snapshot || !bank || blank}
+      <div class="hs__top"><div class="hs__hero"><span class="hs__k">LAST KEY-UP</span><span class="hs__age">{fmt.BLANK}</span></div></div>
+    {:else}
+      <div class="hs__top">
+        <div class="hs__tabs"><BankTabs banks={bankList} active={bank.id} tileCount={tiles.length} variant="standard" readout={false} /></div>
+        <div class="hs__hero">
+          {#if hero.mode === "keyed"}
+            <button class="hs__keyed" type="button" onclick={() => selectChannel(hero.id)}>
+              <PositionGlyph state="tx" /><span class="hs__aar">{hero.aar4}</span><span class="hs__name">{hero.label}</span><span class="hs__timer">{fmt.dur(hero.elapsedS)}</span>
+            </button>
+            {#if hero.others.length}<span class="hs__more">+{hero.others.length}</span>{/if}
+          {:else if hero.mode === "idle"}
+            <span class="hs__k">LAST KEY-UP</span><span class="hs__age">{fmt.age(hero.ageS)}</span><span class="hs__k">· {hero.aar}</span>
+          {:else}
+            <span class="hs__k">{hero.mode === "empty" ? "NO CHANNELS IN THIS BANK" : "NO KEY-UPS YET"}</span>
+          {/if}
+          <span class="hs__grow"></span>
+        </div>
+      </div>
+
+      <div bind:this={tilesBox} class="hs__list" class:has-solo={prefs.solo.size > 0} role="group" aria-label="Channels" inert={!!selectedId}>
+        {#if tiles.length === 0}
+          <div class="hs__empty">
+            {#if bank.id === "bank-live"}
+              <EmptyState title="LIVE BANK EMPTY" detail="Open Live Ops on a wider screen and click a channel on the waterfall." />
+            {:else}
+              <EmptyState title="BANK EMPTY" detail="Add channels in Feeds & Banks." />
+            {/if}
+          </div>
+        {:else}
+          <TileGrid>
+            {#each tiles as c, i (c.id)}
+              {@render tileItem(c, i, "compact")}
+            {/each}
+          </TileGrid>
+        {/if}
+      </div>
+
+      {#if selectedId}
+        <div class="hs__layer">
+          <FrequencyPane bind:this={pane} variant="layer" frequencyId={selectedId} backLabel={bank.name.toUpperCase()} onback={back} onclose={clearSelection} />
+        </div>
+      {/if}
+    {/if}
+  </div>
+{:else}
 <div class="lo-frame" data-link={linkState ?? undefined} bind:clientWidth={frameW} bind:clientHeight={frameH}>
   <div
     class="lo"
@@ -285,7 +377,7 @@
     {#if blank || !snapshot || !bank || !displayed}
       <!-- nothing has arrived yet: the same boxes, empty -->
       <div class="lo__hero hero lo-hero">
-        <span class="hero__text c-ink-2">LAST KEY-UP</span><span class="hero__big is-2">{BLANK}</span>
+        <span class="hero__text c-ink-2">LAST KEY-UP</span><span class="hero__big is-2">{fmt.BLANK}</span>
       </div>
       <div class="lo__wall lo-wall lo-wall--blank">
         <div class="lo-cell lo-cell--spectrum"><div class="lo-plot"><span class="lo-bezel"></span></div></div>
@@ -293,7 +385,7 @@
         <div class="lo-cell lo-cell--fall"><div class="lo-plot lo-fall"><span class="lo-bezel"></span></div></div>
       </div>
       <div class="lo__lower">
-        <div class="lo__bank br"><div class="lo-blank"><span class="t-panel">CHANNELS</span><span class="mono">{BLANK}</span></div></div>
+        <div class="lo__bank br"><div class="lo-blank"><span class="t-panel">CHANNELS</span><span class="mono">{fmt.BLANK}</span></div></div>
         <div class="lo__gutter"></div>
         <div class="lo__pane br"></div>
       </div>
@@ -341,18 +433,7 @@
             {:else}
               <TileGrid>
                 {#each tiles as c, i (c.id)}
-                  {#snippet wave()}
-                    <Waveform env={waveOf(c)} width={WAVE_WIDTH} height={16} live />
-                  {/snippet}
-                  <ChannelTile
-                    variant="standard"
-                    identity={identityFrom(c, sharedFrequencySuffix(c, snapshot.channels, feedName))}
-                    state={tileState(c)}
-                    wave={c.tx || motion.held.has(c.id) ? wave : undefined}
-                    onselect={() => selectChannel(c.id)}
-                    onlever={(key) => leverPressed(c.id, key)}
-                    index={i + 1}
-                  />
+                  {@render tileItem(c, i, "standard")}
                 {/each}
               </TileGrid>
             {/if}
@@ -395,3 +476,4 @@
     {/if}
   </div>
 </div>
+{/if}

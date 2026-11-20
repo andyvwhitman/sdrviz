@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
-import { layoutFor, navFor, routeFor, type Route } from "./routes";
+import { isPhoneFor, layoutFor, navFor, routeFor, type Route } from "./routes";
 
 const route = (path: string): Route => routeFor(path)!;
 
@@ -16,8 +16,16 @@ describe("layoutFor", () => {
     for (const path of ["/login", "/map", "/spot"]) expect(layoutFor(route(path), true)).toBe("page");
   });
 
-  it("gives a phone the wider-screen plate for Live Ops, Feeds & Banks and Settings", () => {
-    for (const path of ["/live", "/feeds", "/settings"]) expect(layoutFor(route(path), true)).toBe("plate");
+  it("gives a phone the wider-screen plate for Feeds & Banks and Settings, and a page for Live Ops", () => {
+    for (const path of ["/feeds", "/settings"]) expect(layoutFor(route(path), true)).toBe("plate");
+    expect(layoutFor(route("/live"), true)).toBe("page");
+  });
+
+  it("tests Live Ops for a handset by width or height, and every other route by width", () => {
+    const landscape = { phone: false, handset: true };
+    expect(isPhoneFor(route("/live"), landscape)).toBe(true);
+    expect(isPhoneFor(route("/feeds"), landscape)).toBe(false);
+    expect(isPhoneFor(route("/live"), { phone: false, handset: false })).toBe(false);
   });
 });
 

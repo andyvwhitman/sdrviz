@@ -133,3 +133,51 @@
 /* while a divider is dragged the cursor holds wherever the pointer goes, and nothing selects */
 body.lo-resizing-col, body.lo-resizing-col * { cursor: col-resize !important; user-select: none !important; }
 body.lo-resizing-row, body.lo-resizing-row * { cursor: row-resize !important; user-select: none !important; }
+
+/* ==========================================================================
+   Handset layout (direction 9): under 768 px wide or 560 px tall. The document scrolls; one sticky block holds the
+   bank tabs and the hero line; the bank is a list of 64 px tile rows; a tap opens the pane as a full-screen layer.
+   ========================================================================== */
+.hs { min-height: 100%; }
+.hs__top { position: sticky; top: var(--header-h); z-index: 8; background: var(--bg-void); border-bottom: 1px solid var(--grid); }
+.hs__tabs { height: 44px; padding: 0 16px; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; display: flex; align-items: flex-end; }
+.hs__tabs::-webkit-scrollbar { display: none; }
+.hs__tabs .lo-tabs { width: max-content; }
+.hs__tabs .tabs { --tabs-h: 44px; flex: none; }
+.hs__tabs .tab { height: 44px; flex: none; white-space: nowrap; }
+.hs__hero { height: 44px; display: flex; align-items: center; gap: 10px; padding: 0 16px; white-space: nowrap; min-width: 0; }
+.hs__k { font: 500 var(--fs-13)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink-2); }
+.hs__age { font: 500 var(--fs-18)/1 var(--font-data); color: var(--ink-2); }
+.hs__keyed { display: inline-flex; align-items: center; gap: 8px; height: 44px; min-width: 0; color: var(--state-tx); font: 500 var(--fs-18)/1 var(--font-data); }
+.hs__name { overflow: hidden; text-overflow: ellipsis; font: 600 var(--fs-15)/1 var(--font-label); letter-spacing: 0.08em; text-transform: uppercase; }
+.hs__more { font: 500 var(--fs-15)/1 var(--font-data); color: var(--state-tx); }
+.hs__grow { flex: 1; }
+.hs__list { padding: 8px 16px 16px; }
+.hs__empty { position: relative; min-height: 160px; }
+.hs .tile-grid { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 8px; }
+
+/* the compact tile as a 64 px row, styled as on the desktop: glyph, index, label and the status readout on row 1,
+   the AAR and MHz on row 2, the three M21 levers as 44 x 64 cells at the right */
+.hs .tile { zoom: 1; --fs-11: 13px; --fs-12: 13px; --fs-13: 14px; }
+.hs .tile.tile--compact { width: 100%; height: 64px; }
+.hs .tile.tile--compact .tile__glyph { top: 11px; }
+.hs .tile.tile--compact .tile__index { top: 12px; }
+.hs .tile.tile--compact .tile__label { top: 12px; font-size: var(--fs-15); max-width: calc(100% - 210px); }
+.hs .tile.tile--compact .tile__ember { top: 29px; }
+.hs .tile.tile--compact .tile__status { top: 12px; right: 140px; }
+.hs .tile.tile--compact .tile__aar { top: 36px; }
+.hs .tile.tile--compact .tile__mhz { left: 84px; top: 40px; font-size: var(--fs-13); }
+.hs .tile.tile--compact .tile__timer { top: 16px; right: 140px; }
+.hs .tile.tile--compact .tile__levers { top: 0; right: 0; height: 64px; }
+.hs .tile.tile--compact .lever { width: 44px; height: 64px; }
+.hs .tile.tile--compact .lever::before { left: 20px; top: 12px; }
+.hs .tile.tile--compact .tile__pips2 { right: 140px; top: 42px; }
+.hs .tile.tile--compact[data-coverage="partial"] .tile__status { right: 140px; }
+.hs .tile.tile--compact[data-tx] .tile__label { max-width: calc(100% - 210px); }
+.hs .tile.tile--compact .tile__reason { left: 84px; right: 140px; top: 40px; }
+/* solo: the channels that are not soloed go quiet */
+.hs__list.has-solo .tile:not([data-solo]) .tile__wave { opacity: 0.4; }
+
+/* the pane as a full-screen layer under the header and above the status line; the list underneath is inert and keeps its scroll */
+.hs__layer { position: fixed; top: var(--header-h); bottom: var(--status-h); left: 0; right: 0; z-index: 12; background: var(--bg-void); }
+:root.lo-locked[data-layout] , :root.lo-locked[data-layout] body { overflow: hidden; }

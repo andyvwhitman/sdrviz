@@ -34,6 +34,12 @@ export interface Route {
   adminOnly?: boolean;
 }
 
+/**
+ * Whether a window is "phone" for this route. Live Ops has its own test (under 768 wide or under 560 tall, so a
+ * landscape phone counts); every other route uses the width alone.
+ */
+export const isPhoneFor = (route: Route, viewport: { phone: boolean; handset: boolean }): boolean => (route.layout === "fluid" ? viewport.handset : viewport.phone);
+
 /** How a route is laid out in a window of this kind: its own layout, or the phone version of a stage route. */
 export function layoutFor(route: Route, phone: boolean): "stage" | "page" | "fluid" | "plate" {
   if (route.layout === "page") return "page";
@@ -42,7 +48,7 @@ export function layoutFor(route: Route, phone: boolean): "stage" | "page" | "flu
 }
 
 export const ROUTES: Route[] = [
-  { id: "live-ops", path: "/live", name: "LIVE OPS", dir: "live-ops", shell: true, layout: "fluid", phone: "plate" },
+  { id: "live-ops", path: "/live", name: "LIVE OPS", dir: "live-ops", shell: true, layout: "fluid", phone: "page" },
   { id: "feeds", path: "/feeds", name: "FEEDS & BANKS", dir: "feeds", shell: true, phone: "plate" },
   { id: "map", path: "/map", name: "MAP", dir: "map", shell: true, phone: "page" },
   { id: "settings", path: "/settings", name: "SETTINGS", dir: "settings", shell: true, phone: "plate", adminOnly: true },

@@ -11,10 +11,10 @@
   import { shell } from "$lib/stores/shell.svelte";
   import { viewport } from "$lib/stores/viewport.svelte";
   import WiderScreen from "$lib/components/WiderScreen.svelte";
-  import { homePath, layoutFor, loadScreen, routeFor } from "./routes";
+  import { homePath, isPhoneFor, layoutFor, loadScreen, routeFor } from "./routes";
 
   const route = $derived(routeFor(router.path));
-  const layout = $derived(route ? layoutFor(route, viewport.phone) : "stage");
+  const layout = $derived(route ? layoutFor(route, isPhoneFor(route, viewport)) : "stage");
 
   // Unknown paths and "/" go to Live Ops (query kept).
   $effect(() => {
@@ -55,7 +55,7 @@
     screenFailed = false;
     if (!wanted) return;
     document.title = `SDRVIZ · ${wanted.name}`;
-    if (layoutFor(wanted, viewport.phone) === "plate") {
+    if (layoutFor(wanted, isPhoneFor(wanted, viewport)) === "plate") {
       document.documentElement.dataset.ready = "1";
       return;
     }

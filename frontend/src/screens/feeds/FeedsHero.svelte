@@ -9,7 +9,15 @@
   import { transitSummary } from "./transit";
 
   /** `sources` is null until the list loads, and for a viewer (the list is admin-only) */
-  let { snapshot, sources, now }: { snapshot: LiveState; sources: TransitSource[] | null; now: number } = $props();
+  interface Props {
+    snapshot: LiveState;
+    sources: TransitSource[] | null;
+    now: number;
+    /** the transit sources sit under the inspector, out of sight: the transit count then becomes a button to them */
+    stacked?: boolean;
+    onshowtransit?: () => void;
+  }
+  let { snapshot, sources, now, stacked = false, onshowtransit }: Props = $props();
 
   const feeds = $derived(new Map(snapshot.feeds.map((f) => [f.id, f])));
   const enabled = $derived(snapshot.feeds.filter((f) => f.enabled));
@@ -63,7 +71,11 @@
     {#if transit}
       <span class="fb-rule"></span>
       <span class="hero__stack">
-        <span class="a">TRANSIT {transit.fresh}/{transit.enabled} FRESH</span>
+        {#if stacked}
+          <button type="button" class="a fb-jump" onclick={onshowtransit}>TRANSIT {transit.fresh}/{transit.enabled} FRESH ›</button>
+        {:else}
+          <span class="a">TRANSIT {transit.fresh}/{transit.enabled} FRESH</span>
+        {/if}
         <span class="b {transit.worst?.tone ?? ''}">{transit.worst?.text ?? "ALL SOURCES CURRENT"}</span>
       </span>
     {/if}

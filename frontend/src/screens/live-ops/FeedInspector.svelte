@@ -114,7 +114,7 @@
     {/each}
   </InspectorSection>
 
-  <InspectorSection title="HEARS · {hears.length} CHANNELS">
+  <InspectorSection title="ENABLED ·{hears.length} CHANNELS">
     <div class="lo-hears">
       {#each hears as channel (channel.id)}<span><b>{channel.aar}</b>{channel.label}</span>{/each}
     </div>

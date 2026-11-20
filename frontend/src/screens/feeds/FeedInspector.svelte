@@ -150,32 +150,33 @@
       {/each}
     </div>
 
-    <div class="fb-sec" style="top:70px">
+    <div class="fb-insp__body"><div class="fb-insp__scroll">
+    <div class="fb-sec" style="top:0">
       <h4>SPECTRUM · {feed.short}<span class="r">{measured ? `FLOOR ${fix(feed.noise_floor_dbfs, 1)} dBFS · SNR ${Math.round(feed.snr_db ?? 0)} dB` : fmt.BLANK}</span></h4>
       <div class="fb-plot">
         <SpectrumPlot width={INNER_W} gutter={GUTTER} {trace} floorDbfs={feed.noise_floor_dbfs} receptions={rxChannels} noSamplesText="NO SAMPLES · LAST {sinceClock}" {heard} bank={heard} {extraLabels} />
       </div>
     </div>
 
-    <div class="fb-sec" style="top:244px">
+    <div class="fb-sec" style="top:174px">
       <h4>WATERFALL · LAST 60 MIN<span class="r">{lofar.row_s} S/ROW · <span class="label">NEWEST AT TOP</span></span></h4>
       <div class="fb-plot">
         <LofarPlot width={INNER_W} gutter={GUTTER} rows={lofar.rows} rowS={lofar.row_s} {cells} {sampled} {floorDbfs} {guides} receptions={rxChannels} nowS={snapshot.t_offset_s} {zone} {measured} {sinceClock} />
       </div>
     </div>
 
-    <div class="fb-sec" style="top:404px;right:auto;width:{HALF_W}px">
+    <div class="fb-sec" style="top:334px;right:auto;width:{HALF_W}px">
       <h4>SAMPLE RATE · 15 MIN<span class="r">{measured ? `${fix(feed.sample_rate_measured_msps, 4)} MS/s` : fmt.BLANK}</span></h4>
       <div class="fb-plot"><SampleRateChart width={HALF_W} values={rates} /></div>
     </div>
-    <div class="fb-sec" style="top:404px;left:auto;width:{HALF_W}px">
+    <div class="fb-sec" style="top:334px;left:auto;width:{HALF_W}px">
       <h4>COVERAGE<span class="r">R {feed.coverage_radius_km} KM · <span class="label">RINGS 5 KM</span></span></h4>
       <div class="fb-plot">
         <CoverageThumb {feed} others={snapshot.feeds.filter((f) => f.id !== feed.id)} routes={catalogue.routes} fault={look.frame === "fault"} markTone={look.glyph === "fault" ? "fault" : look.frame === "stale" ? "stale" : "line"} />
       </div>
     </div>
 
-    <div class="fb-sec" style="top:534px">
+    <div class="fb-sec" style="top:464px">
       <h4>TELEMETRY · ALL DRIVERS<span class="r"><span class="label">MEASURED BY SDRVIZ · OR AS SET</span></span></h4>
       <div class="fb-kv2">
         <div>
@@ -206,7 +207,7 @@
       </div>
     </div>
 
-    <div class="fb-sec" style="top:742px">
+    <div class="fb-sec" style="top:672px">
       <h4>DEVICE + REMOTE HOST<span class="r"><span class="label">{noTelemetry ? "RTL_TCP SENDS NO STATUS · 12-BYTE GREETING, THEN I/Q" : `${driverName(feed).toUpperCase()} · AGENT-ERA FIELDS`}</span></span></h4>
       <div class="fb-kv2">
         {#each TELEMETRY as t}
@@ -226,6 +227,8 @@
         {/each}
       </div>
     </div>
+
+    </div></div>
 
     <div class="fb-sec" style="bottom:12px">
       <div class="fb-disc">

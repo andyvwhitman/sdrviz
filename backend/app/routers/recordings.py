@@ -33,6 +33,7 @@ class RecordingOut(BaseModel):
     frequency_id: str
     aar_channel: int
     feed_id: str
+    node_id: str | None
     feed_lat: float | None
     feed_lon: float | None
     started_at: str
@@ -51,6 +52,7 @@ def out(row: Recording) -> RecordingOut:
         frequency_id=row.frequency_id,
         aar_channel=row.aar_channel,
         feed_id=row.feed_id,
+        node_id=row.node_id,
         feed_lat=row.feed_lat,
         feed_lon=row.feed_lon,
         started_at=iso(row.started_at),

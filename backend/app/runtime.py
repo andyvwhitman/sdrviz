@@ -16,7 +16,7 @@ from .live import protocol
 from .live.hub import Hub
 from .models import Bank, FeedAck, Prefs, Receiver
 from .nodes.schemas import ChannelsIn
-from .nodes.service import BANKS_PRESET, NodeOffline, NodeRegistry
+from .nodes.service import ASSIGNED_PRESET, NodeOffline, NodeRegistry
 from .nodes.session import NodeConnections
 from .radio.receiver import load_receiver, save_receiver
 from .radio.source import RadioSource
@@ -51,9 +51,10 @@ class Runtime:
             log.info("seeded %s", settings.database_file)
 
         self.nodes = NodeRegistry(self.db, settings.public_url)  # remote receiver nodes (docs/node-protocol.md)
+        self.nodes.migrate()
         self.nodes.on_feeds_changed = self.reload_node_feeds
         self.loop: asyncio.AbstractEventLoop | None = None  # set by start(); bank edits arrive on worker threads
-        self._bank_channels = self.nodes.bank_channels()  # last list pushed to nodes on the banks preset
+        self._node_channels = self._wanted_channels()  # the list each node on the assigned preset last got
         self._tasks: set[asyncio.Task] = set()
         self._retention: asyncio.Task | None = None
         self.data: SimData = load_sim_data(self.db, settings)
@@ -159,24 +160,27 @@ class Runtime:
     # --- changes -----------------------------------------------------------------
 
     def reload_world(self) -> None:
-        """Re-read frequencies, banks and feeds after a CRUD change and tell the clients."""
+        """Re-read frequencies, assignments and feeds after a CRUD change and tell the clients."""
         self.world = load_world(self.db, self.settings, self.receiver, self.nodes)
         self.engine.resync()
-        self._push_bank_channels()
+        self.push_node_channels()
 
-    def _push_bank_channels(self) -> None:
-        """Banks or frequencies changed: online nodes on the banks preset get the new channel list."""
-        channels = self.nodes.bank_channels()
-        if channels == self._bank_channels:
+    def _wanted_channels(self) -> dict[str, list[int]]:
+        """Node id -> the AAR channels it should decode, for the nodes on the assigned preset."""
+        return {n.id: self.nodes.channels_for(n) for n in self.nodes.list() if n.preset == ASSIGNED_PRESET}
+
+    def push_node_channels(self) -> None:
+        """Assignments, frequencies or held listens changed: each online node whose list changed gets the new one."""
+        wanted, before = self._wanted_channels(), self._node_channels
+        self._node_channels = wanted
+        online = {n.id for n in self.nodes.list() if n.status == "ONLINE"}
+        # A node cannot be told to decode nothing; it keeps its last list.
+        changed = {node_id: channels for node_id, channels in wanted.items() if channels and node_id in online}
+        changed = {node_id: channels for node_id, channels in changed.items() if before.get(node_id) != channels}
+        if not changed or self.loop is None:
             return
-        self._bank_channels = channels
-        if not channels or self.loop is None:  # a node cannot be told to decode nothing; it keeps its last list
-            return
-        node_ids = [n.id for n in self.nodes.list() if n.preset == BANKS_PRESET and n.status == "ONLINE"]
-        if not node_ids:
-            return
-        log.info("bank channels changed (%d channels): telling %d node(s)", len(channels), len(node_ids))
-        coro = self._send_channels(node_ids, channels)
+        log.info("node channels changed: telling %d node(s)", len(changed))
+        coro = self._send_channels(changed)
         try:
             on_loop = asyncio.get_running_loop() is self.loop
         except RuntimeError:
@@ -188,14 +192,14 @@ class Runtime:
         else:  # a sync route handler, on a worker thread
             asyncio.run_coroutine_threadsafe(coro, self.loop)
 
-    async def _send_channels(self, node_ids: list[str], channels: list[int]) -> None:
-        for node_id in node_ids:  # one failing node must not stop the others
+    async def _send_channels(self, lists: dict[str, list[int]]) -> None:
+        for node_id, channels in lists.items():  # one failing node must not stop the others
             try:
                 await self.nodes.send_command(node_id, ChannelsIn(type="channels", channels=channels))
             except NodeOffline:
                 pass
             except Exception:
-                log.exception("could not send the bank channels to node %s", node_id)
+                log.exception("could not send the channels to node %s", node_id)
 
     def reload_node_feeds(self) -> None:
         """A node was enrolled, changed or revoked: its feed row appears, changes or goes."""

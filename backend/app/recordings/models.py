@@ -10,7 +10,8 @@ class Recording(SQLModel, table=True):
     frequency_id: str = Field(index=True)
     aar_channel: int
     feed_id: str
-    feed_lat: float | None = None
+    node_id: str | None = Field(default=None, index=True)  # the node that heard it; None for the LAN receiver
+    feed_lat: float | None = None  # where that node was at the time (node feeds take it from the node row)
     feed_lon: float | None = None
     started_at: datetime = Field(index=True)  # UTC
     duration_s: float

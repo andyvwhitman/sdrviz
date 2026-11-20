@@ -67,6 +67,22 @@ def create_schema(engine: Engine) -> None:
         conn.execute(text(FTS_DDL))
     if first_assignments:
         _assign_from_hears(engine)
+    _add_recording_node_id(engine)
+
+
+def _add_recording_node_id(engine: Engine) -> None:
+    """Recordings carry the node that heard them; older rows of a node feed (`node-N`) get it from the node's number."""
+    with engine.begin() as conn:
+        columns = {row[1] for row in conn.execute(text("PRAGMA table_info(recording)"))}
+        if "node_id" not in columns:
+            conn.execute(text("ALTER TABLE recording ADD COLUMN node_id VARCHAR"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_recording_node_id ON recording (node_id)"))
+            conn.execute(
+                text(
+                    "UPDATE recording SET node_id = (SELECT node.id FROM node WHERE 'node-' || node.number = "
+                    "recording.feed_id) WHERE feed_id LIKE 'node-%'"
+                )
+            )
 
 
 def _assign_from_hears(engine: Engine) -> None:

@@ -26,7 +26,7 @@ from .ghosts import WINDOW_S as GHOST_HOLD_S
 from .ghosts import GhostFilter, Start
 from .link import LinkStats
 from .schemas import ChannelsIn, CommandError, CommandIn, CommandResult, GainIn
-from .service import BANKS_PRESET, AuthError, NodeLive, node_feed_id
+from .service import ASSIGNED_PRESET, AuthError, NodeLive, node_feed_id
 
 if TYPE_CHECKING:
     from ..runtime import Runtime
@@ -123,9 +123,9 @@ class NodeSession:
             registry.add_event(node.id, "reconnect", "node reconnected")
         registry.add_event(node.id, "online", f"connected, agent {hello.agent_version}")
         background = [asyncio.create_task(self._heartbeat()), asyncio.create_task(self._watchdog())]
-        if node.preset == BANKS_PRESET and auth.channels:
-            # Also as a command: a node keeps the last `channels` command over the welcome's list, so a bank edit
-            # made while it was offline would otherwise never reach it.
+        if node.preset == ASSIGNED_PRESET and auth.channels:
+            # Also as a command: a node keeps the last `channels` command over the welcome's list, so an assignment
+            # change made while it was offline would otherwise never reach it.
             channels = ChannelsIn(type="channels", channels=auth.channels)
             background.append(asyncio.create_task(self.command(channels)))
         try:
@@ -275,15 +275,15 @@ class NodeSession:
         self._end_transmission(message.ch)  # a key-up without a key-down first: close the old one
         self.refused.discard(message.ch)
         channel_id = self._channel_id(message.ch)
-        if channel_id is None:
-            log.debug("node %s: key-up on unknown AAR channel %s", self.node_id, message.ch)
+        if channel_id is None or self.feed_id not in self.rt.world.heard_by(channel_id):
+            log.debug("node %s: key-up on AAR channel %s, which is not enabled here", self.node_id, message.ch)
             return
         seq = REMOTE_SEQ_BASE + self.connections.next_seq()
         if not self.events.key_up(channel_id, seq, message.snr_db, message.power_db, self.feed_id):
             self.refused.add(message.ch)  # another receiver has the channel: ignore this transmission
             return
         tx = Transmission(channel_id, message.ch, seq)
-        tx.recording = self.rt.recorder.begin(channel_id, seq, message.ch, self.feed_id)
+        tx.recording = self.rt.recorder.begin(channel_id, seq, message.ch, self.feed_id, self.node_id)
         self.transmissions[message.ch] = tx
 
     def _on_key_down(self, aar_channel: int) -> None:

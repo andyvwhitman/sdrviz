@@ -182,6 +182,9 @@ def test_enroll_run_and_stream_to_the_browser(servers, tmp_path, monkeypatch):
         await api.wait_status(node_id, "ONLINE")
         freqs = [f["id"] for f in (await api.http.get("/api/frequencies")).json()]
         channel = next(f["id"] for f in (await api.http.get("/api/frequencies")).json() if f["aar_channel"] == 54)
+        for freq in freqs:
+            put = await api.http.put(f"/api/frequencies/{freq}/assignments/node-1", json={"enabled": True})
+            assert put.status_code == 200, put.text
 
         seen_kinds, texts, audio = set(), [], []
         async with connect(

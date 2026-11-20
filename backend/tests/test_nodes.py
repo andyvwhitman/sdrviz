@@ -55,7 +55,7 @@ def test_created_node_is_pending_and_its_key_decodes(client):
     created = create(client)
     node, key = created["node"], wire.NodeKey.decode(created["key"])
     assert node["status"] == "PENDING" and node["number"] == 1 and node["feed_id"] == "node-1"
-    assert node["preset"] == "banks" and node["location"] == LOCATION and node["link_quality"] is None
+    assert node["preset"] == "assigned" and node["location"] == LOCATION and node["link_quality"] is None
     assert key.node == node["id"] and key.url == "http://localhost:8100" and len(key.secret) == 43
     assert node["key_expires_at"] is not None
     assert create(client, "Second")["node"]["number"] == 2
@@ -67,8 +67,7 @@ def test_enrollment_then_connect_with_the_node_secret(client, registry):
     assert client.get("/api/nodes").json()[0]["status"] == "OFFLINE"
     assert client.get("/api/nodes").json()[0]["key_expires_at"] is None
     auth = registry.authenticate(hello(key, "connect", node_secret), "10.0.0.1")
-    assert auth.node_secret is None and auth.channels == registry.bank_channels()
-    assert auth.channels and auth.channels == sorted(set(auth.channels))
+    assert auth.node_secret is None and auth.channels == []  # nothing assigned yet
 
 
 def test_expired_key_is_rejected(client, registry):
@@ -234,3 +233,18 @@ def test_no_secret_or_hash_is_returned_after_creation_or_stored_in_plain(client,
     dump = "\n".join(sqlite3.connect(settings.database_file).iterdump())
     assert not any(secret in dump for secret in secrets_)
     assert "node_credential" in dump
+
+
+def test_banks_preset_nodes_become_assigned_at_startup(client):
+    from sqlalchemy import text
+
+    from app.nodes.service import NodeRegistry
+
+    node_id = create(client)["node"]["id"]
+    rt = client.app.state.rt
+    with rt.db.begin() as conn:
+        conn.execute(text("UPDATE node SET preset = 'banks'"))
+    registry = NodeRegistry(rt.db, "http://localhost:8100")
+    registry.migrate()
+    registry.migrate()  # again: nothing to do
+    assert registry.get(node_id).preset == "assigned"

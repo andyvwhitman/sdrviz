@@ -68,7 +68,7 @@ def load_world(
         feed = live_feed(receiver, freqs, enabled.get(LIVE_FEED_ID, []))
         feeds[feed.id] = feed
     if nodes:
-        feeds |= {feed.id: feed for feed in nodes.feeds(freqs)}
+        feeds |= {feed.id: feed for feed in nodes.feeds(freqs, enabled)}
     return World(freqs, banks, feeds, load_places(settings), load_routes(settings), sim=settings.sim)
 
 

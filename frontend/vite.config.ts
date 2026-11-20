@@ -17,6 +17,13 @@ const FAKE_NODES = process.env.VITE_FAKE_NODES === "1";
 // VITE_FAKE_RECORDINGS=1 answers /api/recordings* and the frequency activity calls from dev/fakeRecordings.ts.
 const FAKE_RECORDINGS = process.env.VITE_FAKE_RECORDINGS === "1";
 
+// Keep the browser's Host header (no changeOrigin), so the backend's Origin check (B-3) sees the same host in
+// Origin and Host, as it does behind Caddy in production.
+const PROXY = {
+  "/api": { target: BACKEND, changeOrigin: false },
+  "/ws": { target: BACKEND, ws: true, changeOrigin: false },
+};
+
 export default defineConfig({
   plugins: [svelte(), ...(HTTPS ? [basicSsl()] : []), ...(FAKE_NODES ? [fakeNodes()] : []), ...(FAKE_RECORDINGS ? [fakeRecordings()] : [])],
   resolve: {
@@ -26,17 +33,11 @@ export default defineConfig({
   },
   server: {
     port: 5173,
-    proxy: {
-      "/api": BACKEND,
-      "/ws": { target: BACKEND, ws: true },
-    },
+    proxy: PROXY,
   },
   // Package preview servers (5174-5178) use the same proxy.
   preview: {
-    proxy: {
-      "/api": BACKEND,
-      "/ws": { target: BACKEND, ws: true },
-    },
+    proxy: PROXY,
   },
   test: {
     environment: "node",

@@ -32,9 +32,6 @@
 .txrow[data-live] .c-text .lo { color: var(--ink); }      /* no ink-3 inside wash */
 .txrow[data-live][data-row="final"] .c-ch { color: var(--ink); transition: color var(--t-settle) var(--ease-instrument); }
 /* off-bank */
-.txrow[data-offbank] .c-ch { color: var(--ink-2); }
-.txrow[data-offbank][data-live] { background: none; }
-.txrow[data-offbank][data-live] .c-ch { color: var(--state-tx); }
 /* detector rows: structured, mono */
 .txrow[data-det] .c-text { font: 400 var(--fs-12)/20px var(--font-data); color: var(--ink); }
 .txrow[data-defect] .c-text { font-weight: 500; color: var(--ink); }
@@ -71,6 +68,5 @@
 .txrow--history .c-aar { font: 500 var(--fs-12)/20px var(--font-data); color: var(--ink); }
 .txrow--history .c-chan { font: 500 var(--fs-12)/20px var(--font-label); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); white-space: nowrap; overflow: hidden; }
 .txrow--history .c-dur { font: 400 var(--fs-12)/20px var(--font-data); color: var(--ink-2); text-align: right; }
-.txrow--history[data-offbank] .c-aar { color: var(--ink-2); }
 .txrow--history.is-selected { background: none; }
 .txrow--history.is-selected .c-time { color: var(--ink); }

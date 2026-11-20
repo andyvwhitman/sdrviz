@@ -16,7 +16,8 @@
     tz: string;
     todayKey: string;
     mhz: string;
-    inBank: boolean;
+    /** the frequency is enabled on some node, so it is recorded */
+    enabled: boolean;
     selectedId: number | null;
     /** a bucket the log was jumped to: its label and the instants it covers */
     bucket: { label: string; from: number; to: number } | null;
@@ -29,7 +30,7 @@
     pane?: boolean;
     scroller?: HTMLElement | null;
   }
-  let { store, tz, todayKey, mhz, inBank, selectedId, bucket, onAir, onplay, attop = $bindable(true), pane = false, scroller = null }: Props = $props();
+  let { store, tz, todayKey, mhz, enabled, selectedId, bucket, onAir, onplay, attop = $bindable(true), pane = false, scroller = null }: Props = $props();
 
   let expanded = $state<number | null>(null);
   let focusId = $state<number | null>(null);
@@ -128,11 +129,11 @@
   {:else if !store.loading && !store.rows.length}
     <div class="lg__empty">
       <p class="lg__msg">NOTHING RECORDED ON {mhz} YET</p>
-      {#if inBank}
+      {#if enabled}
         <p class="lg__sentence">Every transmission on this channel is saved here as it happens, with a transcript a minute or so later.</p>
       {:else}
         <p class="lg__sentence">
-          Only channels in a bank are recorded.{#if session.isAdmin} <a href="/feeds" onclick={followLink}>Add this one to a bank in Feeds &amp; Banks.</a>{:else} Add this one to a bank in Feeds &amp; Banks.{/if}
+          Only enabled frequencies are recorded.{#if session.isAdmin} <a href="/frequencies" onclick={followLink}>Enable this one on a node in Frequencies.</a>{:else} Ask an admin to enable this one on a node.{/if}
         </p>
       {/if}
     </div>

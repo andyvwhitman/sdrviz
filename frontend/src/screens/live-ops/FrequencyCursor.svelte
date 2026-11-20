@@ -51,12 +51,7 @@
     return () => clearTimeout(timer);
   });
 
-  const dropKey = /Mac|iPhone|iPad/.test(navigator.platform) ? "\u2325" : "ALT";
-  const instruction = $derived(
-    channel?.banks.includes("bank-live")
-      ? `IN LIVE BANK \u00b7 ${dropKey}-CLICK TO DROP`
-      : "CLICK TO LISTEN \u00b7 SWITCHES TO LIVE BANK",
-  );
+  const instruction = "HOLD TO LISTEN";
   /** the confirmation of the last click wins over the instruction */
   const hint = $derived(flash ?? (dwelled && listenable ? instruction : null));
 

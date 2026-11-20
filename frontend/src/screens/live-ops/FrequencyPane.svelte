@@ -36,11 +36,11 @@
     frequencyId: string;
     /** the column on a desktop, or the layer that fills a phone */
     variant?: "column" | "layer";
-    /** column: previous (-1) and next (1) frequency in bank order */
+    /** column: previous (-1) and next (1) frequency in tile order */
     onstep?: (direction: -1 | 1) => void;
     /** column: clear the selection */
     onclose?: () => void;
-    /** layer: the bank's name for the back button, and what it does */
+    /** layer: the node's name for the back button, and what it does */
     backLabel?: string;
     onback?: () => void;
   }
@@ -51,11 +51,8 @@
 
   const snapshot = $derived(live.state);
   const channel = $derived(snapshot?.channels.find((c) => c.id === frequencyId));
-  const activeBank = $derived(snapshot?.banks.find((b) => b.id === snapshot.active_bank));
-  const inActiveBank = $derived(!!activeBank?.frequency_ids.includes(frequencyId));
-  const inAnyBank = $derived(inActiveBank || !!snapshot?.banks.some((b) => b.frequency_ids.includes(frequencyId)));
-  /** in a bank, but not the one on the wall */
-  const offBank = $derived(inAnyBank && !inActiveBank);
+  /** the listened node's short name, for "NOT ON SDR-02" */
+  const nodeShort = $derived(snapshot?.feeds_listenable.find((f) => f.feed_id === snapshot.listen_feed)?.short ?? "");
   const tz = $derived(ui.utc ? "UTC" : (snapshot?.tz.iana ?? DEFAULT_TZ));
 
   // ---- the frequency itself: the catalogue entry, or what the live snapshot already knows while it loads
@@ -67,6 +64,11 @@
         ? { id: channel.id, label: channel.label, freq_mhz: channel.freq_mhz, aar_channel: Number(channel.aar.replace(/\D/g, "")) || null, railroad: channel.railroad, use: channel.use }
         : null),
   );
+
+  /** enabled on some node (it is decoded and recorded), though perhaps not on the listened one */
+  const enabledAnywhere = $derived(!!channel || !!info?.assignments?.some((a) => a.enabled));
+  /** enabled elsewhere only: its tile is not in the list */
+  const notOnNode = $derived(enabledAnywhere && !channel);
 
   // ---- the log and the day activity, made per frequency and dropped with it
   let store = $state.raw<LogStore | null>(null);
@@ -322,19 +324,19 @@
         <button class="chip" data-chip="nominal" type="button" onclick={onclose}>CLEAR</button>
       </section>
     {:else if info}
-      <Identity variant="pane" {info} {channel} {keyedElapsed} {offBank} {lastHeardFallback} />
+      <Identity variant="pane" {info} {channel} {keyedElapsed} notOnNode={notOnNode ? nodeShort : null} {lastHeardFallback} />
 
-      {#if inAnyBank}
-        <AudioMixer channelId={frequencyId} {floor} keyed={keyed} {offBank} />
+      {#if enabledAnywhere}
+        <AudioMixer channelId={frequencyId} {floor} keyed={keyed} {notOnNode} />
       {:else}
         <div class="pane__nodecode">
-          <p>NOT DECODED · ONLY BANK CHANNELS ARE DECODED</p>
-          {#if session.isAdmin}<a href="/feeds" onclick={followLink}>ADD IT IN FEEDS &amp; BANKS ›</a>{/if}
+          <p>NOT DECODED · NOT ENABLED ON ANY NODE</p>
+          {#if session.isAdmin}<a href="/frequencies" onclick={followLink}>ENABLE IT IN FREQUENCIES ›</a>{/if}
         </div>
       {/if}
 
-      {#if !inAnyBank}
-        <div class="pane__lid"><span class="pane__lid-k">▸ TODAY · NOT RECORDED · NOT IN ANY BANK</span></div>
+      {#if !enabledAnywhere}
+        <div class="pane__lid"><span class="pane__lid-k">▸ TODAY · NOT RECORDED · NOT ENABLED ON ANY NODE</span></div>
       {:else if day && day.recording_since === null}
         <div class="pane__lid"><span class="pane__lid-k">▸ TODAY · NO RECORDINGS YET</span></div>
       {:else}
@@ -385,7 +387,7 @@
           {tz}
           {todayKey}
           mhz={fmt.freq(info.freq_mhz)}
-          inBank={inAnyBank}
+          enabled={enabledAnywhere}
           {selectedId}
           bucket={jumped}
           {onAir}

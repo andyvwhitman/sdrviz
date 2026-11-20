@@ -51,7 +51,7 @@ describe("tileInputFrom", () => {
     const state = scenario("keyed");
     const feeds = Object.fromEntries(state.feeds.map((f) => [f.id, f]));
     const keyed = state.channels.find((c) => c.id === "amtk-nec-road")!;
-    const input = tileInputFrom(keyed, { feeds, displayedFeed: state.displayed_feed });
+    const input = tileInputFrom(keyed, { feeds, listenFeed: state.listen_feed ?? "" });
     expect(input).toMatchObject({ tx: true, elapsed: 7.4, via: "BWI-03", coverage: keyed.coverage.state });
     expect(input.meter?.db).toBe(-34.4); // BWI-03, the primary reception
     expect(input.meter?.peak).toBe(-34.4);
@@ -63,7 +63,7 @@ describe("tileInputFrom", () => {
     const feeds = Object.fromEntries(state.feeds.map((f) => [f.id, f]));
     const stale = state.channels.find((c) => c.coverage.state === "stale");
     if (!stale) return;
-    const input = tileInputFrom(stale, { feeds, displayedFeed: state.displayed_feed });
+    const input = tileInputFrom(stale, { feeds, listenFeed: state.listen_feed ?? "" });
     expect(input.ageS).toBeGreaterThan(0);
     expect(resolveTile(input).status.cls).toBe("is-stale");
   });
@@ -71,7 +71,7 @@ describe("tileInputFrom", () => {
   it("a dropped link freezes values and reads AGE from the drop", () => {
     const state = scenario("listening");
     const feeds = Object.fromEntries(state.feeds.map((f) => [f.id, f]));
-    const input = tileInputFrom(state.channels[0], { feeds, displayedFeed: state.displayed_feed, linkDropAgeS: 9 });
+    const input = tileInputFrom(state.channels[0], { feeds, listenFeed: state.listen_feed ?? "", linkDropAgeS: 9 });
     expect(resolveTile(input).status).toEqual({ text: "AGE 9S", cls: "is-stale" });
   });
 
@@ -79,7 +79,7 @@ describe("tileInputFrom", () => {
     const state = scenario("listening");
     const feeds = Object.fromEntries(state.feeds.map((f) => [f.id, f]));
     const id = state.channels[0].id;
-    const input = tileInputFrom(state.channels[0], { feeds, displayedFeed: state.displayed_feed, selectedId: id, muted: new Set([id]), solo: new Set() });
+    const input = tileInputFrom(state.channels[0], { feeds, listenFeed: state.listen_feed ?? "", selectedId: id, muted: new Set([id]), solo: new Set() });
     expect(input).toMatchObject({ selected: true, muted: true, solo: false });
   });
 });

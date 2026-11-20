@@ -15,10 +15,10 @@
     channelId: string;
     floor: number | null;
     keyed: boolean;
-    /** the frequency is in a bank, but the active bank is another: only a solo makes it audible */
-    offBank?: boolean;
+    /** the frequency is enabled on another node only: only a solo makes it audible */
+    notOnNode?: boolean;
   }
-  let { channelId, floor, keyed, offBank = false }: Props = $props();
+  let { channelId, floor, keyed, notOnNode = false }: Props = $props();
 
   const mix = $derived<Mix>({ muted: prefs.muted, solo: prefs.solo, volumes: volumesOf(prefs.value) });
   const saved = $derived(Math.round(volumeOf(mix, channelId) * 100));
@@ -39,7 +39,7 @@
   /** What the line under the row says, or nothing when it is only the plain gain. */
   const note = $derived.by((): string | null => {
     if (!audio.enabled) return audio.muted ? "AUDIO MUTED · UNMUTE AT THE BOTTOM RIGHT" : "AUDIO STARTS ON YOUR FIRST CLICK";
-    if (offBank && !prefs.solo.has(channelId)) return "NOT AUDIBLE · NOT IN THE ACTIVE BANK · SOLO TO HEAR";
+    if (notOnNode && !prefs.solo.has(channelId)) return "NOT AUDIBLE · NOT ON THE LISTENED NODE · SOLO TO HEAR";
     if (gain === 0) return `NOT AUDIBLE · ${prefs.solo.size && !prefs.solo.has(channelId) ? "ANOTHER CHANNEL IS SOLOED" : "MUTED"}`;
     return null;
   });

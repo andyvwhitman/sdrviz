@@ -365,7 +365,7 @@
             {tz}
             {todayKey}
             mhz={fmt.freq(info.freq_mhz)}
-            inBank={!!channel || (snapshot?.banks ?? []).some((bank) => bank.frequency_ids.includes(info!.id))}
+            enabled={!!channel || !!info.assignments?.some((a) => a.enabled)}
             {selectedId}
             bucket={jumped}
             {onAir}

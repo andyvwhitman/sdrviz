@@ -9,7 +9,6 @@
   import { live } from "$lib/stores/live.svelte";
   import { spectrum } from "$lib/stores/spectrum.svelte";
   import * as fmt from "$lib/hud/fmt";
-  import { api } from "$lib/api/client";
   import { BAND, mhzToCh, chToMhz } from "$lib/hud/band";
   import type { Channel, Feed, LiveState } from "$lib/types/live";
     import FrequencyCursor from "./FrequencyCursor.svelte";
@@ -114,29 +113,8 @@
   /** left of the waterfall's time-axis labels */
   const FLASH_X = 56;
 
-  /** click: listen to the channel (it joins the live bank, which becomes active); alt-click: drop it */
-  let busy = false; // one request at a time: a double click must not add and activate twice
-  async function listen(event: MouseEvent) {
-    if (blank || busy || !session.isAdmin) return; // changing the live bank is an admin action
-    const ch = channelAt(layoutX(event)); // from the click itself: a touch tap has no hover first
-    if (ch === null) return;
-    busy = true;
-    const name = fmt.ch(ch);
-    try {
-      if (event.altKey) {
-        await api.banks.removeLive(ch);
-        listenFlash.say(`${name} REMOVED FROM LIVE`);
-      } else {
-        await api.banks.addLive(ch, feed.id);
-        await api.banks.activate("bank-live");
-        listenFlash.say(`LISTENING ${name} · LIVE BANK`);
-      }
-    } catch (error) {
-      listenFlash.say(`${name}: ${error instanceof Error ? error.message : "failed"}`.toUpperCase());
-    } finally {
-      busy = false;
-    }
-  }
+  /** click: the bank endpoints are gone (sprint 5); I-2 replaces this with hold-to-listen and right-click-to-add */
+  function listen(_event: MouseEvent) {}
 </script>
 
 <div class="lo-wall" class:is-view={viewOnly} bind:clientWidth={wallW}>

@@ -21,32 +21,32 @@
 
   interface Props {
     info: FrequencyInfo;
-    /** the live channel, when this frequency is in the active bank */
+    /** the live channel, when this frequency is enabled on the listened node */
     channel: Channel | undefined;
     /** seconds the channel has been keyed, or null when it is not */
     keyedElapsed: number | null;
-    /** phone: the lid below the name holds heard-by, banks, notes */
+    /** phone: the lid below the name holds heard-by, notes */
     lidOpen?: boolean;
     ontogglelid?: () => void;
     /** "page": the desktop page. "pane": the Live Ops pane. "phone": the pane's two parts with the crumb above and the ABOUT lid below */
     variant?: "page" | "pane" | "phone";
     /** pane: the frequency is in a bank, but not the active one */
-    offBank?: boolean;
+    /** the short name of the listened node when this frequency is enabled elsewhere only: tags the identity */
+    notOnNode?: string | null;
     /** when the channel last spoke, from its newest recording, for a channel the live snapshot has no last_heard for */
     lastHeardFallback?: { ageS: number; clock: string } | null;
   }
-  let { info, channel, keyedElapsed, lidOpen = false, ontogglelid, variant = "page", offBank = false, lastHeardFallback = null }: Props = $props();
+  let { info, channel, keyedElapsed, lidOpen = false, ontogglelid, variant = "page", notOnNode = null, lastHeardFallback = null }: Props = $props();
 
   const snapshot = $derived(live.state);
   const keyed = $derived(keyedElapsed !== null);
   const lastHeard = $derived(channel?.last_heard ?? null);
-  /** the snapshot may know nothing of this channel (it is not in the active bank): the newest recording says when it spoke */
+  /** the snapshot may know nothing of this channel (it is not on the listened node): the newest recording says when it spoke */
   const heard = $derived(lastHeard ? { ageS: cyclicAge(simClock.now, lastHeard.end_t), clock: lastHeard.clock } : (lastHeardFallback ?? null));
   const via = $derived(channel?.tx?.via ?? "");
 
   const aar4 = $derived(info.aar_channel != null ? fmt.aar(info.aar_channel) : (channel?.aar4 ?? fmt.BLANK));
   const feeds = $derived((channel?.heard_by ?? []).map((id) => snapshot?.feeds.find((feed) => feed.id === id)?.short ?? id));
-  const banks = $derived((channel?.banks ?? []).map((id) => snapshot?.banks.find((bank) => bank.id === id)?.name ?? id));
   const sub = $derived([info.railroad, info.use, ...(viewport.phone ? [] : [info.line])].filter(Boolean).join(" · "));
   const partial = $derived(channel?.coverage.state === "partial");
   const pips = $derived((channel?.coverage.pips ?? []).map((pip) => pip.state === "ok"));
@@ -76,7 +76,7 @@
   <div class="idp__line" class:idp__line--page={variant === "phone"} aria-label="{info.label} frequency">
     <span class="idp__aar">{aar4}</span>
     <h2 class="idp__name" data-ember={ember}>{info.label}</h2>
-    {#if offBank}<span class="idp__tag">NOT IN THIS BANK</span>{/if}
+    {#if notOnNode}<span class="idp__tag">NOT ON {notOnNode}</span>{/if}
     <span class="idp__grow"></span>
     {@render hero()}
   </div>
@@ -95,7 +95,6 @@
     <button class="id__lid idp__lid" type="button" aria-expanded={lidOpen} onclick={ontogglelid}>{lidOpen ? "▾" : "▸"} ABOUT THIS FREQUENCY</button>
     {#if lidOpen}
       <div class="id__lidbody idp__lidbody">
-        {#if banks.length}<p>BANKS <b>{banks.join(" · ")}</b></p>{/if}
         {#if info.notes}<p class="id__notes">{info.notes}</p>{/if}
       </div>
     {/if}
@@ -115,7 +114,6 @@
       <div class="id__mhz"><span>{fmt.freq(info.freq_mhz)}</span> <span class="id__unit">MHz</span><span class="id__sub"> · {sub}</span></div>
       <div class="id__more">
         {#if feeds.length}<span>HEARD BY <b>{feeds.join(" · ")}</b></span>{/if}
-        {#if banks.length}<span>BANKS <b>{banks.join(" · ")}</b></span>{/if}
       </div>
     </div>
 
@@ -138,7 +136,6 @@
   {#if lidOpen}
     <div class="id__lidbody">
       {#if feeds.length}<p>HEARD BY <b>{feeds.join(" · ")}</b></p>{/if}
-      {#if banks.length}<p>BANKS <b>{banks.join(" · ")}</b></p>{/if}
       {#if info.notes}<p class="id__notes">{info.notes}</p>{/if}
     </div>
   {/if}

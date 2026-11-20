@@ -67,7 +67,7 @@ function draft(frequencyId: string, at: number, pending = false): Recording {
   const old = NOW - at > 5 * DAY;
   const state: Recording["transcript_state"] = pending ? "pending" : roll < 0.12 ? "empty" : roll < 0.16 ? "failed" : "done";
   return {
-    id: 0, frequency_id: frequencyId, aar_channel: 12, feed_id: FEEDS[Math.floor(random() * FEEDS.length)], feed_lat: 38.9231, feed_lon: -77.0412,
+    id: 0, frequency_id: frequencyId, aar_channel: 12, feed_id: FEEDS[Math.floor(random() * FEEDS.length)], node_id: null, feed_lat: 38.9231, feed_lon: -77.0412,
     started_at: iso(at), duration_s: duration, audio_bytes: Math.round(duration * 1500), audio_state: old ? "expired" : "ok",
     audio_url: null, transcript: state === "done" ? TEXTS[Math.floor(random() * TEXTS.length)] : "", transcript_state: state, engine: state === "pending" ? "" : "faster-whisper:small.en",
   };

@@ -42,10 +42,7 @@ export function headerChips(state: ChipState, { txChip = false } = {}): ChipSpec
 
   const keyed = state.active_transmissions ?? [];
   if (txChip && keyed.length) {
-    const onBank = keyed.filter((a) => !a.off_bank).map((a) => a.aar);
-    const offBank = keyed.length - onBank.length;
-    const parts = offBank ? [...onBank, `+${offBank} OFF-BANK`] : onBank;
-    chips.push({ id: "keyed", text: `KEYED · ${parts.join(" · ")}`, kind: "tx", glyph: "tx" });
+    chips.push({ id: "keyed", text: `KEYED · ${keyed.map((a) => a.aar).join(" · ")}`, kind: "tx", glyph: "tx" });
   }
   return chips;
 }

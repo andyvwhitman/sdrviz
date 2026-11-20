@@ -19,7 +19,7 @@ class ListenHold {
   state = $state<ServerState | null>(null);
   /** when `state` last changed, for the timer and the no-response wait */
   since = $state(0);
-  /** ticks once a second while held, so the plate's timer moves */
+  /** ticks while held, so the plate's timer moves */
   now = $state(Date.now());
   #tick: ReturnType<typeof setInterval> | undefined;
   /** what the plate showed last, kept for the 400 ms after release */

@@ -30,8 +30,10 @@
     blank?: boolean;
     /** the displayed feed, when the bank has none of its own */
     feed: Feed;
+    /** the wall is being resized: the waterfall stays as drawn (stretched) until the release */
+    resizing?: boolean;
   }
-  let { state: snapshot, bankChannels, dropAge, blank = false, feed }: Props = $props();
+  let { state: snapshot, bankChannels, dropAge, blank = false, feed, resizing = false }: Props = $props();
 
   // the server streams spectrum frames only for the feed being watched
   $effect(() => {
@@ -122,7 +124,7 @@
   </div>
   <div class="lo-cell lo-cell--fall" bind:clientWidth={fallW} bind:clientHeight={fallH} {...hover} role="presentation">
     {#if fallW > 0 && fallH > 0}
-      <Waterfall width={fallW} height={fallH} feedId={feed.id} {floor} {carriers} live={delivering} {dropAge}>
+      <Waterfall width={fallW} height={fallH} feedId={feed.id} {floor} {carriers} live={delivering} {dropAge} frozen={resizing}>
         {#if !delivering}
           <FrontWallMessage
             feedShort={feed.short}

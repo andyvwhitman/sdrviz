@@ -27,8 +27,12 @@
   import FeedInspector from "./FeedInspector.svelte";
   import FrequencyPane from "./FrequencyPane.svelte";
   import { liveOpsPrefs } from "./liveOpsPrefs.svelte";
+  import { paneBounds, paneFraction, panePx, tileColumns, wallBounds, wallFraction, wallPx, waterfallPx } from "./layout";
+  import { PX_PER_S } from "./waterfallModel.svelte";
+  import { viewport } from "$lib/stores/viewport.svelte";
   import FrontWall from "./FrontWall.svelte";
     import { elsewhereLabel, heroFor, offBankLabel } from "./hero";
+  import Divider from "./Divider.svelte";
   import HeroStrip from "./HeroStrip.svelte";
   import { KeyupMotion } from "./keyup.svelte";
   import { LEVER_LIST, type LeverKey } from "./mixer";
@@ -251,13 +255,33 @@
     if (!pane?.escape()) clearSelection();
   }
 
+  /* ---- the two dividers. The grid is CSS and resolves the saved fractions itself; the sizes measured here only feed a
+     drag, a key step, the readout and the ARIA values. */
+  let frameW = $state(0);
+  let frameH = $state(0);
+  /** the divider being dragged, if any: a dragged wall keeps its waterfall stretched until the release */
+  let dragging = $state<"wall" | "pane" | null>(null);
+  const heroH = $derived(viewport.height < 900 ? 48 : 64);
+  const wallSize = $derived(wallPx(liveOpsPrefs.wall, frameH, heroH));
+  const paneSize = $derived(panePx(liveOpsPrefs.pane, frameW));
+  const wallLimits = $derived(wallBounds(frameH, heroH));
+  const paneLimits = $derived(paneBounds(frameW));
+  const wallSeconds = $derived(Math.floor(waterfallPx(wallSize) / PX_PER_S));
+  const columns = $derived(tileColumns(frameW, paneSize));
+
   const downCap = BACKOFF_S[BACKOFF_S.length - 1];
 </script>
 
 <svelte:window onkeydown={globalKeys} />
 
-<div class="lo-frame" data-link={linkState ?? undefined}>
-  <div class="lo" class:is-down={linkState === "no-link"}>
+<div class="lo-frame" data-link={linkState ?? undefined} bind:clientWidth={frameW} bind:clientHeight={frameH}>
+  <div
+    class="lo"
+    class:is-down={linkState === "no-link"}
+    data-pane={liveOpsPrefs.pane === null ? undefined : ""}
+    style:--wall-frac={liveOpsPrefs.wall ?? undefined}
+    style:--pane-frac={liveOpsPrefs.pane ?? undefined}
+  >
     {#if blank || !snapshot || !bank || !displayed}
       <!-- nothing has arrived yet: the same boxes, empty -->
       <div class="lo__hero hero lo-hero">
@@ -279,8 +303,22 @@
       </div>
 
       <div class="lo__wall">
-        <FrontWall state={snapshot} bankChannels={bankChannelNumbers} {dropAge} feed={displayed} />
+        <FrontWall state={snapshot} bankChannels={bankChannelNumbers} {dropAge} feed={displayed} resizing={dragging === "wall"} />
       </div>
+      <Divider
+        class="lo__dv-wall"
+        orientation="horizontal"
+        size={wallSize}
+        limits={wallLimits}
+        grows={1}
+        label="Wall height"
+        readout="WALL {wallSize} · WATERFALL {wallSeconds} S"
+        valuetext="Wall {wallSize} pixels, waterfall {wallSeconds} seconds"
+        onsize={(px) => (liveOpsPrefs.wall = wallFraction(px, frameH))}
+        oncommit={() => liveOpsPrefs.save()}
+        onreset={() => ((liveOpsPrefs.wall = null), liveOpsPrefs.save())}
+        ondragging={(on) => (dragging = on ? "wall" : null)}
+      />
 
       <div class="lo__lower">
         <div class="lo__bank">
@@ -321,7 +359,20 @@
           </div>
         </div>
 
-        <div class="lo__gutter"></div>
+        <Divider
+          class="lo__gutter"
+          orientation="vertical"
+          size={paneSize}
+          limits={paneLimits}
+          grows={-1}
+          label="Pane width"
+          readout="PANE {paneSize} · {columns} {columns === 1 ? 'COLUMN' : 'COLUMNS'}"
+          valuetext="Pane {paneSize} pixels, {columns} tile {columns === 1 ? 'column' : 'columns'}"
+          onsize={(px) => (liveOpsPrefs.pane = paneFraction(px, frameW))}
+          oncommit={() => liveOpsPrefs.save()}
+          onreset={() => ((liveOpsPrefs.pane = null), liveOpsPrefs.save())}
+          ondragging={(on) => (dragging = on ? "pane" : null)}
+        />
 
         <div class="lo__pane br">
           {#if selectedId}

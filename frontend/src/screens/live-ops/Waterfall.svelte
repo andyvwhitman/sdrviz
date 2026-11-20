@@ -23,11 +23,13 @@
     live: boolean;
     /** seconds since the backend link dropped, null while it is up */
     dropAge: number | null;
+    /** the box is being dragged to a new size: keep the canvas as drawn (CSS-stretched) and redraw once on release */
+    frozen?: boolean;
     /** the ramp clamp in dBFS, reported for the LOFAR legend */
     clamp?: { lo: number; hi: number };
     children?: Snippet;
   }
-  let { width, height, feedId, floor, carriers, live, dropAge, clamp = $bindable({ lo: 0, hi: 0 }), children }: Props = $props();
+  let { width, height, feedId, floor, carriers, live, dropAge, frozen = false, clamp = $bindable({ lo: 0, hi: 0 }), children }: Props = $props();
 
   const rampRgb = RAMP.map((hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)));
   const colour = (t: number): number[] => {
@@ -40,14 +42,19 @@
   let canvas = $state<HTMLCanvasElement>();
   /** device pixels per CSS pixel: the canvas backing store is `css px x ratio` */
   let ratio = $state(devicePixelRatio || 1);
-  const backW = $derived(Math.max(1, Math.round(width * ratio)));
-  const backH = $derived(Math.max(1, Math.round(height * ratio)));
+  /** the size the canvas was last drawn for: it follows the box except while the box is being dragged */
+  let drawnFor = $state.raw(untrack(() => ({ width, height })));
+  $effect(() => {
+    if (!frozen) drawnFor = { width, height };
+  });
+  const backW = $derived(Math.max(1, Math.round(drawnFor.width * ratio)));
+  const backH = $derived(Math.max(1, Math.round(drawnFor.height * ratio)));
 
   $effect(() => {
     model.load(feedId);
   });
   $effect(() => {
-    model.grow(rowsFor(height));
+    model.grow(rowsFor(drawnFor.height));
   });
   $effect(() => {
     const frame = spectrum.latest;
@@ -57,6 +64,7 @@
   /** One source row is ROW_PX CSS pixels tall; the backend provides oldest first, row 0 on screen is the newest. */
   function draw(): void {
     const ctx = canvas?.getContext("2d");
+    const { width, height } = drawnFor;
     if (!ctx || !canvas || width < 2 || height < 2) return;
     const image = ctx.createImageData(backW, backH);
     const rows = model.rows;

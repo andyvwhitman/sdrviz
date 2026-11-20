@@ -125,3 +125,11 @@
 .lo-insp .lo-chart { padding-top: 6px; }
 .lo-insp .lo-chart .t-micro { display: block; margin-top: 4px; }
 
+
+/* ---- dividers: each sits in a gap that already exists, so the idle screen looks as it would without them ---- */
+.lo__dv-wall { position: absolute; left: 0; right: 0; height: 24px; top: calc(2 * var(--lo-gap) + var(--hero-h) + var(--wall-h) - 4px); }
+.lo__gutter { position: relative; min-width: 0; min-height: 0; }
+.lo[data-pane] { --pane-w: clamp(360px, calc(var(--pane-frac) * 100cqw), calc(100cqw - 240px)); }
+/* while a divider is dragged the cursor holds wherever the pointer goes, and nothing selects */
+body.lo-resizing-col, body.lo-resizing-col * { cursor: col-resize !important; user-select: none !important; }
+body.lo-resizing-row, body.lo-resizing-row * { cursor: row-resize !important; user-select: none !important; }

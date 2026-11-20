@@ -52,7 +52,7 @@
 
   const zone = $derived(state?.tz.name ?? "EST");
   const utcShift = $derived(state ? -parseUtcOffset(state.tz.utc_offset) : 5 * 3600);
-  const scope = $derived(blank && route.id === "live-ops" ? (["BANK", fmt.BLANK] as [string, string]) : shell.scope);
+  const scope = $derived(blank && route.id === "live-ops" ? (["NODE", fmt.BLANK] as [string, string]) : shell.scope);
   const clock = $derived(state ? fmt.clock(state.clock, ui.utc ? "UTC" : zone, utcShift) : fmt.BLANK);
 
   /** Link trouble outranks everything the scenario says (brief 8.4-8.7). */

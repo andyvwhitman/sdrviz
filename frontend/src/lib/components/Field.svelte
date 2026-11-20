@@ -14,15 +14,17 @@
     readonly?: boolean;
     autofocus?: boolean;
     width?: number;
+    /** id of a <datalist> that suggests values */
+    list?: string;
   }
-  let { label, value = $bindable(), type = "text", unit, placeholder, hint, error, text = false, disabled = false, readonly = false, autofocus = false, width }: Props = $props();
+  let { label, value = $bindable(), type = "text", unit, placeholder, hint, error, text = false, disabled = false, readonly = false, autofocus = false, width, list }: Props = $props();
 </script>
 
 <label class="field" class:is-error={!!error} style:width={width ? `${width}px` : undefined}>
   <span class="field__label">{label}</span>
   <span class="field__row">
     <!-- svelte-ignore a11y_autofocus -->
-    <input class="field__input" class:field__input--text={text} {type} bind:value {placeholder} {disabled} {readonly} {autofocus} />
+    <input class="field__input" class:field__input--text={text} {type} bind:value {placeholder} {list} {disabled} {readonly} {autofocus} />
     {#if unit}<span class="field__unit">{unit}</span>{/if}
   </span>
   {#if error}<span class="field__error">{error}</span>{/if}

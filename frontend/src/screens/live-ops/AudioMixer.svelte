@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * The pane's audio row (direction 5.3): volume slider, level meter while keyed, and the same M S R levers the tiles
+   * The pane's audio row (direction 5.3): volume slider, level meter while keyed, and the same M S levers the tiles
    * carry. Everything goes through the `prefs` store (optimistic, REST-backed); the audio engine reads the same store
    * through `mixer.gainOf`. A line under the row says why a channel cannot be heard, when it cannot.
    */
@@ -15,10 +15,10 @@
     channelId: string;
     floor: number | null;
     keyed: boolean;
-    /** the frequency is in a bank, but the active bank is another: only a solo makes it audible */
-    offBank?: boolean;
+    /** the frequency is enabled on another node only: only a solo makes it audible */
+    notOnNode?: boolean;
   }
-  let { channelId, floor, keyed, offBank = false }: Props = $props();
+  let { channelId, floor, keyed, notOnNode = false }: Props = $props();
 
   const mix = $derived<Mix>({ muted: prefs.muted, solo: prefs.solo, volumes: volumesOf(prefs.value) });
   const saved = $derived(Math.round(volumeOf(mix, channelId) * 100));
@@ -39,7 +39,7 @@
   /** What the line under the row says, or nothing when it is only the plain gain. */
   const note = $derived.by((): string | null => {
     if (!audio.enabled) return audio.muted ? "AUDIO MUTED · UNMUTE AT THE BOTTOM RIGHT" : "AUDIO STARTS ON YOUR FIRST CLICK";
-    if (offBank && !prefs.solo.has(channelId)) return "NOT AUDIBLE · NOT IN THE ACTIVE BANK · SOLO TO HEAR";
+    if (notOnNode && !prefs.solo.has(channelId)) return "NOT AUDIBLE · NOT ON THE LISTENED NODE · SOLO TO HEAR";
     if (gain === 0) return `NOT AUDIBLE · ${prefs.solo.size && !prefs.solo.has(channelId) ? "ANOTHER CHANNEL IS SOLOED" : "MUTED"}`;
     return null;
   });
@@ -62,7 +62,7 @@
     />
     <span class="au__v">{shown}</span>
     {#if keyed}<span class="au__meter"><LevelMeter w={96} db={level?.db ?? null} peak={level?.peak ?? null} {floor} tx muted={prefs.muted.has(channelId)} /></span>{/if}
-    <LeverRow class="au__levers" state={{ m: prefs.muted.has(channelId), s: prefs.solo.has(channelId), r: prefs.record.has(channelId) }} ontoggle={press} />
+    <LeverRow class="au__levers" state={{ m: prefs.muted.has(channelId), s: prefs.solo.has(channelId) }} ontoggle={press} />
   </div>
   <p class="au__note">{#if note}{note}{:else}OUTPUT GAIN <span class="au__n">{gain}</span>{/if}</p>
 </div>

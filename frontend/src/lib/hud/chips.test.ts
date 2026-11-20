@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { compactChips, headerChips } from "./chips";
 
-const row = (aar: string, off_bank: boolean) => ({ aar, off_bank });
+const row = (aar: string) => ({ aar });
 const stateWith = (...active: ReturnType<typeof row>[]) =>
   ({
     header: { feeds_chip: "FEEDS 4/4", feeds_chip_state: "ok", asr_chip: "", disk_chip: "", host_chip: "" },
@@ -14,12 +14,8 @@ const stateWith = (...active: ReturnType<typeof row>[]) =>
 const keyed = (...active: ReturnType<typeof row>[]) => headerChips(stateWith(...active), { txChip: true }).find((c) => c.kind === "tx")?.text;
 
 describe("KEYED chip", () => {
-  it("lists on-bank channels and counts off-bank ones", () => {
-    expect(keyed(row("CH54", false), row("CH08", false), row("CH66", true))).toBe("KEYED · CH54 · CH08 · +1 OFF-BANK");
-  });
-
-  it("an all off-bank key-up has no empty channel slots", () => {
-    expect(keyed(row("CH66", true))).toBe("KEYED · +1 OFF-BANK");
+  it("lists every keyed channel", () => {
+    expect(keyed(row("CH54"), row("CH08"), row("CH66"))).toBe("KEYED · CH54 · CH08 · CH66");
   });
 });
 
@@ -27,13 +23,13 @@ describe("compactChips", () => {
   const chips = (...active: ReturnType<typeof row>[]) => headerChips(stateWith(...active), { txChip: true });
 
   it("shows a KEYED count and keeps the full list in the tooltip", () => {
-    const keyed = compactChips(chips(row("CH22", false), row("CH12", false))).find((c) => c.id === "keyed");
+    const keyed = compactChips(chips(row("CH22"), row("CH12"))).find((c) => c.id === "keyed");
     expect(keyed?.text).toBe("KEYED · 2");
     expect(keyed?.title).toBe("KEYED · CH22 · CH12");
   });
 
   it("counts an off-bank key-up as one", () => {
-    expect(compactChips(chips(row("CH22", false), row("CH66", true))).find((c) => c.id === "keyed")?.text).toBe("KEYED · 2");
+    expect(compactChips(chips(row("CH22"), row("CH66"))).find((c) => c.id === "keyed")?.text).toBe("KEYED · 2");
   });
 
   it("joins FEEDS and ASR into one chip", () => {

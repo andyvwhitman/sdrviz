@@ -61,4 +61,6 @@ export interface FrequencyInfo {
   confidence?: string | null;
   notes?: string | null;
   sources?: string[];
+  /** the full frequency record carries the nodes it is assigned to */
+  assignments?: { feed_id: string; enabled: boolean }[];
 }

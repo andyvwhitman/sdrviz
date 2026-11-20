@@ -1,5 +1,5 @@
 /**
- * What a screen tells the shell: the title-block scope ("BANK  NEC CORRIDOR") and the status
+ * What a screen tells the shell: the title-block scope ("NODE  SDR-01") and the status
  * line's nominal readout. The shell resets both on every route change.
  */
 

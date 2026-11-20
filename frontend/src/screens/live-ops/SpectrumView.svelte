@@ -14,12 +14,12 @@
 
   interface Props {
     state: LiveState;
-    bankChannels: number[];
+    listedChannels: number[];
     dropAge: number | null;
     feed: Feed;
     onback: () => void;
   }
-  let { state: snapshot, bankChannels, dropAge, feed, onback }: Props = $props();
+  let { state: snapshot, listedChannels, dropAge, feed, onback }: Props = $props();
 
   const zone = $derived(snapshot.tz.name ?? "EST");
   const clock = $derived(fmt.clock(snapshot.clock, ui.utc ? "UTC" : zone, -parseUtcOffset(snapshot.tz.utc_offset)).slice(0, 8));
@@ -33,7 +33,7 @@
     <span class="sv__clock">{clock}</span>
   </div>
   <div class="sv__plot">
-    <FrontWall viewOnly state={snapshot} {bankChannels} {dropAge} {feed} />
+    <FrontWall viewOnly state={snapshot} {listedChannels} {dropAge} {feed} />
   </div>
   <div class="sv__foot">
     <span>REF <b>{fmt.num(REF_DBFS, 0)}</b> dBFS · <b>10</b> dB/div</span>

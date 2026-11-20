@@ -135,6 +135,7 @@ button.chip:hover { color: var(--ink); }
 .tab::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: transparent; }
 .tab .n { font: 400 var(--fs-11)/1 var(--font-data); color: var(--ink-3); letter-spacing: 0; }
 .tab:hover { color: var(--ink-2); }
+.tab.is-dim { color: var(--ink-3); }
 .tab[aria-selected="true"] { color: var(--ink); --tab-stroke: var(--line); }
 .tab[aria-selected="true"]::after { background: var(--ink); }
 .tab[aria-selected="true"] .n { color: var(--ink-2); }

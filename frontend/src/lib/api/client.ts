@@ -10,6 +10,7 @@ import type { SourceConfig, TransitSource } from "$lib/types/sources";
 import type { BackendStats } from "../../screens/settings/types";
 import type { Prefs, SessionInfo, SimJump, SimStatus } from "$lib/types/api";
 import type { DayActivity, FrequencyInfo, Recording, WeekActivity } from "$lib/types/recordings";
+import type { Frequency, FrequencyBody } from "$lib/types/frequencies";
 
 /** A JSON object whose fields the owning screen narrows. Replace with schema.gen.ts types. */
 export type Json = Record<string, unknown>;
@@ -103,6 +104,14 @@ export const api = {
     /** right-click on the waterfall (admin): the frequency on that AAR channel, made if need be, enabled on the feed */
     fromChannel: (aarChannel: number, feedId: string) =>
       post<{ frequency: { id: string; label: string }; created: boolean }>("/frequencies/from-channel", { aar_channel: aarChannel, feed_id: feedId }),
+    /** The typed table (with assignments): the Frequencies page and the frequency editor. */
+    table: () => get<Frequency[]>("/frequencies"),
+    add: (body: FrequencyBody) => post<Frequency>("/frequencies", body),
+    save: (body: FrequencyBody) => put<Frequency>(`/frequencies/${encodeURIComponent(body.id)}`, body),
+    delete: (id: string) => del(`/frequencies/${encodeURIComponent(id)}`),
+    /** Assign to a node (feed), enabled or not; creates the assignment or changes it. */
+    assign: (id: string, feedId: string, enabled: boolean) => put<Frequency>(`/frequencies/${encodeURIComponent(id)}/assignments/${encodeURIComponent(feedId)}`, { enabled }),
+    unassign: (id: string, feedId: string) => del<Frequency>(`/frequencies/${encodeURIComponent(id)}/assignments/${encodeURIComponent(feedId)}`),
   },
   /** Saved transmissions and per-frequency activity (docs/recordings-api.md). Times are UTC. */
   recordings: {
@@ -114,14 +123,6 @@ export const api = {
   activity: {
     day: (frequencyId: string, date?: string, signal?: AbortSignal) => get<DayActivity>(`/frequencies/${encodeURIComponent(frequencyId)}/activity`, { date }, signal),
     week: (frequencyId: string, date?: string, signal?: AbortSignal) => get<WeekActivity>(`/frequencies/${encodeURIComponent(frequencyId)}/activity/week`, { date }, signal),
-  },
-  banks: {
-    list: () => get<Json[]>("/banks"),
-    create: (bank: Json) => post("/banks", bank),
-    get: (id: string) => get(`/banks/${id}`),
-    update: (id: string, bank: Json) => put(`/banks/${id}`, bank),
-    remove: (id: string) => del(`/banks/${id}`),
-    activate: (id: string) => post<Prefs>(`/banks/${id}/activate`),
   },
   feeds: {
     list: () => get<Json[]>("/feeds"),

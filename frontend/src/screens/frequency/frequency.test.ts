@@ -6,7 +6,7 @@ const NY = "America/New_York";
 
 function rec(id: number, startedAt: string, extra: Partial<Recording> = {}): Recording {
   return {
-    id, frequency_id: "f", aar_channel: 12, feed_id: "node-1", feed_lat: null, feed_lon: null, started_at: startedAt, duration_s: 5,
+    id, frequency_id: "f", aar_channel: 12, feed_id: "node-1", node_id: null, feed_lat: null, feed_lon: null, started_at: startedAt, duration_s: 5,
     audio_bytes: 100, audio_state: "ok", audio_url: `/api/recordings/${id}/audio`, transcript: "hello", transcript_state: "done", engine: "x", ...extra,
   };
 }

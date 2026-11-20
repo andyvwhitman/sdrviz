@@ -20,7 +20,6 @@ function rowFromKeyup(m: KeyupMessage): TxRow {
     aar4: "",
     frequency_id: m.channel_id,
     label: "",
-    off_bank: m.off_bank,
     feed_id: m.feed_id,
     feed_label: "",
     role: m.role,

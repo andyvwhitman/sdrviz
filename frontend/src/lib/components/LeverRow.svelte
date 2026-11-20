@@ -1,6 +1,6 @@
 <script lang="ts">
-  /** M21 lever row: Mute, Solo, Record. */
-  type LeverKey = "m" | "s" | "r";
+  /** M21 lever row: Mute, Solo. (Recording is "enabled", set per node.) */
+  type LeverKey = "m" | "s";
 
   interface Props {
     state?: Partial<Record<LeverKey, boolean>>;
@@ -12,7 +12,6 @@
   const LEVERS: { letter: string; key: LeverKey; name: string }[] = [
     { letter: "M", key: "m", name: "Mute" },
     { letter: "S", key: "s", name: "Solo" },
-    { letter: "R", key: "r", name: "Record" },
   ];
 
   function press(event: MouseEvent, key: LeverKey) {

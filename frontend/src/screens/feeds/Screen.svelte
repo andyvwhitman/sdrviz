@@ -37,7 +37,7 @@
   const feedFromUrl = $derived(router.query("feed") ? `feed-${router.query("feed")}` : null);
   const selectedFeed = $derived.by(() => {
     if (!snapshot) return undefined;
-    const wanted = pickedFeed ?? feedFromUrl ?? (snapshot as unknown as { displayed_feed_admin?: string }).displayed_feed_admin ?? snapshot.displayed_feed;
+    const wanted = pickedFeed ?? feedFromUrl ?? snapshot.displayed_feed_admin;
     return snapshot.feeds.find((f) => f.id === wanted) ?? snapshot.feeds[0];
   });
   $effect(() => {
@@ -140,7 +140,6 @@
   }
 
   onMount(() => {
-    catalogue.load().catch(report);
     loadSources();
     const poll = setInterval(loadSources, POLL_MS);
     const clock = setInterval(() => (now = Date.now()), 1000);

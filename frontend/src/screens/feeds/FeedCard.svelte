@@ -1,6 +1,7 @@
 <script lang="ts">
   /** One receiver in the feed list: state line, five measured values, telemetry line, live receptions. */
   import PositionGlyph from "$lib/components/PositionGlyph.svelte";
+  import { followLink } from "$lib/router.svelte";
   import { session } from "$lib/stores/session.svelte";
   import SimTag from "$lib/components/SimTag.svelte";
   import Toggle from "$lib/components/Toggle.svelte";
@@ -64,7 +65,7 @@
 
   <div class="fb-card__state">
     {#if feed.state === "ok"}
-      <span class="k">HEARS</span>{feed.hears.length} CH<span class="sep"></span><span class="k">LAST SAMPLE</span>{fmt.age(silent.value)}
+      <span class="k">ENABLED</span><a href="/frequencies?node={feed.id}&state=enabled" onclick={(e) => (e.stopPropagation(), followLink(e))}>{feed.hears.length} CH</a><span class="sep"></span><span class="k">LAST SAMPLE</span>{fmt.age(silent.value)}
     {:else}
       <span class={look.tone}>{feed.label}</span><span class="sep"></span><span class={look.tone}>{feed.in_state_label}</span>
       {#if feed.state === "fault"}

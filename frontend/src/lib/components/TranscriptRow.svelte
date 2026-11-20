@@ -28,7 +28,6 @@
   let { row, columns = "log", live = false, selected = false, play = false, colWidth = 320, onclick, onretry, channelHref = null }: Props = $props();
 
   const isDetector = $derived(row.role_tag === "DET");
-  const offBank = $derived(row.off_bank);
   const detector = $derived(isDetector ? row.detector : null);
 
   // a detector row names the train it read
@@ -59,10 +58,9 @@
   class="txrow"
   class:txrow--history={columns === "history"}
   class:is-selected={selected}
-  class:has-wash={live && !offBank}
+  class:has-wash={live}
   data-row={row.state}
   data-live={live ? "" : undefined}
-  data-offbank={offBank ? "" : undefined}
   data-det={detector ? "" : undefined}
   data-defect={detector?.defect ? "" : undefined}
   data-id={row.id}

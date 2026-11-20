@@ -33,7 +33,7 @@ describe("applyMessage", () => {
     const receptions = [{ feed_id: "feed-lnd", snr_db: 20, rssi_dbfs: -30, dist_km: 5 }];
     const row = { ...state.transcript.rows[0], id: "tx-r" } as Record<string, unknown>;
     delete row.receptions;
-    applyMessage(state, { type: "keyup", tx_id: "tx-r", channel_id: "x", aar: "CH08", feed_id: "feed-lnd", receptions, role: "crew", role_tag: "CRW", speaker: "", train_id: null, place_id: null, off_bank: false, t: 1, row } as unknown as KeyupMessage);
+    applyMessage(state, { type: "keyup", tx_id: "tx-r", channel_id: "x", aar: "CH08", feed_id: "feed-lnd", receptions, role: "crew", role_tag: "CRW", speaker: "", train_id: null, place_id: null, t: 1, row } as unknown as KeyupMessage);
     expect(state.active_transmissions.at(-1)?.receptions).toEqual(receptions);
   });
 
@@ -44,7 +44,7 @@ describe("applyMessage", () => {
     const row = { ...state.transcript.rows[0], id: "tx-new", state: "decoding" as const, live: true, words: [], transcript: "" };
     const keyup: KeyupMessage = {
       type: "keyup", tx_id: "tx-new", channel_id: "amtk-nec-road", aar: "CH54", feed_id: "feed-lnd", receptions: [], role: "crew",
-      role_tag: "CRW", speaker: "MARC 433", train_id: "MARC 433", place_id: null, off_bank: false, t: 13205, row,
+      role_tag: "CRW", speaker: "MARC 433", train_id: "MARC 433", place_id: null, t: 13205, row,
     };
     applyMessage(state, keyup);
     expect(state.transcript.rows[0].id).toBe("tx-new");
@@ -62,8 +62,8 @@ describe("applyMessage", () => {
 
   it("keyup without a row still produces one from the message fields", () => {
     const state = scenario("listening");
-    applyMessage(state, { type: "keyup", tx_id: "tx-bare", channel_id: "x", aar: "CH08", feed_id: "feed-bay", receptions: [], role: "crew", role_tag: "CRW", speaker: "CSX Q216", train_id: null, place_id: null, off_bank: true, t: 1 } as unknown as KeyupMessage);
-    expect(state.transcript.rows[0]).toMatchObject({ id: "tx-bare", aar: "CH08", off_bank: true, state: "decoding" });
+    applyMessage(state, { type: "keyup", tx_id: "tx-bare", channel_id: "x", aar: "CH08", feed_id: "feed-bay", receptions: [], role: "crew", role_tag: "CRW", speaker: "CSX Q216", train_id: null, place_id: null, t: 1 } as unknown as KeyupMessage);
+    expect(state.transcript.rows[0]).toMatchObject({ id: "tx-bare", aar: "CH08", state: "decoding" });
   });
 
   it("faults replaces the fault set, header and status line", () => {

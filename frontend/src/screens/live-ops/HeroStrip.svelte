@@ -1,45 +1,31 @@
 <script lang="ts">
-  import { session } from "$lib/stores/session.svelte";
   /**
-   * Hero strip (spec 5.27, brief 9.1.1): what is keyed now, or how long ago the bank last was, then
-   * the off-bank count and the displayed-feed selector. The selector opens a small menu: inspect the
-   * feed, or show another feed on the front wall.
+   * Hero strip (spec 5.27, brief 9.1.1): what is keyed now, or how long ago the listened node last heard anything,
+   * then the "on another node" readout and the node's state chip, which opens the feed inspector.
    */
   import Chip from "$lib/components/Chip.svelte";
-  import PositionGlyph from "$lib/components/PositionGlyph.svelte";
   import type { ChipKind } from "$lib/hud/chips";
   import * as fmt from "$lib/hud/fmt";
+  import { session } from "$lib/stores/session.svelte";
   import type { Fault, Feed } from "$lib/types/live";
   import type { Hero } from "./hero";
 
   interface Props {
     hero: Hero;
-    feeds: readonly Feed[];
     displayed: Feed;
     faults: readonly Fault[];
-    offBank: string | null;
-    elsewhere: string | null;
+    elsewhere: { text: string; feedId: string } | null;
     /** a keyed channel's name was chosen: select it into the pane */
     onselect?: (frequencyId: string) => void;
+    /** an admin chose the "+1 ON SDR-02" readout: listen to that node */
     onshowfeed: (feedId: string) => void;
     oninspectfeed: (feedId: string) => void;
-    /** the live bank is the one on the wall: its empty state is told by the tile area, so the title is short */
-    liveBank?: boolean;
   }
-  let { hero, feeds, displayed, faults, offBank, elsewhere, onselect, onshowfeed, oninspectfeed, liveBank = false }: Props = $props();
+  let { hero, displayed, faults, elsewhere, onselect, onshowfeed, oninspectfeed }: Props = $props();
 
   const fault = $derived(faults.find((f) => f.object === displayed.id));
   const selectorKind = $derived<ChipKind>(fault ? (fault.acked ? "acked" : "fault") : displayed.state === "stale" ? "degraded" : "active");
-  const offBankParts = $derived(offBank?.match(/^(\+\d+ OFF-BANK)(.*)$/) ?? null);
-
-  let menuOpen = $state(false);
-  const pick = (action: () => void) => () => {
-    menuOpen = false;
-    action();
-  };
 </script>
-
-<svelte:window onclick={() => (menuOpen = false)} onkeydown={(e) => e.key === "Escape" && (menuOpen = false)} />
 
 <div class="hero lo-hero">
   {#if hero.mode === "keyed"}
@@ -56,30 +42,19 @@
     <span class="hero__big is-2">{fmt.age(hero.ageS)}</span>
     <span class="hero__text c-ink-2">AGO · {hero.aar} · {hero.label}</span>
   {:else if hero.mode === "empty"}
-    <span class="hero__text c-ink-2">{liveBank ? "LIVE · 0 CHANNELS" : "NO CHANNELS IN THIS BANK"}</span>
+    <span class="hero__text c-ink-2">NOTHING ENABLED</span>
   {:else}
     <span class="hero__text c-ink-2">NO KEY-UPS YET</span>
   {/if}
 
   <span class="hero__aside">
-    {#if offBank}
-      <span class="lo-offbank">{offBankParts ? offBankParts[1] : offBank}{#if offBankParts}<span class="mono">{offBankParts[2]}</span>{/if}</span>
-    {/if}
-    <span class="lo-selector">
-      <Chip button kind={selectorKind} glyph={fault ? "fault" : undefined} text="FEED · {displayed.short} ▾" onclick={(e) => (e.stopPropagation(), (menuOpen = !menuOpen))} />
-      {#if menuOpen}
-        <div class="lo-menu br" role="menu">
-          <button class="lo-menu__item" role="menuitem" onclick={pick(() => oninspectfeed(displayed.id))}>INSPECT {displayed.short}</button>
-          <!-- the displayed feed is shared by everyone: only an admin changes it -->
-          {#each session.isAdmin ? feeds : [] as feed (feed.id)}
-            <button class="lo-menu__item" role="menuitemradio" aria-checked={feed.id === displayed.id} onclick={pick(() => onshowfeed(feed.id))}>
-              <PositionGlyph state={feed.state === "fault" ? "fault" : feed.state === "ok" ? "idle" : "stale"} />
-              SHOW {feed.short}
-            </button>
-          {/each}
-        </div>
+    <Chip button kind={selectorKind} glyph={fault ? "fault" : undefined} text="FEED · {displayed.short}" title="Inspect {displayed.short}" onclick={() => oninspectfeed(displayed.id)} />
+    {#if elsewhere}
+      {#if session.isAdmin}
+        <Chip button kind="nominal" text={elsewhere.text} title="Listen to {elsewhere.text.replace(/^.* ON /, '')}" onclick={() => onshowfeed(elsewhere.feedId)} />
+      {:else}
+        <Chip kind="nominal" text={elsewhere.text} />
       {/if}
-    </span>
-    {#if elsewhere}<Chip kind="nominal" text={elsewhere} />{/if}
+    {/if}
   </span>
 </div>

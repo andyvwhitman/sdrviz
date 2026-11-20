@@ -32,13 +32,13 @@
 
   interface Props {
     state: LiveState;
-    /** channel numbers of the displayed bank */
-    bankChannels: number[];
+    /** channel numbers of the listened node's list */
+    listedChannels: number[];
     /** seconds since the link dropped, null while it is up */
     dropAge: number | null;
     /** no data yet (loading, connecting): empty boxes */
     blank?: boolean;
-    /** the displayed feed, when the bank has none of its own */
+    /** the listened node's feed */
     feed: Feed;
     /** the wall is being resized: the waterfall stays as drawn (stretched) until the release */
     resizing?: boolean;
@@ -47,7 +47,7 @@
     /** the selected frequency's channel number, marked on the ruler */
     selectedChannel?: number | null;
   }
-  let { state: snapshot, bankChannels, dropAge, blank = false, feed, resizing = false, viewOnly = false, selectedChannel = null }: Props = $props();
+  let { state: snapshot, listedChannels, dropAge, blank = false, feed, resizing = false, viewOnly = false, selectedChannel = null }: Props = $props();
 
   // the server streams spectrum frames only for the feed being watched
   $effect(() => {
@@ -81,8 +81,8 @@
   const rulerBox = $derived<Box>([0, spectrumH, plotW, rulerH]);
   const waterfallBox = $derived<Box>([0, spectrumH + rulerH, plotW, fallH]);
 
-  /** what the ruler labels: the bank's channels this feed hears; off-bank keyed channels and the selection ride along as extras */
-  const labelled = $derived(blank ? [] : bankChannels.filter((ch) => heard.includes(ch)));
+  /** what the ruler labels: the node's listed channels this feed hears; unlisted keyed channels and the selection ride along as extras */
+  const labelled = $derived(blank ? [] : listedChannels.filter((ch) => heard.includes(ch)));
   const keyedChannels = $derived(snapshot.active_transmissions.map((row) => channelNumber(row.aar)));
   const inBand = (ch: number): boolean => ch >= BAND.first && ch <= BAND.last;
   const extras = $derived(blank ? [] : [...keyedChannels, ...(selectedChannel === null ? [] : [selectedChannel]), ...(listenHold.held ? [listenHold.held.channel] : [])].filter((ch) => inBand(ch) && !labelled.includes(ch)));

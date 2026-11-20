@@ -39,7 +39,7 @@ export interface TileInput {
   showLevers?: boolean;
   spark?: number[];
   meter?: { floor?: number | null; db?: number | null; peak?: number | null };
-  levers?: { m?: boolean; s?: boolean; r?: boolean };
+  levers?: { m?: boolean; s?: boolean };
 }
 
 export interface TileIdentity {
@@ -114,7 +114,7 @@ export function resolveTile(s: TileInput = {}, identity: Partial<TileIdentity> =
 /** What `tileInputFrom` needs to know about the wall around a channel. */
 export interface TileContext {
   feeds: Record<string, Feed>;
-  displayedFeed: string;
+  listenFeed: string;
   /** noise floor of a feed when it reports none now */
   nominalFloor?: (feedId: string) => number | null;
   selectedId?: string | null;
@@ -129,7 +129,7 @@ const OFFLINE_READOUT = /NO FEEDS|RECONNECTING|DISABLED/;
 /** Build the resolveTile input for one channel of a LiveState. */
 export function tileInputFrom(c: Channel, ctx: TileContext): TileInput {
   const healthyFeeds = c.coverage.pips.filter((p) => p.state === "ok").map((p) => p.feed_id);
-  const meterFeed = healthyFeeds.includes(ctx.displayedFeed) ? ctx.displayedFeed : healthyFeeds[0];
+  const meterFeed = healthyFeeds.includes(ctx.listenFeed) ? ctx.listenFeed : healthyFeeds[0];
   const floor = (feedId: string) => ctx.feeds[feedId]?.noise_floor_dbfs ?? ctx.nominalFloor?.(feedId) ?? DEFAULT_NOISE_FLOOR_DBFS;
 
   const input: TileInput = {

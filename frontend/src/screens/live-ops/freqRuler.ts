@@ -61,9 +61,9 @@ export interface AxisInput {
   /** plot width, CSS px (the wall's inner width less the right margin) */
   width: number;
   cls: AxisClass;
-  /** the active bank's channels the displayed feed hears */
+  /** the listed channels the displayed feed hears */
   labelled: readonly number[];
-  /** off-bank keyed channels, and the selected channel when it is not labelled */
+  /** unlisted keyed channels, and the selected channel when it is not labelled */
   extras?: readonly number[];
   /** channels the displayed feed hears (8 px faint ticks) */
   hears?: readonly number[];
@@ -190,7 +190,7 @@ export function rulerLayout({ width, cls, labelled, extras = [], hears = [] }: A
   let bare: number[] = [];
   while (runs.length && xRight(boxesOf(runs[runs.length - 1])) > width + m.M + 1e-6) bare = runs.pop()!.members.concat(bare);
 
-  // pass 3: extras are additive and never move a bank item
+  // pass 3: extras are additive and never move a listed item
   const placed = runs.map(boxesOf);
   const extraRuns: { kind: "single"; members: number[]; extra: true }[] = [];
   const bareExtras: number[] = [];

@@ -26,8 +26,7 @@
 
   const snapshot = $derived(live.state);
   const feeds = $derived(Object.fromEntries((snapshot?.feeds ?? []).map((f) => [f.id, f])));
-  const bank = $derived(snapshot ? snapshot.views[snapshot.active_bank] : null);
-  const channels = $derived(snapshot ? bank!.tile_ids.map((id) => snapshot.channels.find((c) => c.id === id)!) : []);
+  const channels = $derived(snapshot?.channels ?? []);
 
   let variant = $state<TileVariant>("standard");
   const cols = $derived(variant === "standard" ? 5 : variant === "compact" ? 3 : 2);
@@ -50,7 +49,7 @@
           <ChannelTile
             {variant}
             identity={identityFrom(c, sharedFrequencySuffix(c, snapshot.channels, feedName))}
-            state={tileInputFrom(c, { feeds, displayedFeed: snapshot.displayed_feed })}
+            state={tileInputFrom(c, { feeds, listenFeed: snapshot.listen_feed ?? "" })}
           />
         {/each}
       </TileGrid>

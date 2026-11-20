@@ -9,9 +9,13 @@
    * container queries on the nearest `pane` container.
    */
   import CoveragePips from "$lib/components/CoveragePips.svelte";
+  import type { Outcome } from "$lib/components/frequency-editor/editorForm";
+  import FrequencyLayer from "$lib/components/frequency-editor/FrequencyLayer.svelte";
+  import FrequencyWindow from "$lib/components/frequency-editor/FrequencyWindow.svelte";
   import PositionGlyph from "$lib/components/PositionGlyph.svelte";
   import * as fmt from "$lib/hud/fmt";
-  import { followLink } from "$lib/router.svelte";
+  import { followLink, router } from "$lib/router.svelte";
+  import { session } from "$lib/stores/session.svelte";
   import { simClock } from "$lib/stores/simClock.svelte";
   import { live } from "$lib/stores/live.svelte";
   import { viewport } from "$lib/stores/viewport.svelte";
@@ -21,37 +25,61 @@
 
   interface Props {
     info: FrequencyInfo;
-    /** the live channel, when this frequency is in the active bank */
+    /** the live channel, when this frequency is enabled on the listened node */
     channel: Channel | undefined;
     /** seconds the channel has been keyed, or null when it is not */
     keyedElapsed: number | null;
-    /** phone: the lid below the name holds heard-by, banks, notes */
+    /** phone: the lid below the name holds heard-by, notes */
     lidOpen?: boolean;
     ontogglelid?: () => void;
     /** "page": the desktop page. "pane": the Live Ops pane. "phone": the pane's two parts with the crumb above and the ABOUT lid below */
     variant?: "page" | "pane" | "phone";
-    /** pane: the frequency is in a bank, but not the active one */
-    offBank?: boolean;
+    /** the short name of the listened node when this frequency is enabled elsewhere only: tags the identity */
+    notOnNode?: string | null;
     /** when the channel last spoke, from its newest recording, for a channel the live snapshot has no last_heard for */
     lastHeardFallback?: { ageS: number; clock: string } | null;
+    /** the frequency was saved in the editor: reload what the page shows */
+    onsaved?: () => void;
   }
-  let { info, channel, keyedElapsed, lidOpen = false, ontogglelid, variant = "page", offBank = false, lastHeardFallback = null }: Props = $props();
+  let { info, channel, keyedElapsed, lidOpen = false, ontogglelid, variant = "page", notOnNode = null, lastHeardFallback = null, onsaved }: Props = $props();
+
+  // ---- the `⋯` and the edit window (admin only). A phone gets the full-screen layer.
+  let editOpen = $state(false);
+  let editButton = $state<HTMLButtonElement>();
+  function edited(outcome: Outcome): void {
+    if (outcome === "saved") onsaved?.();
+    if (outcome !== "deleted") return;
+    editOpen = false;
+    // the detail page has nothing left to show; in the pane the selection is dropped
+    if (variant === "pane") router.setQuery({ select: null, inspect: null });
+    else router.go("/frequencies");
+  }
 
   const snapshot = $derived(live.state);
   const keyed = $derived(keyedElapsed !== null);
   const lastHeard = $derived(channel?.last_heard ?? null);
-  /** the snapshot may know nothing of this channel (it is not in the active bank): the newest recording says when it spoke */
+  /** the snapshot may know nothing of this channel (it is not on the listened node): the newest recording says when it spoke */
   const heard = $derived(lastHeard ? { ageS: cyclicAge(simClock.now, lastHeard.end_t), clock: lastHeard.clock } : (lastHeardFallback ?? null));
   const via = $derived(channel?.tx?.via ?? "");
 
   const aar4 = $derived(info.aar_channel != null ? fmt.aar(info.aar_channel) : (channel?.aar4 ?? fmt.BLANK));
   const feeds = $derived((channel?.heard_by ?? []).map((id) => snapshot?.feeds.find((feed) => feed.id === id)?.short ?? id));
-  const banks = $derived((channel?.banks ?? []).map((id) => snapshot?.banks.find((bank) => bank.id === id)?.name ?? id));
   const sub = $derived([info.railroad, info.use, ...(viewport.phone ? [] : [info.line])].filter(Boolean).join(" · "));
   const partial = $derived(channel?.coverage.state === "partial");
   const pips = $derived((channel?.coverage.pips ?? []).map((pip) => pip.state === "ok"));
   const ember = $derived(channel?.state === "recent" || channel?.state === "recent-dim" ? channel.state : null);
 </script>
+
+{#snippet editDoor()}
+  {#if session.isAdmin}
+    <button bind:this={editButton} class="idp__more" type="button" aria-label="Edit {info.label}" aria-haspopup="dialog" aria-expanded={editOpen} onclick={() => (editOpen = !editOpen)}><i></i><i></i><i></i></button>
+    {#if editOpen && viewport.handset}
+      <FrequencyLayer frequencyId={info.id} openPage={variant === "pane"} onclose={() => (editOpen = false)} ondone={edited} />
+    {:else if editOpen && editButton}
+      <FrequencyWindow frequencyId={info.id} anchor={editButton} kind="button" openPage={variant === "pane"} onclose={() => (editOpen = false)} ondone={edited} />
+    {/if}
+  {/if}
+{/snippet}
 
 {#snippet hero()}
   <div class="idp__hero" class:is-keyed={keyed} aria-live="off">
@@ -76,9 +104,10 @@
   <div class="idp__line" class:idp__line--page={variant === "phone"} aria-label="{info.label} frequency">
     <span class="idp__aar">{aar4}</span>
     <h2 class="idp__name" data-ember={ember}>{info.label}</h2>
-    {#if offBank}<span class="idp__tag">NOT IN THIS BANK</span>{/if}
+    {#if notOnNode}<span class="idp__tag">NOT ON {notOnNode}</span>{/if}
     <span class="idp__grow"></span>
     {@render hero()}
+    {@render editDoor()}
   </div>
   <div class="idp__detail">
     <div class="idp__l2">
@@ -95,7 +124,6 @@
     <button class="id__lid idp__lid" type="button" aria-expanded={lidOpen} onclick={ontogglelid}>{lidOpen ? "▾" : "▸"} ABOUT THIS FREQUENCY</button>
     {#if lidOpen}
       <div class="id__lidbody idp__lidbody">
-        {#if banks.length}<p>BANKS <b>{banks.join(" · ")}</b></p>{/if}
         {#if info.notes}<p class="id__notes">{info.notes}</p>{/if}
       </div>
     {/if}
@@ -115,7 +143,6 @@
       <div class="id__mhz"><span>{fmt.freq(info.freq_mhz)}</span> <span class="id__unit">MHz</span><span class="id__sub"> · {sub}</span></div>
       <div class="id__more">
         {#if feeds.length}<span>HEARD BY <b>{feeds.join(" · ")}</b></span>{/if}
-        {#if banks.length}<span>BANKS <b>{banks.join(" · ")}</b></span>{/if}
       </div>
     </div>
 
@@ -132,13 +159,13 @@
         <span class="id__k">NOT HEARD YET</span>
       {/if}
     </div>
+    {@render editDoor()}
   </div>
 
   <button class="id__lid" type="button" aria-expanded={lidOpen} onclick={ontogglelid}>{lidOpen ? "▾" : "▸"} ABOUT THIS FREQUENCY</button>
   {#if lidOpen}
     <div class="id__lidbody">
       {#if feeds.length}<p>HEARD BY <b>{feeds.join(" · ")}</b></p>{/if}
-      {#if banks.length}<p>BANKS <b>{banks.join(" · ")}</b></p>{/if}
       {#if info.notes}<p class="id__notes">{info.notes}</p>{/if}
     </div>
   {/if}
@@ -190,6 +217,13 @@
   .idp__name[data-ember="recent-dim"]::after { background: var(--state-recent-dim); }
   .idp__tag { flex: none; font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink-3); white-space: nowrap; }
   .idp__grow { flex: 1; }
+  /* the `⋯`: three 2 px squares, no frame at rest; a frame and brighter squares on hover or focus */
+  .idp__more { flex: none; align-self: center; width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; gap: 3px; margin-left: 4px; padding: 0; background: none; border: 0; cursor: pointer; }
+  .idp__more i { width: 2px; height: 2px; background: var(--ink-3); }
+  .idp__more:hover, .idp__more:focus-visible, .idp__more[aria-expanded="true"] { box-shadow: inset 0 0 0 1px var(--line); }
+  .idp__more:hover i, .idp__more:focus-visible i, .idp__more[aria-expanded="true"] i { background: var(--ink); }
+  .id__row > .idp__more { margin-top: 4px; }
+  @media (max-width: 767px) { .idp__more { width: 44px; height: 44px; } }
   .idp__hero { flex: none; display: flex; align-items: center; gap: 8px; }
   .idp__k { font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink-2); white-space: nowrap; }
   .idp__big { font: 500 var(--fs-32)/1 var(--font-data); font-variant-numeric: tabular-nums; color: var(--ink-2); white-space: nowrap; }

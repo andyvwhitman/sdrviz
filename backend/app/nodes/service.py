@@ -201,6 +201,9 @@ class NodeRegistry:
             for node in nodes
         ]
 
+    def node_for_feed(self, feed_id: str) -> NodeOut | None:
+        return next((node for node in self.list() if node.feed_id == feed_id), None)
+
     def online_feed_ids(self) -> list[str]:
         """The feeds of the nodes that are connected now, by node number."""
         return sorted((live.feed_id for live in self.live.values() if live.online and live.feed_id), key=_number)

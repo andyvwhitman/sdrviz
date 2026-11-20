@@ -7,6 +7,14 @@ from dataclasses import dataclass, field
 QUEUE_SIZE = 512
 
 
+@dataclass
+class Hold:
+    """A client holding a channel to listen to it (see live/listen.py)."""
+
+    expires: float  # monotonic
+    state: str = "tuning"  # tuning: the node has not confirmed the channel yet | listening
+
+
 @dataclass(eq=False)
 class Client:
     """One connection: an outbound queue plus what it asked to receive."""
@@ -14,6 +22,7 @@ class Client:
     queue: asyncio.Queue[str | bytes | None] = field(default_factory=lambda: asyncio.Queue(QUEUE_SIZE))  # None: close
     audio: set[str] = field(default_factory=set)  # frequency ids
     watch: str | None = None  # feed id for spectrum frames
+    holds: dict[tuple[str, int], Hold] = field(default_factory=dict)  # (feed id, AAR channel) held to listen
 
 
 class Hub:
@@ -39,6 +48,16 @@ class Hub:
 
     def send_audio(self, channel_id: str, frame: bytes) -> None:
         self._post(lambda: self._deliver([c for c in self.clients if channel_id in c.audio], frame))
+
+    def send_listen(self, feed_id: str, aar_channel: int, frame: bytes, skip_channel_id: str = "") -> None:
+        """Audio of a held channel, to the clients holding it (not those that already get it as `skip_channel_id`)."""
+        key = (feed_id, aar_channel)
+        self._post(
+            lambda: self._deliver([c for c in self.clients if key in c.holds and skip_channel_id not in c.audio], frame)
+        )
+
+    def send_to(self, client: Client, text: str) -> None:
+        self._post(lambda: self._deliver([client], text))
 
     def send_spectrum(self, feed_id: str, frame: bytes) -> None:
         self._post(lambda: self._deliver([c for c in self.clients if c.watch == feed_id], frame))

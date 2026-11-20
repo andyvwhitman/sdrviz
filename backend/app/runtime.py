@@ -14,9 +14,10 @@ from .config import Settings
 from .db import create_schema, make_engine, open_session, seed_if_empty
 from .live import protocol
 from .live.hub import Hub
+from .live.listen import Listening
 from .models import FeedAck, Prefs, Receiver
 from .nodes.schemas import ChannelsIn
-from .nodes.service import ASSIGNED_PRESET, NodeOffline, NodeRegistry
+from .nodes.service import ASSIGNED_PRESET, NodeOffline, NodeRegistry, node_feed_id
 from .nodes.session import NodeConnections
 from .radio.receiver import load_receiver, save_receiver
 from .radio.source import RadioSource
@@ -57,6 +58,7 @@ class Runtime:
         self._node_channels = self._wanted_channels()  # the list each node on the assigned preset last got
         self._tasks: set[asyncio.Task] = set()
         self._retention: asyncio.Task | None = None
+        self._sweeper: asyncio.Task | None = None
         self.data: SimData = load_sim_data(self.db, settings)
         self.receiver: Receiver = load_receiver(self.db, settings)
         self.world: World = load_world(self.db, settings, self.receiver, self.nodes)
@@ -69,6 +71,8 @@ class Runtime:
         wall = not settings.sim and not settings.sim_start
         self.clock = WallClock() if wall else SimClock(start, settings.sim_speed)
         self.hub = Hub()
+        self.listening = Listening(self)  # channels clients hold to listen to
+        self.nodes.held_channels = self.listening.channels
         self.audio = AudioStore(settings.audio_path)
         self.transcription = Transcription(self, make_transcriber(settings, lambda: vocabulary_prompt(self)))
         self.recorder = Recorder(self)
@@ -106,6 +110,7 @@ class Runtime:
         self.radio.start()
         self.transcription.start()
         self._retention = asyncio.create_task(retention.run_forever(self), name="retention")
+        self._sweeper = asyncio.create_task(self._sweep_holds(), name="listen-holds")
         if self.transit:
             self.transit.start()
         if missing := missing_tools():
@@ -114,7 +119,16 @@ class Runtime:
             self.prefetcher = Prefetcher(self.audio, self.data.day, self.clock.now)
             self.prefetcher.start()
 
+    async def _sweep_holds(self) -> None:
+        while True:
+            await asyncio.sleep(1.0)
+            self.listening.sweep()
+
     async def stop(self) -> None:
+        if self._sweeper:
+            self._sweeper.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await self._sweeper
         if self._retention:
             self._retention.cancel()
             with contextlib.suppress(asyncio.CancelledError):
@@ -195,12 +209,16 @@ class Runtime:
 
     async def _send_channels(self, lists: dict[str, list[int]]) -> None:
         for node_id, channels in lists.items():  # one failing node must not stop the others
+            failure: str | None = "node offline"
             try:
-                await self.nodes.send_command(node_id, ChannelsIn(type="channels", channels=channels))
+                result = await self.nodes.send_command(node_id, ChannelsIn(type="channels", channels=channels))
+                failure = None if result.status == "acked" else f"node {result.status}"
             except NodeOffline:
                 pass
             except Exception:
+                failure = "could not tell the node"
                 log.exception("could not send the channels to node %s", node_id)
+            self.listening.node_replied(node_feed_id(self.nodes.get(node_id).number), channels, failure)
 
     def reload_node_feeds(self) -> None:
         """A node was enrolled, changed or revoked: its feed row appears, changes or goes."""

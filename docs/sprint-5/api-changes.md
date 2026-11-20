@@ -79,3 +79,36 @@ the UI filters to the listened node if it wants to. (`channel` patches over the 
 frequency; ignore ids not in `channels`.)
 
 Not provided any more: the bank "hero" (keyed / last key-up line). Derive it from `channels[].tx` and `last_heard`.
+
+## Hold to listen (websocket `/ws/live`)
+
+Client ops (also in `ClientOp`, `frontend/src/lib/ws/protocol.ts`):
+
+```ts
+{ op: "listen_hold";    feed_id: string; aar_channel: number }   // press; repeat every 5 s while held
+{ op: "listen_release"; feed_id?: string; aar_channel?: number } // release; no fields = all of this connection's holds
+```
+
+- `feed_id` must be an online node feed (`node-N`); `aar_channel` 1..97. Bad values are ignored silently (no message);
+  a hold on a feed that is not a node or is offline answers `failed`.
+- Viewers may hold (it is listening, not a change). At most 4 holds per connection.
+- While held, the channel is added to that node's decode list (union with its enabled assignments), pushed to that node
+  only. It is removed again on release, 15 s without a renewal, or disconnect (no message to a gone client).
+- The audio arrives as ordinary binary audio frames (PCM, 100 ms chunks, `ch` = AAR channel in the header, its own
+  `tx_seq`) to the holding connections only; no `audio` op or frequency id is needed. If the channel also is an enabled
+  frequency, holders get it once (a connection that subscribed to it with the `audio` op is not sent it twice).
+- Held listening is never recorded, transcribed, nor shown as a tile, `keyup`, `keydown` or `level`. A key-up on a
+  channel that is neither enabled on the node nor held is ignored.
+
+Server message, to the holding connection only:
+
+```ts
+{ type: "listen_state", feed_id, aar_channel, state: "tuning" | "listening" | "released" | "failed", reason?: string }
+```
+
+- `tuning`: hold accepted, the node has been sent the new list. `listening`: the node acked it (sent at once, without
+  `tuning` first being followed by a wait, when the node already decoded the channel: enabled there or `aar` preset).
+  The first audio frame for the channel can take longer than `listening` (it comes with a transmission).
+- `released`: `reason` is `"released"` (your op) or `"timeout"`. `failed`: `reason` is `"not a node"`, `"node offline"`,
+  `"too many holds"`, `"node timeout"` / `"node failed"` (the node did not ack or refused) or `"could not tell the node"`.
+  After `failed` the hold is gone; press again to retry.

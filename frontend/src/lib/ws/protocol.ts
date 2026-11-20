@@ -99,7 +99,19 @@ export type ServerMessage =
   | FeedMessage
   | FaultsMessage
   | TrainsMessage
-  | LofarRowMessage;
+  | LofarRowMessage
+  | ListenStateMessage;
+
+/** Answer to listen_hold / listen_release, for the TUNING / LISTENING readout. */
+export interface ListenStateMessage {
+  type: "listen_state";
+  feed_id: string;
+  aar_channel: number;
+  /** tuning: the node is being told; listening: it confirmed (at once when it already decoded the channel);
+   *  released: the hold ended (reason "released" or "timeout"); failed: reason says why */
+  state: "tuning" | "listening" | "released" | "failed";
+  reason?: string;
+}
 
 export type ServerMessageType = ServerMessage["type"];
 export type MessageOf<T extends ServerMessageType> = Extract<ServerMessage, { type: T }>;
@@ -108,6 +120,10 @@ export type MessageOf<T extends ServerMessageType> = Extract<ServerMessage, { ty
 export type ClientOp =
   | { op: "audio"; channels: string[] }
   | { op: "watch"; feed_id: string | null }
+  /** hold to listen: send on press and again every 5 s; the server drops it after 15 s without one */
+  | { op: "listen_hold"; feed_id: string; aar_channel: number }
+  /** stop listening; both fields optional (none: every hold of this connection) */
+  | { op: "listen_release"; feed_id?: string; aar_channel?: number }
   | { op: "ping" };
 
 /* ------------------------------------------------------------------ binary frames */

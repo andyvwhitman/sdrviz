@@ -50,6 +50,7 @@ async def live(websocket: WebSocket) -> None:
     finally:
         sender.cancel()
         rt.hub.unregister(client)
+        rt.listening.drop_client(client)
 
 
 async def _send_loop(websocket: WebSocket, client: Client) -> None:
@@ -68,7 +69,7 @@ async def _send_loop(websocket: WebSocket, client: Client) -> None:
 
 
 def _handle(rt, client: Client, raw: str) -> None:
-    """Client ops: {op:"audio", channels:[...]}, {op:"watch", feed_id}, {op:"ping"}."""
+    """Client ops: audio, watch, ping, and listen_hold / listen_release (see live/listen.py)."""
     try:
         msg = json.loads(raw)
         op = msg["op"]
@@ -79,5 +80,9 @@ def _handle(rt, client: Client, raw: str) -> None:
     elif op == "watch":
         feed_id = msg.get("feed_id")
         client.watch = feed_id if feed_id in rt.world.feeds else None
+    elif op == "listen_hold":
+        rt.listening.hold(client, msg.get("feed_id"), msg.get("aar_channel"))
+    elif op == "listen_release":
+        rt.listening.release(client, msg.get("feed_id"), msg.get("aar_channel"))
     elif op == "ping":
         client.queue.put_nowait(protocol.message("pong", t=rt.clock.now()))

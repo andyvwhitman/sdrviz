@@ -61,7 +61,7 @@ class HeldKeyUp:
 class Transmission:
     """One node transmission being relayed: Opus packets in, 100 ms PCM chunks out."""
 
-    channel_id: str
+    channel_id: str  # "" for a channel that is only held to listen to: no tile, no recording
     aar_channel: int
     seq: int  # the server's number for it on /ws/live
     decoder: OpusDecoder = field(default_factory=OpusDecoder)
@@ -275,10 +275,11 @@ class NodeSession:
         self._end_transmission(message.ch)  # a key-up without a key-down first: close the old one
         self.refused.discard(message.ch)
         channel_id = self._channel_id(message.ch)
-        if channel_id is None or self.feed_id not in self.rt.world.heard_by(channel_id):
-            log.debug("node %s: key-up on AAR channel %s, which is not enabled here", self.node_id, message.ch)
-            return
         seq = REMOTE_SEQ_BASE + self.connections.next_seq()
+        if channel_id is None or self.feed_id not in self.rt.world.heard_by(channel_id):
+            if message.ch in self.rt.listening.channels(self.feed_id):  # held to listen: audio only, never recorded
+                self.transmissions[message.ch] = Transmission("", message.ch, seq)
+            return
         if not self.events.key_up(channel_id, seq, message.snr_db, message.power_db, self.feed_id):
             self.refused.add(message.ch)  # another receiver has the channel: ignore this transmission
             return
@@ -296,7 +297,8 @@ class NodeSession:
         if tx := self.transmissions.pop(aar_channel, None):
             if tx.recording:
                 self.rt.recorder.finish(tx.recording)
-            self.events.key_down(tx.channel_id, self.feed_id)
+            if tx.channel_id:
+                self.events.key_down(tx.channel_id, self.feed_id)
 
     def _end_all_transmissions(self) -> None:
         for aar_channel in list(self.transmissions):
@@ -307,7 +309,7 @@ class NodeSession:
         if message.open:
             self._guard_gain(max(level.power_db for level in message.open))
         for level in message.open:
-            if tx := self.transmissions.get(level.ch):
+            if (tx := self.transmissions.get(level.ch)) and tx.channel_id:
                 readings[tx.channel_id] = (level.power_db, level.snr_db)
         self.events.levels(readings, self.feed_id)
 
@@ -356,7 +358,7 @@ class NodeSession:
             held.frames.append(frame)
             return
         tx = self.transmissions.get(frame.ch)
-        if tx is None or not self.events.owns(tx.channel_id, self.feed_id):
+        if tx is None or (tx.channel_id and not self.events.owns(tx.channel_id, self.feed_id)):
             return  # refused, unknown or already ended
         if frame.first:
             tx.decoder.reset()
@@ -374,9 +376,10 @@ class NodeSession:
             last = frame.last and start + CHUNK_BYTES >= len(data)
             flags = (0 if tx.started else protocol.FLAG_FIRST) | (protocol.FLAG_LAST if last else 0)
             tx.started = True
-            self.rt.hub.send_audio(
-                tx.channel_id, protocol.audio_frame(tx.aar_channel, tx.seq, tx.sent_ms, flags, piece)
-            )
+            chunk = protocol.audio_frame(tx.aar_channel, tx.seq, tx.sent_ms, flags, piece)
+            if tx.channel_id:
+                self.rt.hub.send_audio(tx.channel_id, chunk)
+            self.rt.hub.send_listen(self.feed_id, tx.aar_channel, chunk, tx.channel_id)
             tx.sent_ms += protocol.CHUNK_MS
 
     # --- commands -----------------------------------------------------------------------------------------------------

@@ -162,9 +162,14 @@
     {/each}
     {#each ticks as { sec, major }}
       <path class="s-hair {major ? 'k-line' : 'k-faint'}" d="M1 {snap(sec * PX_PER_S)}H{major ? 9 : 5}" />
-      {#if major}<text class="tx-num" x="13" y={snap(sec * PX_PER_S) + 4}>{sec} S</text>{/if}
+      {#if major}<text class="tx-num wf-t" x="13" y={snap(sec * PX_PER_S) + 4}>{sec} S</text>{/if}
     {/each}
   </svg>
   <span class="lo-bezel"></span>
   {@render children?.()}
 </div>
+
+<style>
+  /* the time labels sit on data: a void halo keeps them readable */
+  .wf-t { paint-order: stroke; stroke: var(--bg-void); stroke-width: 3px; stroke-linejoin: round; }
+</style>

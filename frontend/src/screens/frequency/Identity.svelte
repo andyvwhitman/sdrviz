@@ -82,7 +82,7 @@
   </div>
   <div class="idp__detail">
     <div class="idp__l2">
-      <span class="idp__mhz"><span>{fmt.freq(info.freq_mhz)}</span> <span class="idp__unit">MHz</span><span class="idp__sub"> · {[info.railroad, info.use].filter(Boolean).join(" · ")}{#if info.line}<span class="idp__route"> · {info.line}</span>{/if}</span></span>
+      <span class="idp__mhz"><span>{fmt.freq(info.freq_mhz)}</span> <span class="idp__unit">MHz</span><span class="idp__sub">&nbsp;·&nbsp;{[info.railroad, info.use].filter(Boolean).join(" · ")}{#if info.line}<span class="idp__route">&nbsp;·&nbsp;{info.line}</span>{/if}</span></span>
       <span class="idp__r">
         {#if keyed}<span class="idp__k idp__k2">KEYED</span>{#if via}VIA {via}{/if}{:else if heard}<span class="idp__k idp__k2">LAST HEARD</span><PositionGlyph state="idle" dim /> <span class="mono">{heard.clock}</span>{/if}
       </span>

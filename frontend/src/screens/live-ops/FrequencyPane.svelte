@@ -411,6 +411,16 @@
   .pane__back:hover { color: var(--ink); }
   .pane--layer .pane__open { height: 44px; display: inline-flex; align-items: center; }
   .pane--layer :global(.lr__play) { height: 44px; }
+  /* phone targets are 44 px: the log head's controls (the plate stays 32), the range switch and the day steppers */
+  .pane--layer :global(.lg__cont), .pane--layer :global(.lg__chip) { min-height: 44px; margin: -2px 0; }
+  .pane--layer :global(.rs) { height: 44px; --tabs-h: 44px; }
+  .pane--layer :global(.rs .tab) { height: 44px; }
+  .pane--layer :global(.ds__steps button) { width: 44px; height: 44px; }
+  /* the closed lid is one line: FS, the count and the last heard; the last heard goes first when it is narrow, then FS */
+  .pane__lid :global(.ms) { min-width: 0; }
+  .pane__lid :global(.ms__text) { display: flex; gap: 0 6px; white-space: nowrap; }
+  .pane__lid :global(.ms__fs)::after { content: " ·"; }
+  @container pane (max-width: 399px) { .pane__lid :global(.ms__fs) { display: none; } }
   .pane__open { height: 24px; font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); border: 0; }
   .pane__scroll { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; scrollbar-width: thin; scrollbar-color: var(--line-faint) transparent; }
 

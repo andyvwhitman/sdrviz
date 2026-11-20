@@ -184,7 +184,8 @@ body.lo-resizing-row, body.lo-resizing-row * { cursor: row-resize !important; us
 
 /* the pane as a full-screen layer under the header and above the status line; the list underneath is inert and keeps its scroll */
 .hs__layer { position: fixed; top: var(--header-h); bottom: var(--status-h); left: 0; right: 0; z-index: 12; background: var(--bg-void); }
-:root.lo-locked[data-layout] , :root.lo-locked[data-layout] body { overflow: hidden; }
+/* only the root locks: with the body locked too it becomes its own scroller and the sticky status line stops sticking */
+:root.lo-locked[data-layout] { overflow: hidden; }
 
 /* the spectrum view is read, not driven: a held touch must not scroll the page or select text */
 .lo-wall.is-view .lo-cell { touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
@@ -211,3 +212,6 @@ body.lo-resizing-row, body.lo-resizing-row * { cursor: row-resize !important; us
 .lo-tabs > .tabs::-webkit-scrollbar { display: none; }
 .lo-tabs .tab { flex: none; white-space: nowrap; }
 .lo-tabs > .density, .lo-tabs > .lo-density { flex: none; }
+
+/* a keyed hero line on a narrow phone: glyph, channel, timer and +N; the row below names the channel */
+@media (max-width: 419px) { .hs__name { display: none; } }

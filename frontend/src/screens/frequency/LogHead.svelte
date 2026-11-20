@@ -44,5 +44,8 @@
   @media (min-width: 900px) {
     .lg__head { padding: 0 var(--margin-x); }
   }
+  /* the title gives way (it truncates); the controls never shrink, so the right gutter stays 16 px */
+  .lg__head--pane .lg__title { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .lg__head--pane .lg__chip, .lg__head--pane .lg__cont { flex: none; }
   .lg__head.lg__head--pane { top: var(--fq-line-h); height: 40px; min-height: 0; padding: 0 16px; }
 </style>

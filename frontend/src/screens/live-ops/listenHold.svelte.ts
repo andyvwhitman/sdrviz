@@ -63,6 +63,7 @@ class ListenHold {
   }
 
   #set(state: ServerState | null): void {
+    if (state !== null && state === this.state) return; // a repeated answer does not restart the timer
     this.state = state;
     this.since = Date.now();
   }

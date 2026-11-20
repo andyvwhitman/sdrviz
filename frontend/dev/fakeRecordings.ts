@@ -158,13 +158,6 @@ export function fakeRecordings(): Plugin {
           return json(response, 200, rows.slice(0, limit));
         }
         if ((match = /^\/api\/recordings\/(\d+)\/audio$/.exec(path))) return audio(request, response, all().find((rec) => rec.id === Number(match![1])));
-        if (path === "/api/frequencies/activity") {
-          const from = dayStart(date);
-          const frequencies = ["amtk-nec-road", "amtk-wash-term", "amtk-k-tower", "amtk-wash-ops2", "amtk-ivy-city"].map((id) => ({
-            frequency_id: id, recording_since: since(id), buckets: buckets(id, from, 96, 15 * MIN),
-          }));
-          return json(response, 200, { date, tz: TZ, frequencies });
-        }
         if ((match = /^\/api\/frequencies\/([^/]+)\/activity$/.exec(path))) {
           return json(response, 200, { frequency_id: match[1], date, tz: TZ, recording_since: since(match[1]), buckets: buckets(match[1], dayStart(date), 96, 15 * MIN) });
         }

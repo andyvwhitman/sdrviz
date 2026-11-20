@@ -40,7 +40,7 @@
 
 <section class="id" aria-label="{info.label} frequency">
   <nav class="id__crumb" aria-label="Breadcrumb">
-    <a href="/frequency" onclick={followLink}><span class="id__crumb-short">‹ </span>FREQUENCIES</a><span class="id__crumb-tail">{" / "}{info.label}</span>
+    <a href="/live" onclick={followLink}><span class="id__crumb-short">‹ </span>LIVE OPS</a><span class="id__crumb-tail">{" / "}{info.label}</span>
   </nav>
 
   <div class="id__row">

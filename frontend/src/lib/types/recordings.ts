@@ -46,12 +46,6 @@ export interface WeekActivity {
   days: { date: string; hours: ActivityBucket[] }[];
 }
 
-export interface ActivityIndex {
-  date: string;
-  tz: string;
-  frequencies: { frequency_id: string; recording_since: string | null; buckets: ActivityBucket[] }[];
-}
-
 /** One row of GET /api/frequencies/{id}: the catalogue entry the page shows as identity. */
 export interface FrequencyInfo {
   id: string;

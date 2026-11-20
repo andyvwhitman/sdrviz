@@ -64,7 +64,6 @@
       {#each phoneReady as item (item.id)}
         <a href={hrefOf(item.path)} onclick={followLink} aria-current={item.id === route.id ? "page" : undefined}>{item.name}</a>
       {/each}
-      <a href={hrefOf("/frequency")} onclick={followLink} aria-current={route.id === "frequency" ? "page" : undefined}>FREQUENCIES</a>
       {#if needsWider.length}<span class="pg__sheet-k">WIDER SCREEN</span>{/if}
       {#each needsWider as item (item.id)}
         <a class="is-plate" href={hrefOf(item.path)} onclick={followLink} aria-current={item.id === route.id ? "page" : undefined}>{item.name}</a>

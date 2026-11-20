@@ -21,7 +21,6 @@
   import { ActivityStore } from "./activityStore.svelte";
   import { beforeAt, clockOf, DEFAULT_TZ, dayHeading, dayKey, dayName, findByStart, hasAudio, nextNewer } from "./frequency";
   import Identity from "./Identity.svelte";
-  import Index from "./Index.svelte";
   import Log from "./Log.svelte";
   import LogHead from "./LogHead.svelte";
   import { LogStore } from "./logStore.svelte";
@@ -46,6 +45,11 @@
       return source;
     }
   }
+
+  // `/frequency` alone has nothing to show: on to Live Ops
+  $effect(() => {
+    if (!frequencyId) router.go("/live", { replace: true });
+  });
 
   // ---- the frequency itself
   let info = $state<FrequencyInfo | null>(null);
@@ -305,7 +309,6 @@
   // ---- keyboard: J/K move through rows, Space plays, arrows seek, Esc stops, C continuous, T newest.
   // Captured before the header's tab keys (T is the SPOT tab's letter) and only while this page is open.
   function keys(event: KeyboardEvent): void {
-    if (!frequencyId) return; // the index has no keys of its own
     if (event.ctrlKey || event.metaKey || event.altKey) return;
     if (event.target instanceof Element && event.target.closest("input, textarea, select, [contenteditable]")) return;
     const key = event.key;
@@ -340,12 +343,10 @@
 </script>
 
 <div class="fq" style="--fq-top: {topHeight}px">
-  {#if !frequencyId}
-    <Index />
-  {:else if unknown}
+  {#if unknown}
     <section class="fq__plate">
       <p class="fq__plate-k">UNKNOWN FREQUENCY · {frequencyId}</p>
-      <a href="/frequency" onclick={followLink}>ALL FREQUENCIES →</a>
+      <a href="/live" onclick={followLink}>LIVE OPS →</a>
     </section>
   {:else if info}
     <div class="fq__top" bind:clientHeight={topHeight}>

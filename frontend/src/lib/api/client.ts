@@ -8,7 +8,7 @@ import type { LiveState } from "$lib/types/live";
 import type { Approaching, ApproachingQuery, Board, Line, RouteTimetable, Stop, StationBoard, TransitSourceStatus, Trip, Vehicle } from "$lib/types/transit";
 import type { BackendStats, SourceConfig, TransitSource } from "../../screens/settings/types";
 import type { Prefs, SessionInfo, SimJump, SimStatus } from "$lib/types/api";
-import type { ActivityIndex, DayActivity, FrequencyInfo, Recording, WeekActivity } from "$lib/types/recordings";
+import type { DayActivity, FrequencyInfo, Recording, WeekActivity } from "$lib/types/recordings";
 
 /** A JSON object whose fields the owning screen narrows. Replace with schema.gen.ts types. */
 export type Json = Record<string, unknown>;
@@ -110,7 +110,6 @@ export const api = {
   activity: {
     day: (frequencyId: string, date?: string, signal?: AbortSignal) => get<DayActivity>(`/frequencies/${encodeURIComponent(frequencyId)}/activity`, { date }, signal),
     week: (frequencyId: string, date?: string, signal?: AbortSignal) => get<WeekActivity>(`/frequencies/${encodeURIComponent(frequencyId)}/activity/week`, { date }, signal),
-    all: (date?: string, signal?: AbortSignal) => get<ActivityIndex>("/frequencies/activity", { date }, signal),
   },
   banks: {
     list: () => get<Json[]>("/banks"),

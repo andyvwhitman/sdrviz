@@ -9,6 +9,7 @@ import type { Approaching, ApproachingQuery, Board, Line, RouteTimetable, Stop, 
 import type { BackendStats, SourceConfig, TransitSource } from "../../screens/settings/types";
 import type { Prefs, SessionInfo, SimJump, SimStatus } from "$lib/types/api";
 import type { DayActivity, FrequencyInfo, Recording, WeekActivity } from "$lib/types/recordings";
+import type { Frequency, FrequencyBody } from "$lib/types/frequencies";
 
 /** A JSON object whose fields the owning screen narrows. Replace with schema.gen.ts types. */
 export type Json = Record<string, unknown>;
@@ -99,6 +100,14 @@ export const api = {
     info: (id: string, signal?: AbortSignal) => get<FrequencyInfo>(`/frequencies/${encodeURIComponent(id)}`, undefined, signal),
     update: (id: string, frequency: Json) => put(`/frequencies/${id}`, frequency),
     remove: (id: string, force = false) => del(`/frequencies/${id}`, { force }),
+    /** The typed table (with assignments): the Frequencies page and the frequency editor. */
+    table: () => get<Frequency[]>("/frequencies"),
+    add: (body: FrequencyBody) => post<Frequency>("/frequencies", body),
+    save: (body: FrequencyBody) => put<Frequency>(`/frequencies/${encodeURIComponent(body.id)}`, body),
+    delete: (id: string) => del(`/frequencies/${encodeURIComponent(id)}`),
+    /** Assign to a node (feed), enabled or not; creates the assignment or changes it. */
+    assign: (id: string, feedId: string, enabled: boolean) => put<Frequency>(`/frequencies/${encodeURIComponent(id)}/assignments/${encodeURIComponent(feedId)}`, { enabled }),
+    unassign: (id: string, feedId: string) => del<Frequency>(`/frequencies/${encodeURIComponent(id)}/assignments/${encodeURIComponent(feedId)}`),
   },
   /** Saved transmissions and per-frequency activity (docs/recordings-api.md). Times are UTC. */
   recordings: {

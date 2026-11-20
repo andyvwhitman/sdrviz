@@ -6,7 +6,7 @@
 import type { Component } from "svelte";
 import StubScreen from "$lib/components/StubScreen.svelte";
 
-export type ScreenId = "live-ops" | "feeds" | "map" | "settings" | "spot" | "frequency" | "login" | "kit";
+export type ScreenId = "live-ops" | "frequencies" | "feeds" | "map" | "settings" | "spot" | "frequency" | "login" | "kit";
 
 export interface Route {
   id: ScreenId;
@@ -49,6 +49,7 @@ export function layoutFor(route: Route, phone: boolean): "stage" | "page" | "flu
 
 export const ROUTES: Route[] = [
   { id: "live-ops", path: "/live", name: "LIVE OPS", dir: "live-ops", shell: true, layout: "fluid", phone: "page" },
+  { id: "frequencies", path: "/frequencies", name: "FREQUENCIES", dir: "frequencies", shell: true, layout: "fluid", phone: "page" },
   { id: "feeds", path: "/feeds", name: "FEEDS & BANKS", dir: "feeds", shell: true, phone: "plate" },
   { id: "map", path: "/map", name: "MAP", dir: "map", shell: true, phone: "page" },
   { id: "settings", path: "/settings", name: "SETTINGS", dir: "settings", shell: true, phone: "plate", adminOnly: true },
@@ -59,7 +60,7 @@ export const ROUTES: Route[] = [
 ];
 
 /** The header tabs, in order. History and Stats still answer at their paths but are off the nav for now. */
-const NAV_ORDER: ScreenId[] = ["map", "live-ops", "feeds", "settings", "spot"];
+const NAV_ORDER: ScreenId[] = ["map", "live-ops", "frequencies", "feeds", "settings", "spot"];
 export const NAV = NAV_ORDER.map((id) => ROUTES.find((r) => r.id === id)!);
 
 /** The tabs this session may use. */

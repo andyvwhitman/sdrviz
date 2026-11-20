@@ -193,11 +193,14 @@
   /* ---- the edit window (the tile's `⋯`, or `E` on a focused tile): a floating window on desktop, a layer on a phone */
   let editId = $state<string | null>(null);
   let editAnchor = $state<HTMLElement>();
+  /** where focus goes when the window closes: the `⋯` that opened it, else the tile */
+  let editReturn = $state<HTMLElement>();
   let editWindow = $state<ReturnType<typeof FrequencyWindow>>();
-  function editTile(id: string): void {
+  function editTile(id: string, viaButton = false): void {
     if (editId === id) return;
     const open = () => {
       editAnchor = tileEl(id);
+      editReturn = (viaButton ? editAnchor?.querySelector<HTMLElement>(".tile__more") : undefined) ?? editAnchor;
       editId = id;
     };
     if (editWindow) editWindow.requestClose(open);
@@ -418,7 +421,7 @@
     wave={(c.tx || motion.held.has(c.id)) && variant === "standard" ? wave : undefined}
     onselect={() => selectChannel(c.id)}
     onlever={(key) => leverPressed(c.id, key)}
-    onedit={session.isAdmin ? () => editTile(c.id) : undefined}
+    onedit={session.isAdmin ? () => editTile(c.id, true) : undefined}
     index={i + 1}
   />
 {/snippet}
@@ -610,6 +613,6 @@
   {#if viewport.handset}
     <FrequencyLayer frequencyId={editId} listenedFeedId={displayed?.id} onclose={() => (editId = null)} ondone={edited} />
   {:else if editAnchor}
-    <FrequencyWindow bind:this={editWindow} frequencyId={editId} anchor={editAnchor} kind="tile" listenedFeedId={displayed?.id} onclose={() => (editId = null)} ondone={edited} />
+    <FrequencyWindow bind:this={editWindow} frequencyId={editId} anchor={editAnchor} returnFocus={editReturn} kind="tile" listenedFeedId={displayed?.id} onclose={() => (editId = null)} ondone={edited} />
   {/if}
 {/if}

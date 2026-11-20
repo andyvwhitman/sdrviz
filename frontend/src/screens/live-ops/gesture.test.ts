@@ -118,9 +118,14 @@ describe("plate texts", () => {
     expect(unlistedClick(52, true).ms).toBe(2500);
   });
   it("dwell hints", () => {
-    expect(dwellHint(true, false)).toBe("CLICK TO SELECT · HOLD TO LISTEN");
-    expect(dwellHint(false, true)).toBe("HOLD TO LISTEN · RIGHT-CLICK TO ADD");
-    expect(dwellHint(false, false)).toBe("HOLD TO LISTEN");
+    expect(dwellHint(true, false, true)).toBe("CLICK TO SELECT · HOLD TO LISTEN");
+    expect(dwellHint(false, true, true)).toBe("HOLD TO LISTEN · RIGHT-CLICK TO ADD");
+    expect(dwellHint(false, false, true)).toBe("HOLD TO LISTEN");
+  });
+  it("dwell hints do not offer a hold on a node that is not ok", () => {
+    expect(dwellHint(true, false, false)).toBe("CLICK TO SELECT");
+    expect(dwellHint(false, true, false)).toBe("RIGHT-CLICK TO ADD");
+    expect(dwellHint(false, false, false)).toBe("");
   });
   it("four-digit AAR", () => {
     expect(aar4(54)).toBe("5454");

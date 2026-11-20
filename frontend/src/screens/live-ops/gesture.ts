@@ -120,10 +120,11 @@ export function unlistedClick(ch: number, isAdmin: boolean): Message {
   return { text: `${chName(ch)} NOT ENABLED${isAdmin ? " · RIGHT-CLICK TO ADD" : ""}`, tone: "ink-2", ms: 2500 };
 }
 
-/** The cursor's second line after a dwell on a slot. */
-export function dwellHint(listed: boolean, isAdmin: boolean): string {
-  if (listed) return "CLICK TO SELECT · HOLD TO LISTEN";
-  return isAdmin ? "HOLD TO LISTEN · RIGHT-CLICK TO ADD" : "HOLD TO LISTEN";
+/** The cursor's second line after a dwell on a slot; empty for none. A node that is not ok refuses a hold, so it is not offered. */
+export function dwellHint(listed: boolean, isAdmin: boolean, nodeOk: boolean): string {
+  if (listed) return nodeOk ? "CLICK TO SELECT · HOLD TO LISTEN" : "CLICK TO SELECT";
+  if (isAdmin) return nodeOk ? "HOLD TO LISTEN · RIGHT-CLICK TO ADD" : "RIGHT-CLICK TO ADD";
+  return nodeOk ? "HOLD TO LISTEN" : "";
 }
 
 export const addingMessage = (ch: number): Message => ({ text: `ADDING · ${chName(ch)} …`, tone: "ink-2", ms: 30000 });

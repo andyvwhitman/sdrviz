@@ -13,7 +13,7 @@ from sqlalchemy.engine import Engine
 from sqlmodel import Session, SQLModel, create_engine, select
 
 from .config import Settings
-from .models import Assignment, Bank, Feed, FeedAck, FeedEvent, Frequency, Prefs, Transmission
+from .models import Assignment, Feed, FeedAck, FeedEvent, Frequency, Prefs, Transmission
 from .nodes import models as _node_tables  # noqa: F401  (registers the node tables for create_all)
 from .recordings import models as _recording_tables  # noqa: F401  (registers the recording table)
 from .sim.detector import detector_fields
@@ -23,13 +23,6 @@ FTS_DDL = """
 CREATE VIRTUAL TABLE IF NOT EXISTS transmission_fts
 USING fts5(tx_id UNINDEXED, transcript, speaker, train_id)
 """
-
-BANK_SHORTS = {"bank-nec": "NEC", "bank-freight": "FRT", "bank-commuter": "COM", "bank-harbor": "HBR"}
-
-
-def bank_short(bank_id: str, name: str) -> str:
-    """Bank short code (spec gap 13.4.5): known ids first, otherwise the first three letters."""
-    return BANK_SHORTS.get(bank_id) or name[:3].upper()
 
 
 def feed_short(name: str) -> str:
@@ -67,6 +60,34 @@ def create_schema(engine: Engine) -> None:
         conn.execute(text(FTS_DDL))
     if first_assignments:
         _assign_from_hears(engine)
+    _add_recording_node_id(engine)
+    _move_prefs_to_listen_feed(engine)
+
+
+def _move_prefs_to_listen_feed(engine: Engine) -> None:
+    """Preferences from before banks went: `listen_feed` is added, `active_bank` and `displayed_feed` dropped."""
+    with engine.begin() as conn:
+        columns = {row[1] for row in conn.execute(text("PRAGMA table_info(prefs)"))}
+        if "listen_feed" not in columns:
+            conn.execute(text("ALTER TABLE prefs ADD COLUMN listen_feed VARCHAR"))
+        for old in ("active_bank", "displayed_feed"):
+            if old in columns:
+                conn.execute(text(f"ALTER TABLE prefs DROP COLUMN {old}"))
+
+
+def _add_recording_node_id(engine: Engine) -> None:
+    """Recordings carry the node that heard them; older rows of a node feed (`node-N`) get it from the node's number."""
+    with engine.begin() as conn:
+        columns = {row[1] for row in conn.execute(text("PRAGMA table_info(recording)"))}
+        if "node_id" not in columns:
+            conn.execute(text("ALTER TABLE recording ADD COLUMN node_id VARCHAR"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_recording_node_id ON recording (node_id)"))
+            conn.execute(
+                text(
+                    "UPDATE recording SET node_id = (SELECT node.id FROM node WHERE 'node-' || node.number = "
+                    "recording.feed_id) WHERE feed_id LIKE 'node-%'"
+                )
+            )
 
 
 def _assign_from_hears(engine: Engine) -> None:
@@ -93,16 +114,11 @@ def seed_if_empty(engine: Engine, settings: Settings) -> bool:
 def seed_all(session: Session, settings: Settings) -> None:
     places = _read(settings.seed_dir / "places.json")
     health = _read(settings.sim_dir / "health.json")
-    banks = _read(settings.sim_dir / "banks.json")["banks"]
     transmissions = _read(settings.sim_dir / "transmissions.json")
 
     freqs = {f["id"]: f for f in _read(settings.seed_dir / "frequencies.json")["frequencies"]}
     for freq in freqs.values():
         session.add(Frequency(**freq))
-
-    for bank in banks:
-        short = bank_short(bank["id"], bank["name"])
-        session.add(Bank(**{**bank, "short": short}))
 
     for place in places["feeds"]:
         static = health["feeds"][place["id"]]

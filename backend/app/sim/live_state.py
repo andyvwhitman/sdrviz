@@ -58,7 +58,7 @@ class SimInputs:
 # ---------------------------------------------------------------------------
 
 
-def row_view(world: World, tx: Tx, t: float, bank_ids: set[str]) -> dict:
+def row_view(world: World, tx: Tx, t: float) -> dict:
     live = tx.t <= t < tx.end
     decoding = live or (tx.end <= t < tx.end + tx.latency)
     freq = world.freqs[tx.channel]
@@ -72,7 +72,6 @@ def row_view(world: World, tx: Tx, t: float, bank_ids: set[str]) -> dict:
         "aar4": aar4(freq.aar_channel),
         "frequency_id": tx.channel,
         "label": freq.label,
-        "off_bank": tx.channel not in bank_ids,
         "feed_id": tx.feed,
         "feed_label": world.feed_short(tx.feed) + (f" +{more}" if more else ""),
         "role": tx.role,
@@ -93,7 +92,7 @@ def row_view(world: World, tx: Tx, t: float, bank_ids: set[str]) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# Channels and banks
+# Channels
 # ---------------------------------------------------------------------------
 
 
@@ -187,7 +186,6 @@ def channel_view(inputs: SimInputs, cid: str, t: float) -> dict:
         "railroad": freq.railroad,
         "use": freq.use,
         "monitored": bool(world.heard_by(cid)),
-        "banks": world.banks_of(cid),
         "heard_by": world.heard_by(cid),
         "coverage": cov,
         "state": state,
@@ -219,61 +217,23 @@ def channel_view(inputs: SimInputs, cid: str, t: float) -> dict:
 
 
 def channel_views(inputs: SimInputs, t: float) -> list[dict]:
+    """Every frequency's view; the engine diffs these to send `channel` patches."""
     return [channel_view(inputs, cid, t) for cid in inputs.world.freqs]
 
 
-def bank_views(world: World, channels: list[dict], active_bank: str, displayed_feed: str | None) -> dict[str, dict]:
-    by_id = {c["id"]: c for c in channels}
-    views = {}
-    for bank in world.banks:
-        ids = [c for c in bank.frequency_ids if c in by_id]
-        id_set = set(ids)
-        keyed = sorted((by_id[c] for c in ids if by_id[c]["tx"]), key=lambda c: -c["tx"]["elapsed_s"])
-        off = [c for c in channels if c["tx"] and c["id"] not in id_set]
-        last_in_bank = max(
-            (c for c in channels if c["id"] in id_set and c["last_heard"]),
-            key=lambda c: c["last_heard"]["end_t"],
-            default=None,
-        )
-        disp = displayed_feed if bank.id == active_bank and displayed_feed else bank.home_feed
-        not_on_disp = [c for c in channels if c["tx"] and all(r["feed_id"] != disp for r in c["tx"]["receptions"])]
-        hero: dict = {"mode": "keyed" if keyed else "idle"}
-        if keyed:
-            h = keyed[0]
-            others = [c["aar4"] for c in keyed[1:]]
-            hero |= {
-                "aar4": h["aar4"],
-                "label": h["label"],
-                "via": h["tx"]["via"],
-                "timer": h["tx"]["timer"],
-                "line": f"KEYED · VIA {h['tx']['via']}",
-                "others": others,
-                "others_label": f"+{len(others)} · " + " · ".join(others) if others else None,
-            }
-        elif last_in_bank:
-            lh = last_in_bank["last_heard"]
-            hero |= {
-                "age_label": lh["age_label"],
-                "aar": last_in_bank["aar"],
-                "label": last_in_bank["label"],
-                "line": f"LAST KEY-UP {lh['age_label']} AGO · {last_in_bank['aar']} · {last_in_bank['label']}",
-            }
-        vias = sorted({c["tx"]["via"] for c in not_on_disp})
-        views[bank.id] = {
-            "bank_id": bank.id,
-            "name": bank.name,
-            "short": bank.short,
-            "tile_ids": list(bank.frequency_ids),
-            "tile_count": len(bank.frequency_ids),
-            "hero": hero,
-            "displayed_feed": disp,
-            "displayed_feed_label": f"FEED · {world.feed_short(disp)}",
-            "off_bank_active": [c["aar4"] for c in off],
-            "off_bank_label": f"+{len(off)} OFF-BANK · " + " · ".join(c["aar4"] for c in off) if off else None,
-            "not_on_displayed_feed": [{"aar4": c["aar4"], "feed": c["tx"]["via"]} for c in not_on_disp],
-            "selector_extra_label": f"+{len(not_on_disp)} ON " + " · ".join(vias) if not_on_disp else None,
-        }
-    return views
+def listened_channels(inputs: SimInputs, feed_id: str | None, t: float) -> list[dict]:
+    """The channel views of the frequencies enabled on `feed_id`, low to high by frequency."""
+    world = inputs.world
+    heard = world.feeds[feed_id].hears if feed_id in world.feeds else []
+    return [channel_view(inputs, cid, t) for cid in sorted(heard, key=lambda cid: world.freqs[cid].freq_mhz)]
+
+
+def listenable_feeds(feeds: list[dict]) -> list[dict]:
+    """What the node picker offers: every feed, with whether it is up (ok or stale; offline and fault are down)."""
+    return [
+        {"feed_id": f["id"], "name": f["name"], "short": f["short"], "online": f["state"] in ("ok", "stale")}
+        for f in feeds
+    ]
 
 
 # ---------------------------------------------------------------------------
@@ -449,8 +409,8 @@ def this_host_block() -> dict:
     }
 
 
-def admin_feed(feeds: list[dict], displayed: str, scenario: ScenarioSpec | None) -> tuple[str, str]:
-    """The feed the Feeds & Banks inspector opens on, and why."""
+def admin_feed(feeds: list[dict], displayed: str | None, scenario: ScenarioSpec | None) -> tuple[str, str]:
+    """The feed the Feeds inspector opens on, and why."""
     if scenario:
         return scenario.admin_feed, scenario.admin_feed_why
     ranked = health_summary(feeds)["header"]["feeds_hero_ranked"]
@@ -458,7 +418,7 @@ def admin_feed(feeds: list[dict], displayed: str, scenario: ScenarioSpec | None)
         worst = ranked[0]
         why = "The acked fault is still the worst feed." if worst["acked"] else "The worst feed is inspected first."
         return worst["feed_id"], why
-    return displayed, "Nothing is off: the active bank's home feed."
+    return displayed, "Nothing is off: the node being listened to."
 
 
 # ---------------------------------------------------------------------------
@@ -555,28 +515,24 @@ def lofar_row(inputs: SimInputs, start: float, end: float) -> dict:
 def build(
     inputs: SimInputs,
     t: float,
-    bank_id: str,
-    displayed_feed: str | None = None,
+    listen_feed: str | None,
     scenario: ScenarioSpec | None = None,
     speed: float = 1.0,
     live: "LiveEvents | None" = None,
 ) -> dict:
-    """The LiveState at clock time `t` with `bank_id` active. `live` lays the live receivers' traffic over it."""
+    """The LiveState at clock time `t`, listening to `listen_feed`. `live` lays the live receivers' traffic over it."""
     world, data = inputs.world, inputs.data
     t %= DAY
-    channels = channel_views(inputs, t)
+    channels = listened_channels(inputs, listen_feed, t)
     if live:
         channels = live.overlay(channels)
-    views = bank_views(world, channels, bank_id, displayed_feed)
     feeds = [feed_view(inputs, fid, t) for fid in world.feeds]
     summary = health_summary(feeds)
 
     heard = [tx for tx in data.day.window(t - DAY, t + 0.001) if tx.t <= t and tx.channel in world.freqs]
     active = [tx for tx in heard if tx.end > t]
-    bank_ids = set(world.bank(bank_id).frequency_ids)
     positions, ctc = trains_block(inputs, t, active)
-    displayed = views[bank_id]["displayed_feed"]
-    admin_id, admin_why = admin_feed(feeds, displayed, scenario)
+    admin_id, admin_why = admin_feed(feeds, listen_feed, scenario)
 
     return {
         "scenario": scenario.name if scenario else None,
@@ -587,33 +543,21 @@ def build(
         "t_offset_s": t,
         "clock": hms(t),
         "clock_tenths": hms(t, True),
-        "active_bank": bank_id,
-        "displayed_feed": displayed,
+        "listen_feed": listen_feed,
+        "feeds_listenable": listenable_feeds(feeds),
         "displayed_feed_admin": admin_id,
         "displayed_feed_admin_why": admin_why,
-        "banks": [
-            {
-                "id": b.id,
-                "name": b.name,
-                "short": b.short,
-                "home_feed": b.home_feed,
-                "frequency_ids": list(b.frequency_ids),
-                "sim": b.sim,
-            }
-            for b in world.banks
-        ],
         **summary,
         "feeds": feeds,
         "system": system_block(data, t),
         "channels": channels,
-        "views": views,
         "active_transmissions": [
-            row_view(world, tx, t, bank_ids) | {"elapsed_s": round(t - tx.t, 1), "receptions": list(tx.receptions)}
+            row_view(world, tx, t) | {"elapsed_s": round(t - tx.t, 1), "receptions": list(tx.receptions)}
             for tx in active
         ]
         + (live.active_rows() if live else []),
         "transcript": {
-            "rows": [row_view(world, tx, t, bank_ids) for tx in reversed(heard[-40:])],
+            "rows": [row_view(world, tx, t) for tx in reversed(heard[-40:])],
             "count_today": sum(1 for tx in heard if tx.t >= 0),
         },
         "trains": {"tracked_count": len(positions), "positions": positions},

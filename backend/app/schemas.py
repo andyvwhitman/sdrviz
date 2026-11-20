@@ -27,7 +27,7 @@ class SimOut(BaseModel):
 
 
 class JumpIn(BaseModel):
-    """Move the replay clock. A scenario also selects its bank; `speed: 0` freezes the clock."""
+    """Move the replay clock. A scenario also selects the node Live Ops listens to; `speed: 0` freezes the clock."""
 
     scenario: ScenarioName | None = None
     clock: str | None = None
@@ -46,8 +46,7 @@ class AckIn(BaseModel):
 
 
 class PrefsModel(BaseModel):
-    active_bank: str
-    displayed_feed: str | None = None
+    listen_feed: str | None = None  # the node Live Ops listens to; null: the default (first online node)
     muted: list[str] = []
     solo: list[str] = []
     record: list[str] = []

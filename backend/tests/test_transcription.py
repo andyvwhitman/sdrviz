@@ -37,7 +37,7 @@ class Stub:
 def add(client, tx_seq, age_s=0):
     """Save a recording by the real recorder, started `age_s` ago."""
     rt = client.app.state.rt
-    recording = rt.recorder.begin("amtk-k-tower", tx_seq, 12, "node-1")
+    recording = rt.recorder.begin("amtk-k-tower", tx_seq, 12, rt.world.heard_by("amtk-k-tower")[0])
     recording.started_at = utc_now() - timedelta(seconds=age_s)
     for packet in packets(5):
         rt.recorder.add(recording, packet)

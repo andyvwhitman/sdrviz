@@ -136,12 +136,12 @@ def test_week_is_seven_days_of_24_hours_oldest_first(client, settings):
     assert body["recording_since"] == "2026-11-09T20:00:00.000Z"
 
 
-def test_batch_activity_covers_every_banked_frequency(client, settings):
+def test_batch_activity_covers_every_enabled_frequency(client, settings):
     add(client, settings, utc(2026, 11, 16, 19, 20), duration=12)
     add(client, settings, utc(2026, 11, 1, 19, 20), freq=OTHER)  # an earlier day: only recording_since shows it
     body = client.get("/api/frequencies/activity", params={"date": "2026-11-16"}).json()
-    banked = {f for f in client.app.state.rt.world.freqs if client.app.state.rt.world.banks_of(f)}
-    assert {f["frequency_id"] for f in body["frequencies"]} == banked
+    enabled = {f for f in client.app.state.rt.world.freqs if client.app.state.rt.world.heard_by(f)}
+    assert {f["frequency_id"] for f in body["frequencies"]} == enabled
     by_id = {f["frequency_id"]: f for f in body["frequencies"]}
     assert by_id[FREQ]["buckets"][57]["count"] == 1 and by_id[FREQ]["recording_since"] == "2026-11-16T19:20:00.000Z"
     assert (

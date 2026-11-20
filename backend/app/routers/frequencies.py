@@ -5,7 +5,7 @@ from sqlmodel import col, delete, select
 
 from ..auth import ADMIN
 from ..deps import DB, RT
-from ..models import Assignment, Bank, Frequency, FrequencyBase
+from ..models import Assignment, Frequency, FrequencyBase
 
 router = APIRouter(prefix="/frequencies", tags=["frequencies"])
 
@@ -164,10 +164,6 @@ def unassign(freq_id: str, feed_id: str, session: DB, rt: RT) -> FrequencyOut:
 @router.delete("/{freq_id}", status_code=204, dependencies=[ADMIN])
 def delete_frequency(freq_id: str, session: DB, rt: RT) -> Response:
     freq = get_or_404(session, freq_id)
-    for bank in session.exec(select(Bank)).all():  # banks go in G-4
-        if freq_id in bank.frequency_ids:
-            bank.frequency_ids = [f for f in bank.frequency_ids if f != freq_id]
-            session.add(bank)
     session.exec(delete(Assignment).where(col(Assignment.frequency_id) == freq_id))
     # The recorded history keeps its rows; they are ignored by the live view once the channel is gone.
     session.delete(freq)

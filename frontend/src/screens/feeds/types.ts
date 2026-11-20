@@ -1,4 +1,4 @@
-/** REST shapes owned by the Feeds & Banks screen (backend/app/models.py). */
+/** REST shapes owned by the Feeds screen (backend/app/models.py). */
 
 export interface Frequency {
   id: string;
@@ -12,17 +12,6 @@ export interface Frequency {
   confidence: "high" | "medium" | "med" | "low" | string;
   notes: string;
   sources: string[];
-}
-
-export interface BankRecord {
-  id: string;
-  name: string;
-  description: string;
-  home_feed: string;
-  short: string;
-  sim: boolean;
-  /** ordered: the tile order of the bank */
-  frequency_ids: string[];
 }
 
 /** The configuration fields of a feed (FeedBase), as the forms edit them. */

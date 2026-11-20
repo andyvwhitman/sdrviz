@@ -1,20 +1,17 @@
 import { api } from "$lib/api/client";
-import type { BankRecord, FeedConfig, FeedHealth, Frequency, GeoRoute } from "./types";
+import type { FeedConfig, FeedHealth, Frequency, GeoRoute } from "./types";
 
 /**
- * The configuration resources this screen edits over REST: frequencies, banks and the route
+ * The configuration resources this screen edits over REST: frequencies (for a feed's hears list) and the route
  * geometry for the coverage thumbnail. Live state (health, coverage, key-ups) stays in the live store.
  */
 class Catalogue {
   frequencies = $state<Frequency[]>([]);
-  banks = $state<BankRecord[]>([]);
   routes = $state<GeoRoute[]>([]);
   loaded = $state(false);
 
   async load(): Promise<void> {
-    const [frequencies, banks] = await Promise.all([api.frequencies.list(), api.banks.list()]);
-    this.frequencies = frequencies as unknown as Frequency[];
-    this.banks = banks as unknown as BankRecord[];
+    this.frequencies = (await api.frequencies.list()) as unknown as Frequency[];
     this.loaded = true;
   }
 
@@ -32,38 +29,6 @@ class Catalogue {
       this.routesRequest = null;
     });
     return this.routesRequest;
-  }
-
-  frequency = (id: string): Frequency | undefined => this.frequencies.find((f) => f.id === id);
-
-  // -- banks -------------------------------------------------------------------------------
-
-  async saveBank(bank: BankRecord, isNew: boolean): Promise<void> {
-    await (isNew ? api.banks.create({ ...bank }) : api.banks.update(bank.id, { ...bank }));
-    await this.load();
-  }
-
-  async deleteBank(id: string): Promise<void> {
-    await api.banks.remove(id);
-    await this.load();
-  }
-
-  /** Add or remove one channel; a new member goes to the end of the bank's tile order. */
-  async setMember(bank: BankRecord, frequencyId: string, member: boolean): Promise<void> {
-    const ids = member ? [...bank.frequency_ids, frequencyId] : bank.frequency_ids.filter((id) => id !== frequencyId);
-    await this.saveBank({ ...bank, frequency_ids: ids }, false);
-  }
-
-  // -- frequencies --------------------------------------------------------------------------
-
-  async saveFrequency(frequency: Partial<Frequency> & { id: string }, isNew: boolean): Promise<void> {
-    await (isNew ? api.frequencies.create({ ...frequency }) : api.frequencies.update(frequency.id, { ...frequency }));
-    await this.load();
-  }
-
-  async deleteFrequency(id: string, force = false): Promise<void> {
-    await api.frequencies.remove(id, force);
-    await this.load();
   }
 
   // -- feeds ---------------------------------------------------------------------------------

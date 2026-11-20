@@ -48,9 +48,6 @@
   // -- live channel context ----------------------------------------------------------------------
   const channelById = $derived(new Map(snapshot.channels.map((c) => [c.id, c])));
   const heard = $derived(feed.hears.flatMap((id) => channelById.get(id) ?? []).map(channelNumber));
-  const activeBank = $derived(snapshot.banks.find((b) => b.id === snapshot.active_bank));
-  const bank = $derived((activeBank?.frequency_ids ?? []).flatMap((id) => channelById.get(id) ?? []).map(channelNumber));
-  const bankHeard = $derived(heard.filter((ch) => bank.includes(ch)));
   /** key-ups on air that this feed receives, strongest first */
   const receptions = $derived(
     snapshot.active_transmissions
@@ -101,15 +98,15 @@
   const cells = $derived((lofar.cells[feed.id] ?? {}) as Cells);
   const cellRows = $derived(new Set(Object.values(cells).flatMap((list) => list.map(([row]) => row))));
   const sampled = $derived(sampledRows({ rows: lofar.rows, rowS: lofar.row_s, measured, lastSampleAgeS: feed.last_sample_age_s, cellRows, minuteStates, nowS: snapshot.t_offset_s }));
-  const guides = $derived([...new Set([...bankHeard, ...Object.keys(cells).map(Number)])].sort((a, b) => a - b));
+  const guides = $derived([...new Set([...heard, ...Object.keys(cells).map(Number)])].sort((a, b) => a - b));
   /** while faulted the live floor is null: fall back to the feed's configured floor */
   const floorDbfs = $derived(feed.noise_floor_dbfs ?? -45);
 
-  /** off-bank numerals on the ruler: every live slot and waterfall column the shared ruler does not number */
+  /** extra numerals on the ruler: every live slot and waterfall column the feed does not list as heard */
   const extraLabels = $derived(
     offBankLabels(
-      bankHeard,
-      [...new Set([...rxChannels.map((r) => r.channel), ...guides])].filter((ch) => !bankHeard.includes(ch)).sort((a, b) => a - b),
+      heard,
+      [...new Set([...rxChannels.map((r) => r.channel), ...guides])].filter((ch) => !heard.includes(ch)).sort((a, b) => a - b),
       (ch) => channelX(ch, PLOT_W) + 0.5,
     ),
   );
@@ -155,7 +152,7 @@
     <div class="fb-sec" style="top:70px">
       <h4>SPECTRUM · {feed.short}<span class="r">{measured ? `FLOOR ${fix(feed.noise_floor_dbfs, 1)} dBFS · SNR ${Math.round(feed.snr_db ?? 0)} dB` : fmt.BLANK}</span></h4>
       <div class="fb-plot">
-        <SpectrumPlot width={INNER_W} gutter={GUTTER} {trace} floorDbfs={feed.noise_floor_dbfs} receptions={rxChannels} noSamplesText="NO SAMPLES · LAST {sinceClock}" {heard} {bank} {extraLabels} />
+        <SpectrumPlot width={INNER_W} gutter={GUTTER} {trace} floorDbfs={feed.noise_floor_dbfs} receptions={rxChannels} noSamplesText="NO SAMPLES · LAST {sinceClock}" {heard} bank={heard} {extraLabels} />
       </div>
     </div>
 

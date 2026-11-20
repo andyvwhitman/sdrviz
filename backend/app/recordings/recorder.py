@@ -38,6 +38,7 @@ class ActiveRecording:
     tx_seq: int
     aar_channel: int
     feed_id: str
+    node_id: str | None = None
     started_at: datetime = field(default_factory=utc_now)
     packets: list[bytes] = field(default_factory=list)
     part: int = 1  # a transmission longer than the maximum goes on in a second file
@@ -59,11 +60,13 @@ class Recorder:
 
     # --- node audio: Opus packets ------------------------------------------------------------------------------
 
-    def begin(self, channel_id: str, tx_seq: int, aar_channel: int, feed_id: str) -> ActiveRecording | None:
-        """Start recording a transmission, unless its channel is in no bank."""
-        if not self.rt.world.banks_of(channel_id):
+    def begin(
+        self, channel_id: str, tx_seq: int, aar_channel: int, feed_id: str, node_id: str | None = None
+    ) -> ActiveRecording | None:
+        """Start recording a transmission, unless the channel is not enabled on the feed that heard it."""
+        if feed_id not in self.rt.world.heard_by(channel_id):
             return None
-        return ActiveRecording(channel_id, tx_seq, aar_channel, feed_id)
+        return ActiveRecording(channel_id, tx_seq, aar_channel, feed_id, node_id)
 
     def add(self, recording: ActiveRecording, packet: bytes) -> None:
         recording.packets.append(packet)
@@ -75,7 +78,14 @@ class Recorder:
         """Hand what has been heard to the writer thread. The recording can go on (a new part) afterwards."""
         if not recording.packets:
             return
-        job = (recording.channel_id, recording.tx_seq, recording.part, recording.aar_channel, recording.feed_id)
+        job = (
+            recording.channel_id,
+            recording.tx_seq,
+            recording.part,
+            recording.aar_channel,
+            recording.feed_id,
+            recording.node_id,
+        )
         packets, started_at = recording.packets, recording.started_at
         recording.packets, recording.started_at = [], utc_now()
         self._pool.submit(self._save, job, packets, started_at)
@@ -120,7 +130,7 @@ class Recorder:
         self._pool.shutdown(wait=True)
 
     def _save(self, job: tuple, packets: list[bytes], started_at: datetime) -> None:
-        channel_id, tx_seq, part, aar_channel, feed_id = job
+        channel_id, tx_seq, part, aar_channel, feed_id, node_id = job
         try:
             data = ogg_opus(packets)
             path = self._free_path(started_at, channel_id, tx_seq, part)
@@ -133,6 +143,7 @@ class Recorder:
                 frequency_id=channel_id,
                 aar_channel=aar_channel,
                 feed_id=feed_id,
+                node_id=node_id,
                 feed_lat=feed.lat if feed else None,
                 feed_lon=feed.lon if feed else None,
                 started_at=started_at,

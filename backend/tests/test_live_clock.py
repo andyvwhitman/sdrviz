@@ -38,7 +38,6 @@ def test_last_heard_is_filled_and_survives_midnight(client):
     state = rt.live_state()
     shown = next(c for c in state["channels"] if c["id"] == channel)
     assert shown["last_heard"]["age_s"] == 3.0 and shown["state"] == "recent"
-    assert state["views"][rt.active_bank.id]["hero"]["mode"] in ("idle", "keyed")
 
 
 def test_snapshot_carries_a_transmission_on_air(client):

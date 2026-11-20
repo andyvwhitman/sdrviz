@@ -1,9 +1,8 @@
-/** Pure display logic of the Feeds & Banks screen, ported from design/mockups/feeds.js. */
+/** Pure display logic of the Feeds screen, ported from design/mockups/feeds.js. */
 
 import { BLANK, num } from "$lib/hud/fmt";
 import type { GlyphState } from "$lib/hud/tile";
 import type { Channel, Feed } from "$lib/types/live";
-import type { BankRecord } from "./types";
 
 export interface FeedLook {
   frame: "idle" | "stale" | "fault" | "offline";
@@ -34,13 +33,8 @@ export const pct = (value: number | null | undefined): string => (value == null 
 export const driverName = (feed: Pick<Feed, "driver">): string => feed.driver.replace(/\s*·\s*SIM$/, "");
 /** "LND-02 New Carrollton" -> "NEW CARROLLTON" */
 export const siteName = (feed: Pick<Feed, "name" | "short">): string => feed.name.replace(feed.short, "").trim().toUpperCase();
-/** "Baltimore Harbor" -> "BAL", "Freight - CSX/NS" -> "FRE": the design's rule, not the backend's `short` (FRT, HBR). */
-export const bankAbbr = (bank: Pick<BankRecord, "name">): string => bank.name.split(/[\s-]+/)[0].slice(0, 3).toUpperCase();
 
 export const channelNumber = (channel: Pick<Channel, "aar">): number => parseInt(channel.aar.replace(/\D/g, ""), 10);
 
 /** Measured values exist only while samples flow. */
 export const isMeasured = (feed: Pick<Feed, "state">): boolean => feed.state === "ok";
-
-/** "bank-harbor" style id from a display name. */
-export const slugify = (text: string, prefix: string): string => `${prefix}-${text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`;

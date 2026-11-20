@@ -33,6 +33,7 @@ class RecordingOut(BaseModel):
     frequency_id: str
     aar_channel: int
     feed_id: str
+    node_id: str | None
     feed_lat: float | None
     feed_lon: float | None
     started_at: str
@@ -51,6 +52,7 @@ def out(row: Recording) -> RecordingOut:
         frequency_id=row.frequency_id,
         aar_channel=row.aar_channel,
         feed_id=row.feed_id,
+        node_id=row.node_id,
         feed_lat=row.feed_lat,
         feed_lon=row.feed_lon,
         started_at=iso(row.started_at),
@@ -159,7 +161,7 @@ def known_frequency(rt: RT, frequency_id: str) -> str:
 
 @router.get("/frequencies/activity")
 def activity_of_all(session: DB, rt: RT, date: date | None = None) -> dict:
-    """Day buckets of every frequency that is in a bank, in one call (the /frequency index)."""
+    """Day buckets of every frequency that is enabled on some feed, in one call (the /frequency index)."""
     day = local_day(date)
     start, end = day_span(day)
     by_frequency: dict[str, list[tuple[datetime, float]]] = {}
@@ -177,7 +179,7 @@ def activity_of_all(session: DB, rt: RT, date: date | None = None) -> dict:
                 "buckets": buckets(by_frequency.get(frequency_id, []), start, end, BUCKET),
             }
             for frequency_id in rt.world.freqs
-            if rt.world.banks_of(frequency_id)
+            if rt.world.heard_by(frequency_id)
         ],
     }
 

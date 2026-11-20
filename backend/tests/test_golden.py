@@ -14,11 +14,13 @@ SCENARIO_DIR = Settings().sim_dir / "scenarios"
 
 # Keys a screen consumes. `summary`, `generator`, `history`, `stats` and `map` have other endpoints.
 CONSUMED = [
-    "header", "status_line", "faults", "degraded", "feeds", "system", "channels", "views",
-    "active_transmissions", "transcript", "trains", "ctc", "lofar_60m", "displayed_feed",
-    "displayed_feed_admin", "displayed_feed_admin_why", "active_bank", "clock", "clock_tenths",
+    "header", "status_line", "faults", "degraded", "feeds", "system",
+    "active_transmissions", "transcript", "trains", "ctc", "lofar_60m",
+    "displayed_feed_admin", "clock", "clock_tenths",
 ]  # fmt: skip
-IGNORED = {"spark_60m"}  # the port emits 60 per-minute bins where the generator wrote 12 (spec gap 13.4.2)
+# spark_60m: the port emits 60 per-minute bins where the generator wrote 12 (spec gap 13.4.2).
+# banks, off_bank: gone with the banks (decision 66).
+IGNORED = {"spark_60m", "banks", "off_bank"}
 TRAIN_TOLERANCE = 0.11  # trains.json rounds times to 0.1 s, which moves interpolated positions slightly
 
 
@@ -61,8 +63,16 @@ def test_live_state_matches_scenario(client, name):
     spec = SCENARIOS[name]
     rt = client.app.state.rt
     expected = json.loads((SCENARIO_DIR / f"{name}.json").read_text(encoding="utf-8"))
-    state = live_state.build(rt.inputs, spec.t, spec.bank, scenario=spec)
+    state = live_state.build(rt.inputs, spec.t, spec.feed, scenario=spec)
     state = json.loads(json.dumps(state))  # what a client receives
     for key in CONSUMED:
         assert_same(state[key], expected[key], key)
-    assert state["transcript"]["rows"] == expected["transcript"]["rows"]
+    assert state["listen_feed"] == spec.feed
+    # `channels`: the listened feed's enabled frequencies, each the same as the generator's view of it.
+    by_id = {channel["id"]: channel for channel in expected["channels"]}
+    assert state["channels"] and all(
+        assert_same(channel, by_id[channel["id"]], f"channels[{channel['id']}]") is None
+        for channel in state["channels"]
+    )
+    rows = [{k: v for k, v in row.items() if k not in IGNORED} for row in expected["transcript"]["rows"]]
+    assert state["transcript"]["rows"] == rows

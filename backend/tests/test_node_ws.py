@@ -12,14 +12,17 @@ from pathlib import Path
 import httpx
 import pytest
 import uvicorn
+from sqlmodel import select
 from starlette.websockets import WebSocketDisconnect
 from websockets.asyncio.client import connect
 from websockets.exceptions import ConnectionClosed
 
+from app.db import open_session
 from app.live import node_protocol as wire
 from app.live import protocol
 from app.live.opus import OpusEncoder
 from app.main import create_app
+from app.models import Assignment, Frequency
 from app.nodes import session as node_session
 
 from .conftest import PASSWORD
@@ -302,12 +305,23 @@ def subscribe(live, channels: list[str], feed_id: str | None) -> None:
     read_live(live, lambda texts, _: any(t["type"] == "pong" for t in texts))  # the ops before it are applied
 
 
-def enrolled_node(client) -> tuple[HandNode, str]:
+def enable_all(client, feed_id: str) -> None:
+    """Every frequency enabled on the feed, as if the admin had assigned them all."""
+    rt = client.app.state.rt
+    with open_session(rt.db) as session:
+        session.add_all(Assignment(frequency_id=f, feed_id=feed_id) for f in session.exec(select(Frequency.id)))
+        session.commit()
+    rt.reload_world()
+
+
+def enrolled_node(client, enable: bool = True) -> tuple[HandNode, str]:
     created = create_node(client)
     node = HandNode(client, created["key"])
     node.welcome()
     node.send(wire.EnrolledAck())
     wait_for(lambda: node_status(client, created["node"]["id"]) == "ONLINE")
+    if enable:
+        enable_all(client, created["node"]["feed_id"])
     return node, created["node"]["id"]
 
 
@@ -438,10 +452,12 @@ def test_fake_node_end_to_end(server, tmp_path):
                 raise AssertionError(f"never {wanted}, now {await status()}")
 
             state = tmp_path / "node.json"
-            node = fake_node.FakeNode(state, [], keyup_every_s=0.2, keyup_length_s=0.5)
+            node = fake_node.FakeNode(state, [54], keyup_every_s=0.2, keyup_length_s=0.5)
             run = asyncio.create_task(node.run(key))
             await until("ONLINE")
             assert json.loads(state.read_text())["node"] == node_id
+            assigned = await http.put("/api/frequencies/amtk-nec-road/assignments/node-1", json={"enabled": True})
+            assert assigned.status_code == 200  # CH54, where the fake node keys up
 
             async with connect(
                 server.replace("http", "ws") + "/ws/live", additional_headers={"Cookie": cookie}
@@ -490,6 +506,76 @@ def next_command(node: HandNode):
     while isinstance(message, wire.Ping):
         message = node.receive()
     return message
+
+
+# --- the assigned preset ---------------------------------------------------------------------------------------------
+
+
+def assign(client, freq_id: str, enabled: bool = True, feed_id: str = "node-1"):
+    return client.put(f"/api/frequencies/{freq_id}/assignments/{feed_id}", json={"enabled": enabled})
+
+
+def test_assigned_preset_node_follows_its_assignments(client):
+    created = create_node(client, preset="assigned")
+    node_id = created["node"]["id"]
+    node = HandNode(client, created["key"])
+    assert node.welcome().config.channels == []  # nothing assigned yet
+    node.send(wire.EnrolledAck())
+    wait_for(lambda: node_status(client, node_id) == "ONLINE")
+
+    assert assign(client, "amtk-nec-road").status_code == 200  # CH54
+    pushed = next_command(node)
+    assert pushed.type == "channels" and pushed.channels == [54]
+    node.send(wire.Ack(id=pushed.id, ok=True))
+
+    assert assign(client, "amtk-nec-road").status_code == 200  # no change: no push
+    assert assign(client, "csx-road").status_code == 200
+    pushed = next_command(node)
+    channels = client.get("/api/frequencies/csx-road").json()["aar_channel"]
+    assert pushed.channels == sorted([54, channels])
+    node.send(wire.Ack(id=pushed.id, ok=True))
+
+    assign(client, "csx-road", enabled=False)  # disabled: the node stops decoding it
+    pushed = next_command(node)
+    assert pushed.channels == [54]
+    node.send(wire.Ack(id=pushed.id, ok=True))
+
+    assign(client, "amtk-nec-road", enabled=False)  # an empty list is not sent: the node keeps its last one
+    assert client.app.state.rt.nodes.channels_for(client.app.state.rt.nodes.list()[0]) == []
+    assign(client, "csx-road")
+    pushed = next_command(node)  # the first command after the empty list is the next real one
+    assert pushed.channels == [channels]
+    node.close()
+
+
+def test_a_reconnecting_node_gets_its_list_in_welcome_and_as_a_command(client):
+    created = create_node(client, preset="assigned")
+    node_id = created["node"]["id"]
+    node = HandNode(client, created["key"])
+    secret = node.welcome().node_secret
+    node.send(wire.EnrolledAck())
+    wait_for(lambda: node_status(client, node_id) == "ONLINE")
+    node.close()
+    wait_for(lambda: node_status(client, node_id) == "OFFLINE")
+    assign(client, "amtk-nec-road")  # changed while it was offline
+
+    again = HandNode(client, created["key"], mode="connect", secret=secret)
+    assert again.welcome().config.channels == [54]
+    command = next_command(again)
+    assert command.type == "channels" and command.channels == [54]
+    again.close()
+
+
+def test_a_key_up_on_a_channel_not_enabled_on_the_node_is_ignored(client):
+    node, _ = enrolled_node(client, enable=False)
+    assign(client, "amtk-nec-road")
+    with client.websocket_connect("/ws/live") as live:
+        subscribe(live, [], None)
+        node.send(key_up(66))  # not assigned
+        node.send(key_up(54))
+        texts, _ = read_live(live, lambda texts, _: any(t["type"] == "keyup" for t in texts))
+        assert [t["aar"] for t in texts if t["type"] == "keyup"] == ["CH54"]
+    node.close()
 
 
 # --- the node's health fills its feed's telemetry --------------------------------------------------

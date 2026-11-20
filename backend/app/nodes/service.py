@@ -13,21 +13,22 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
+from sqlalchemy import text
 from sqlalchemy.engine import Engine
 from sqlmodel import Session, col, func, select
 
 from ..auth import LoginLimiter
 from ..db import open_session
 from ..live import node_protocol as wire
-from ..models import Bank, Feed, Frequency
+from ..models import Assignment, Feed, Frequency
 from .models import Node, NodeCredential, NodeEvent
 from .schemas import CommandIn, CommandResult, Location, NodeDetail, NodeEventOut, NodeOut
 
 ENROLLMENT_TTL = timedelta(hours=24)
-BANKS_PRESET = "banks"  # every AAR channel used by a frequency in any bank; follows bank edits
-PRESETS = {"aar": list(range(7, 98))}  # fixed presets: name → AAR channel numbers
-PRESET_NAMES = (BANKS_PRESET, *PRESETS)
-DEFAULT_PRESET = BANKS_PRESET
+ASSIGNED_PRESET = "assigned"  # the AAR channels of the node's enabled assignments, plus held listens
+PRESETS = {"aar": list(range(7, 98))}  # fixed presets: name → AAR channel numbers (the whole band)
+PRESET_NAMES = (ASSIGNED_PRESET, *PRESETS)
+DEFAULT_PRESET = ASSIGNED_PRESET
 EVENTS_SHOWN = 50
 ID_ALPHABET = string.ascii_lowercase + string.digits
 
@@ -114,6 +115,10 @@ def node_feed_id(number: int) -> str:
     return f"node-{number}"
 
 
+def _number(feed_id: str) -> int:
+    return int(feed_id.removeprefix("node-"))
+
+
 def hash_secret(secret: str) -> str:
     return hashlib.sha256(secret.encode()).hexdigest()
 
@@ -133,6 +138,13 @@ class NodeRegistry:
         self.command_sender: Callable[[str, CommandIn], Awaitable[CommandResult]] | None = None
         # Set by the runtime: called after a change that adds, changes or removes a node's feed row.
         self.on_feeds_changed: Callable[[], None] = lambda: None
+        # Set by the runtime: the AAR channels clients hold to listen to on a feed (see live/hub.py).
+        self.held_channels: Callable[[str], set[int]] = lambda feed_id: set()
+
+    def migrate(self) -> None:
+        """Nodes on the retired `banks` preset decode their assignments now."""
+        with self.engine.begin() as conn:
+            conn.execute(text("UPDATE node SET preset = :new WHERE preset = 'banks'"), {"new": ASSIGNED_PRESET})
 
     # --- reading ---------------------------------------------------------------------------------------------
 
@@ -152,39 +164,46 @@ class NodeRegistry:
             shown = [NodeEventOut(t=iso(e.t), kind=e.kind, detail=e.detail) for e in events]
             return NodeDetail(**self._view(session, node).model_dump(), events=shown)
 
-    def channels_for(self, preset: str) -> list[int]:
-        return self.bank_channels() if preset == BANKS_PRESET else PRESETS[preset]
+    def channels_for(self, node: Node | NodeOut) -> list[int]:
+        """The AAR channels `node` should decode: the whole band, or its enabled assignments and held listens."""
+        if node.preset in PRESETS:
+            return PRESETS[node.preset]
+        feed_id = node_feed_id(node.number)
+        return sorted(self.assigned_channels(feed_id) | self.held_channels(feed_id))
 
-    def bank_channels(self) -> list[int]:
-        """The AAR channels of every frequency in any bank, sorted: what a node on the banks preset decodes."""
+    def assigned_channels(self, feed_id: str) -> set[int]:
+        """The AAR channels of the frequencies enabled on a feed."""
         with open_session(self.engine) as session:
-            ids = {freq_id for bank in session.exec(select(Bank)) for freq_id in bank.frequency_ids}
-            freqs = session.exec(select(Frequency).where(col(Frequency.id).in_(ids))).all() if ids else []
-        return sorted({freq.aar_channel for freq in freqs if freq.aar_channel})
+            query = (
+                select(Frequency.aar_channel)
+                .join(Assignment, col(Assignment.frequency_id) == col(Frequency.id))
+                .where(Assignment.feed_id == feed_id, Assignment.enabled)
+            )
+            return {channel for channel in session.exec(query) if channel}
 
-    def feeds(self, freqs: dict[str, Frequency]) -> list[Feed]:
-        """Enrolled nodes as feeds (driver sdrviz-agent) that hear the channels of their preset."""
+    def feeds(self, freqs: dict[str, Frequency], enabled: dict[str, list[str]]) -> list[Feed]:
+        """Enrolled nodes as feeds (driver sdrviz-agent) that hear their enabled frequencies."""
         with open_session(self.engine) as session:
             nodes = session.exec(select(Node).where(Node.status == "OFFLINE").order_by(Node.number)).all()
-        feeds = []
-        for node in nodes:
-            wanted = set(self.channels_for(node.preset))
-            hears = [cid for cid, freq in freqs.items() if freq.aar_channel in wanted]
-            feeds.append(
-                Feed(
-                    id=node_feed_id(node.number),
-                    name=node.name,
-                    short=node.name.split()[0],
-                    site="remote node",
-                    lat=node.lat,
-                    lon=node.lon,
-                    coverage_radius_km=20,
-                    hears=hears,
-                    driver="sdrviz-agent",
-                    sample_rate_msps=1.536,
-                )
+        return [
+            Feed(
+                id=node_feed_id(node.number),
+                name=node.name,
+                short=node.name.split()[0],
+                site="remote node",
+                lat=node.lat,
+                lon=node.lon,
+                coverage_radius_km=20,
+                hears=enabled.get(node_feed_id(node.number), []),
+                driver="sdrviz-agent",
+                sample_rate_msps=1.536,
             )
-        return feeds
+            for node in nodes
+        ]
+
+    def online_feed_ids(self) -> list[str]:
+        """The feeds of the nodes that are connected now, by node number."""
+        return sorted((live.feed_id for live in self.live.values() if live.online and live.feed_id), key=_number)
 
     def feed_status(self, feed_id: str) -> NodeFeedStatus | None:
         """The live state and telemetry of node feed `feed_id`; None for a feed that is not a node."""
@@ -335,7 +354,7 @@ class NodeRegistry:
             self._finish_enrollment(session, node, credential)
             session.commit()
             self.on_feeds_changed()
-        return Authenticated(node, self.channels_for(node.preset), None)
+        return Authenticated(node, self.channels_for(node), None)
 
     def _enroll(
         self, session: Session, node: Node, credential: NodeCredential, secret: str, client: str, now: datetime
@@ -351,7 +370,7 @@ class NodeRegistry:
         credential.pending_secret_hash = hash_secret(node_secret)  # replaces an earlier unacknowledged one
         session.add(credential)
         session.commit()
-        return Authenticated(node, self.channels_for(node.preset), node_secret)
+        return Authenticated(node, self.channels_for(node), node_secret)
 
     def _finish_enrollment(self, session: Session, node: Node, credential: NodeCredential) -> None:
         credential.node_secret_hash, credential.pending_secret_hash = credential.pending_secret_hash, None

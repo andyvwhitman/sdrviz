@@ -25,12 +25,14 @@
   import LogHead from "./LogHead.svelte";
   import { LogStore } from "./logStore.svelte";
   import { player } from "./player.svelte";
+  import { logKey } from "./logKeys";
+  import { keepLogFresh, useDayClock } from "./refresh.svelte";
 
   const CONTINUOUS_KEY = "sdrviz.frequency.continuous";
-  const REFRESH_AFTER_KEY_UP_MS = 2000;
-  const PENDING_POLL_MS = 10_000;
   const GAP_MS = 400;
   const RAIL_MIN_PX = 1100;
+  /** under this width the page pins two lines (identity, log head) instead of one tall block (direction 5.8) */
+  const PAGE_MIN_PX = 900;
 
   const frequencyId = $derived(decodeURIComponent(router.path.split("/")[2] ?? ""));
   const snapshot = $derived(live.state);
@@ -100,7 +102,18 @@
   }
 
   // ---- the day shown: today unless `?date=` names an earlier day
-  let nowMs = $state(Date.now());
+  const clock = useDayClock(
+    () => todayKey,
+    // local midnight: today becomes yesterday with no ceremony; the strip and the log start over on the new day
+    () => {
+      if (isToday && !router.query("date")) {
+        void activity?.loadDay(undefined);
+        void activity?.loadWeek();
+        void store?.load();
+      }
+    },
+  );
+  const nowMs = $derived(clock.nowMs);
   const todayKey = $derived(dayKey(nowMs, tz));
   const dateParam = $derived(router.query("date"));
   const viewDate = $derived(dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam) && dateParam < todayKey ? dateParam : undefined);
@@ -238,30 +251,7 @@
   const keyed = $derived(keyedElapsed !== null);
   const onAir = $derived(keyedElapsed !== null && store?.fromHead && !jumped ? { startedAt: nowMs - keyedElapsed * 1000, elapsed: keyedElapsed } : null);
 
-  let wasKeyed = false;
-  $effect(() => {
-    const now = keyed;
-    if (wasKeyed && !now && store) {
-      const target = store;
-      const timer = setTimeout(() => {
-        void target.refreshHead(!attop);
-        if (isToday) void activity?.loadDay(undefined);
-      }, REFRESH_AFTER_KEY_UP_MS);
-      wasKeyed = now;
-      return () => clearTimeout(timer);
-    }
-    wasKeyed = now;
-  });
-
-  $effect(() => {
-    const target = store;
-    if (!target) return;
-    const timer = setInterval(() => {
-      if (document.hidden) return;
-      if (target.rows.slice(0, 50).some((rec) => rec.transcript_state === "pending")) void target.refreshHead(!attop);
-    }, PENDING_POLL_MS);
-    return () => clearInterval(timer);
-  });
+  keepLogFresh({ store: () => store, activity: () => activity, keyed: () => keyed, attop: () => attop, isToday: () => isToday });
 
   // ---- playback
   function play(rec: Recording): void {
@@ -283,20 +273,9 @@
 
   onMount(() => {
     const stopClock = simClock.start();
-    const second = setInterval(() => {
-      const before = untrack(() => todayKey);
-      nowMs = Date.now();
-      // local midnight: today becomes yesterday with no ceremony; the strip and the log start over on the new day
-      if (untrack(() => todayKey) !== before && untrack(() => isToday) && !router.query("date")) {
-        void activity?.loadDay(undefined);
-        void activity?.loadWeek();
-        void store?.load();
-      }
-    }, 1000);
     player.onended = playNext;
     return () => {
       stopClock();
-      clearInterval(second);
       player.onended = null;
       player.stop();
       shell.statusFallback = undefined;
@@ -306,24 +285,18 @@
     if (snapshot) simClock.sync(snapshot.t_offset_s);
   });
 
-  // ---- keyboard: J/K move through rows, Space plays, arrows seek, Esc stops, C continuous, T newest.
-  // Captured before the header's tab keys (T is the SPOT tab's letter) and only while this page is open.
-  function keys(event: KeyboardEvent): void {
-    if (event.ctrlKey || event.metaKey || event.altKey) return;
-    if (event.target instanceof Element && event.target.closest("input, textarea, select, [contenteditable]")) return;
-    const key = event.key;
-    const handled = (): void => (event.preventDefault(), event.stopPropagation());
-    const row = log?.focused();
-    if (key === "Escape" && player.playingId === null && jumped) (handled(), void toNewest());
-    else if (key === "j" || key === "J") (handled(), log?.step(1));
-    else if (key === "k" || key === "K") (handled(), log?.step(-1));
-    else if ((key === " " || key === "Enter") && row && (event.target as HTMLElement).closest("[data-rec]")) (handled(), hasAudio(row) && play(row));
-    else if ((key === "ArrowLeft" || key === "ArrowRight") && player.playingId !== null) (handled(), player.seekBy(key === "ArrowLeft" ? -1 : 1));
-    else if (key === "Escape") {
-      if (player.playingId !== null) (handled(), player.stop());
-    } else if (key === "c" || key === "C") (handled(), setContinuous(!continuous));
-    else if (key === "t" || key === "T") (handled(), void showDay(undefined));
-  }
+  // ---- keyboard (logKeys). Captured before the header's tab keys (T is the SPOT tab's letter), only while this page is open.
+  const keys = (event: KeyboardEvent): void => {
+    logKey(event, {
+      step: (direction) => log?.step(direction),
+      focused: () => log?.focused(),
+      play,
+      toggleContinuous: () => setContinuous(!continuous),
+      showToday: () => void showDay(undefined),
+      jumped: () => !!jumped,
+      clearJump: () => void toNewest(),
+    });
+  };
   onMount(() => {
     window.addEventListener("keydown", keys, true);
     return () => window.removeEventListener("keydown", keys, true);
@@ -350,7 +323,7 @@
     </section>
   {:else if info}
     <div class="fq__top" bind:clientHeight={topHeight}>
-      <Identity {info} {channel} {keyedElapsed} {lidOpen} ontogglelid={() => (lidOpen = !lidOpen)} />
+      <Identity variant={viewport.width < PAGE_MIN_PX ? "phone" : "page"} {info} {channel} {keyedElapsed} {lidOpen} ontogglelid={() => (lidOpen = !lidOpen)} />
       {#if compact && range === "week"}
         <WeekGrid week={activity?.week ?? null} {tz} {nowMs} shownDate={viewDate ?? todayKey} {range} {dayLabel} onrange={(next) => (range = next)} onpick={(date, hour) => void pick(date, hour)} />
       {:else}
@@ -413,7 +386,7 @@
 </div>
 
 <style>
-  .fq { min-width: 0; }
+  .fq { min-width: 0; container: pane / inline-size; }
   .fq__top { background: var(--bg-void); }
   .fq__rail { display: none; }
   .fq__plate { display: grid; gap: 12px; justify-items: start; margin: 40px 16px; padding: 20px 24px; box-shadow: inset 0 0 0 1px var(--line-faint); width: fit-content; max-width: calc(100% - 32px); }
@@ -423,7 +396,7 @@
   /* Pinned: the identity and the log's header bar stay in view while the log scrolls, when the window is tall
      enough. Otherwise the block does not exist as a box (it measures 0) and only the header bar pins itself. */
   .fq__top { display: contents; }
-  @media (min-height: 800px) {
+  @media (min-height: 800px) and (min-width: 900px) {
     .fq__top { display: block; position: sticky; top: var(--header-h); z-index: 10; }
     .fq__top :global(.lg__head) { position: static; }
   }

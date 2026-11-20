@@ -8,11 +8,13 @@
     continuous: boolean;
     onclearbucket: () => void;
     ontogglecontinuous: () => void;
+    /** "pane": pinned in the pane's scroll box, just under the identity line (a token offset, 40 px tall) */
+    variant?: "page" | "pane";
   }
-  let { countToday, bucket, continuous, onclearbucket, ontogglecontinuous }: Props = $props();
+  let { countToday, bucket, continuous, onclearbucket, ontogglecontinuous, variant = "page" }: Props = $props();
 </script>
 
-<div class="lg__head">
+<div class="lg__head" class:lg__head--pane={variant === "pane"}>
   <h2 class="lg__title">TRANSMISSIONS{#if countToday != null}{" · "}<span class="lg__n">{countToday}</span> TODAY{/if}</h2>
   {#if bucket}<button class="lg__chip" type="button" onclick={onclearbucket} aria-label="Return the log to newest">{bucket.label} ×</button>{/if}
   <span class="lg__grow"></span>
@@ -35,7 +37,12 @@
   }
   .lg__cont { color: var(--ink-2); }
   .lg__cont[aria-pressed="true"] { color: var(--ink); box-shadow: inset 0 0 0 1px var(--line), inset 0 0 0 2px var(--bg-void), inset 0 0 0 3px var(--line-faint); }
+  /* the phone page pins two lines: the identity line, then this head, both at token offsets (40 px tall) */
+  @media (max-width: 899px) {
+    .lg__head { top: calc(var(--header-h) + var(--fq-line-h)); height: 40px; min-height: 0; }
+  }
   @media (min-width: 900px) {
     .lg__head { padding: 0 var(--margin-x); }
   }
+  .lg__head.lg__head--pane { top: var(--fq-line-h); height: 40px; min-height: 0; padding: 0 16px; }
 </style>

@@ -102,6 +102,7 @@
   --status-h: 28px;
   --hero-h: 64px;
   --tabs-h: 36px;
+  --fq-line-h: 48px;       /* the pinned identity line of the frequency pane / phone page (44 px on a phone) */
   --inspector-w: 480px;
   --arm-len: 8px;          /* M1 bracket arm */
   --sel-arm: 14px;         /* selection bracket arm */
@@ -132,3 +133,4 @@
 }
 :root[data-size="1440"] { --stage-w: 1440px; --stage-h: 900px; }
 
+@media (max-width: 899px) { :root { --fq-line-h: 44px; } }

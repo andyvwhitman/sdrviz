@@ -1,8 +1,8 @@
 <script lang="ts">
   /**
    * The day strip, size M (M26): 96 buckets at a 2 px pitch (1 px bar, 1 px gap), 192 x 24, ticks at 00/06/12/18/24,
-   * the full-scale step and the day's count beside it. No hover: the whole strip is a link to the frequency page.
-   * Used by the Live Ops channel inspector and the frequency index.
+   * the full-scale step and the day's count beside it. No hover: the whole strip is a link to the frequency page, or,
+   * without an `href`, a plain element (the Live Ops pane's day-strip lid wraps it in its own toggle button).
    */
   import * as fmt from "$lib/hud/fmt";
   import { followLink } from "$lib/router.svelte";
@@ -17,7 +17,7 @@
     keyed?: boolean;
     /** seconds since the channel last spoke, for "LAST 4M" */
     lastS?: number | null;
-    href: string;
+    href?: string;
     label: string;
   }
   let { buckets, recordingSince, nowMs, keyed = false, lastS = null, href, label }: Props = $props();
@@ -34,7 +34,8 @@
   const ticks = [0, 24, 48, 72, 96];
 </script>
 
-<a class="ms" {href} onclick={followLink} aria-label="{label}: {totals.count} transmissions today, open the frequency page">
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<svelte:element this={href ? "a" : "div"} class="ms" {href} onclick={href ? followLink : undefined} aria-label={href ? `${label}: ${totals.count} transmissions today, open the frequency page` : undefined}>
   <svg width={W} height={H + 5} viewBox="0 0 {W} {H + 5}" shape-rendering="crispEdges" aria-hidden="true">
     {#each buckets as b, i (b.start)}
       {@const kind = kinds[i]}
@@ -62,7 +63,7 @@
     <span class="ms__fs">FS {scale}M</span>
     <span>{totals.count} TX{lastS != null ? ` · LAST ${fmt.age(lastS)}` : ""}</span>
   </span>
-</a>
+</svelte:element>
 
 <style>
   .ms { display: flex; align-items: flex-end; gap: 12px; border: 0; color: var(--ink-2); }

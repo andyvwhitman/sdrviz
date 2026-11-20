@@ -2,7 +2,13 @@
   /**
    * The channel's identity and its one live datum: how long since it last spoke, or while it is keyed the orange
    * timer. The age and the timer come from the live store, the same source as the Live Ops tile.
+   *
+   * `variant="pane"` (the Live Ops pane and the phone page) renders the same facts as two siblings, with no crumb and
+   * no lid: the identity line, one pinned row of fixed height, and the detail that scrolls away under it. The parent
+   * is the scroll box, so the line sticks to its top (docs/sprint-4/liveops-direction.md 5.8). Widths come from
+   * container queries on the nearest `pane` container.
    */
+  import CoveragePips from "$lib/components/CoveragePips.svelte";
   import PositionGlyph from "$lib/components/PositionGlyph.svelte";
   import * as fmt from "$lib/hud/fmt";
   import { followLink } from "$lib/router.svelte";
@@ -20,10 +26,14 @@
     /** seconds the channel has been keyed, or null when it is not */
     keyedElapsed: number | null;
     /** phone: the lid below the name holds heard-by, banks, notes */
-    lidOpen: boolean;
-    ontogglelid: () => void;
+    lidOpen?: boolean;
+    ontogglelid?: () => void;
+    /** "page": the desktop page. "pane": the Live Ops pane. "phone": the pane's two parts with the crumb above and the ABOUT lid below */
+    variant?: "page" | "pane" | "phone";
+    /** pane: the frequency is in a bank, but not the active one */
+    offBank?: boolean;
   }
-  let { info, channel, keyedElapsed, lidOpen, ontogglelid }: Props = $props();
+  let { info, channel, keyedElapsed, lidOpen = false, ontogglelid, variant = "page", offBank = false }: Props = $props();
 
   const snapshot = $derived(live.state);
   const keyed = $derived(keyedElapsed !== null);
@@ -35,12 +45,62 @@
   const feeds = $derived((channel?.heard_by ?? []).map((id) => snapshot?.feeds.find((feed) => feed.id === id)?.short ?? id));
   const banks = $derived((channel?.banks ?? []).map((id) => snapshot?.banks.find((bank) => bank.id === id)?.name ?? id));
   const sub = $derived([info.railroad, info.use, ...(viewport.phone ? [] : [info.line])].filter(Boolean).join(" · "));
+  const partial = $derived(channel?.coverage.state === "partial");
+  const pips = $derived((channel?.coverage.pips ?? []).map((pip) => pip.state === "ok"));
   const ember = $derived(channel?.state === "recent" || channel?.state === "recent-dim" ? channel.state : null);
 </script>
 
+{#snippet hero()}
+  <div class="idp__hero" class:is-keyed={keyed} aria-live="off">
+    {#if keyed}
+      <PositionGlyph state="tx" /><span class="idp__k">KEYED</span>
+      <span class="idp__big is-tx">{fmt.dur(keyedElapsed ?? 0)}</span>
+    {:else if lastHeard && ageS != null}
+      <span class="idp__k">LAST HEARD</span>
+      <span class="idp__big">{fmt.age(ageS)}</span>
+    {:else}
+      <span class="idp__k">NOT HEARD YET</span>
+    {/if}
+  </div>
+{/snippet}
+
+{#if variant !== "page"}
+  {#if variant === "phone"}
+    <nav class="id__crumb idp__crumb" aria-label="Breadcrumb">
+      <a href="/live?select={encodeURIComponent(info.id)}" onclick={followLink}>‹ LIVE OPS</a>
+    </nav>
+  {/if}
+  <div class="idp__line" class:idp__line--page={variant === "phone"} aria-label="{info.label} frequency">
+    <span class="idp__aar">{aar4}</span>
+    <h2 class="idp__name" data-ember={ember}>{info.label}</h2>
+    {#if offBank}<span class="idp__tag">NOT IN THIS BANK</span>{/if}
+    <span class="idp__grow"></span>
+    {@render hero()}
+  </div>
+  <div class="idp__detail">
+    <div class="idp__l2">
+      <span class="idp__mhz"><span>{fmt.freq(info.freq_mhz)}</span> <span class="idp__unit">MHz</span><span class="idp__sub"> · {[info.railroad, info.use].filter(Boolean).join(" · ")}{#if info.line}<span class="idp__route"> · {info.line}</span>{/if}</span></span>
+      <span class="idp__r">
+        {#if keyed}<span class="idp__k idp__k2">KEYED</span>{#if via}VIA {via}{/if}{:else if lastHeard}<span class="idp__k idp__k2">LAST HEARD</span><PositionGlyph state="idle" dim /> <span class="mono">{lastHeard.clock}</span>{/if}
+      </span>
+    </div>
+    {#if feeds.length}
+      <div class="idp__l3">HEARD BY <b>{feeds.join(" · ")}</b>{#if partial}<CoveragePips feeds={pips} />{/if}</div>
+    {/if}
+  </div>
+  {#if variant === "phone"}
+    <button class="id__lid idp__lid" type="button" aria-expanded={lidOpen} onclick={ontogglelid}>{lidOpen ? "▾" : "▸"} ABOUT THIS FREQUENCY</button>
+    {#if lidOpen}
+      <div class="id__lidbody idp__lidbody">
+        {#if banks.length}<p>BANKS <b>{banks.join(" · ")}</b></p>{/if}
+        {#if info.notes}<p class="id__notes">{info.notes}</p>{/if}
+      </div>
+    {/if}
+  {/if}
+{:else}
 <section class="id" aria-label="{info.label} frequency">
   <nav class="id__crumb" aria-label="Breadcrumb">
-    <a href="/live" onclick={followLink}><span class="id__crumb-short">‹ </span>LIVE OPS</a><span class="id__crumb-tail">{" / "}{info.label}</span>
+    <a href="/live?select={encodeURIComponent(info.id)}" onclick={followLink}><span class="id__crumb-short">‹ </span>LIVE OPS</a><span class="id__crumb-tail">{" / "}{info.label}</span>
   </nav>
 
   <div class="id__row">
@@ -80,6 +140,7 @@
     </div>
   {/if}
 </section>
+{/if}
 
 <style>
   .id { padding: 0 16px; background: var(--bg-void); }
@@ -111,6 +172,52 @@
   .id__lidbody { display: grid; gap: 6px; padding: 4px 0 12px; font: 500 var(--fs-13)/1.3 var(--font-label); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--ink-2); background: var(--bg-raised); padding-inline: 12px; }
   .id__lidbody p { margin: 0; }
   .id__lidbody .id__notes { font: 400 var(--fs-13)/1.4 var(--font-read); letter-spacing: 0; text-transform: none; color: var(--ink-2); }
+
+  /* the pane variant: one pinned line (fixed height, never wraps), the detail below it scrolls away */
+  .idp__line {
+    position: sticky; top: 0; z-index: 6; height: var(--fq-line-h); display: flex; align-items: center; gap: 12px; padding: 0 16px;
+    background: var(--bg-void); border-bottom: 1px solid var(--grid); overflow: hidden;
+  }
+  .idp__aar { flex: none; font: 500 var(--fs-24)/1 var(--font-data); color: var(--ink); }
+  .idp__name {
+    margin: 0; position: relative; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    font: 600 var(--fs-24)/1.1 var(--font-display); letter-spacing: var(--track-display); text-transform: uppercase; color: var(--ink);
+  }
+  .idp__name[data-ember]::after { content: ""; position: absolute; left: 0; right: 0; bottom: -4px; height: 2px; background: var(--state-recent); }
+  .idp__name[data-ember="recent-dim"]::after { background: var(--state-recent-dim); }
+  .idp__tag { flex: none; font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink-3); white-space: nowrap; }
+  .idp__grow { flex: 1; }
+  .idp__hero { flex: none; display: flex; align-items: center; gap: 8px; }
+  .idp__k { font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink-2); white-space: nowrap; }
+  .idp__big { font: 500 var(--fs-32)/1 var(--font-data); font-variant-numeric: tabular-nums; color: var(--ink-2); white-space: nowrap; }
+  .idp__big.is-tx { color: var(--state-tx); }
+  .idp__detail { display: grid; gap: 4px; padding: 8px 16px 8px; background: var(--bg-void); }
+  .idp__l2 { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; min-width: 0; }
+  .idp__mhz { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 400 var(--fs-12)/1.3 var(--font-data); color: var(--ink); }
+  .idp__unit { color: var(--ink-2); }
+  .idp__sub { font: 500 var(--fs-13)/1.3 var(--font-label); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--ink-2); }
+  .idp__route { display: none; }
+  .idp__r { flex: none; display: inline-flex; align-items: center; gap: 6px; font: 400 var(--fs-12)/1 var(--font-data); color: var(--ink-3); white-space: nowrap; }
+  .idp__l3 { font: 500 var(--fs-13)/1.3 var(--font-label); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--ink-2); }
+  .idp__l3 b { font-weight: 500; color: var(--ink); }
+  .idp__line--page { top: var(--header-h); }
+  .idp__k2 { display: none; margin-right: 6px; }
+  .idp__crumb { padding: 0 16px; background: var(--bg-void); }
+  .idp__lid { padding: 0 16px; background: var(--bg-void); }
+  .idp__lidbody { margin: 0; }
+  @container pane (min-width: 560px) { .idp__route { display: inline; } }
+  /* a narrow column (a phone, or the pane dragged thin): the hero is the age alone at 24 px; its label and the
+     clock time move to line 2 */
+  @container pane (max-width: 479px) {
+    .idp__line { gap: 8px; padding: 0 12px; }
+    .idp__aar { font-size: var(--fs-18); }
+    .idp__name { font-size: var(--fs-18); }
+    .idp__big { font-size: var(--fs-24); }
+    .idp__hero > .idp__k { display: none; }
+    .idp__k2 { display: inline; }
+    .idp__detail { padding-inline: 12px; }
+    .idp__l2 { flex-wrap: wrap; row-gap: 2px; }
+  }
 
   @media (min-width: 900px) {
     .id { padding: 0 var(--margin-x); }

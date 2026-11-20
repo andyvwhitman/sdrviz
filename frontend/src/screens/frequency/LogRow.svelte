@@ -112,8 +112,8 @@
   .lr {
     position: relative; display: grid; align-items: start; column-gap: 8px; padding: 6px 0 8px; min-height: 44px;
     border-bottom: 1px solid var(--grid); list-style: none;
-    /* scrolled into view, a row stops below the pinned identity and strip, not under them */
-    scroll-margin-top: calc(var(--header-h) + var(--fq-top, 0px) + 52px);
+    /* scrolled into view, a row stops below what is pinned (the identity line and the log head), not under it */
+    scroll-margin-top: calc(var(--header-h) + var(--fq-line-h) + 48px);
     grid-template-columns: 44px auto auto minmax(0, 1fr);
     grid-template-areas: "play time len feed" ". text text text";
   }
@@ -153,13 +153,22 @@
   .lr__fill { position: absolute; left: 0; bottom: 0; height: 2px; background: var(--ink); }
   .lr__cap { position: absolute; right: -3px; bottom: 2px; border: 3px solid transparent; border-top: 5px solid var(--ink); border-bottom: 0; }
 
+  /* the desktop page keeps its tall pinned block, which is measured (--fq-top); the pane and the phone page pin two lines */
   @media (min-width: 900px) {
-    .lr { grid-template-columns: 32px 96px 150px minmax(0, 1fr) 88px; grid-template-areas: "play time len text feed"; min-height: 40px; padding: 4px 0 6px; }
-    .lr__play, .lr__gone { width: 32px; height: 32px; }
-    .lr__time { font-size: var(--fs-12); }
-    .lr__len { font-size: var(--fs-12); }
-    .lr__text { padding-top: 3px; }
-    .lr__feed { font-size: var(--fs-11); }
-    .lr__tag--2 { margin-top: -8px; }
+    :global(.lg:not(.lg--pane)) .lr { scroll-margin-top: calc(var(--header-h) + var(--fq-top, 0px) + 52px); }
+    :global(.lg:not(.lg--pane)) .lr { grid-template-columns: 32px 96px 150px minmax(0, 1fr) 88px; grid-template-areas: "play time len text feed"; min-height: 40px; padding: 4px 0 6px; }
+    :global(.lg:not(.lg--pane)) .lr__play, :global(.lg:not(.lg--pane)) .lr__gone { width: 32px; height: 32px; }
+    :global(.lg:not(.lg--pane)) .lr__time, :global(.lg:not(.lg--pane)) .lr__len { font-size: var(--fs-12); }
+    :global(.lg:not(.lg--pane)) .lr__text { padding-top: 3px; }
+    :global(.lg:not(.lg--pane)) .lr__feed { font-size: var(--fs-11); }
+  }
+  /* the pane: one line from 560 px of pane width, two below (container query, not the window) */
+  :global(.lg--pane) .lr { scroll-margin-top: calc(var(--fq-line-h) + 48px); }
+  @container pane (min-width: 560px) {
+    :global(.lg--pane) .lr { grid-template-columns: 32px 88px 130px minmax(0, 1fr) 72px; grid-template-areas: "play time len text feed"; min-height: 40px; padding: 4px 0 6px; }
+    :global(.lg--pane) .lr__play, :global(.lg--pane) .lr__gone { width: 32px; height: 32px; }
+    :global(.lg--pane) .lr__time, :global(.lg--pane) .lr__len { font-size: var(--fs-12); }
+    :global(.lg--pane) .lr__text { padding-top: 3px; }
+    :global(.lg--pane) .lr__feed { font-size: var(--fs-11); }
   }
 </style>

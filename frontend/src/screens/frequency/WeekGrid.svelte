@@ -22,10 +22,13 @@
     onrange?: (range: "day" | "week") => void;
     /** a cell was chosen: its day, and the hour index (null for a click on the day label) */
     onpick: (date: string, hour: number | null) => void;
+    /** the Live Ops pane (its own width decides `narrow`, not the window's) */
+    pane?: boolean;
+    narrow?: boolean;
   }
-  let { week, tz, nowMs, shownDate, range, dayLabel = "TODAY", onrange, onpick }: Props = $props();
+  let { week, tz, nowMs, shownDate, range, dayLabel = "TODAY", onrange, onpick, pane = false, narrow = false }: Props = $props();
 
-  const phone = $derived(viewport.phone);
+  const phone = $derived(pane ? narrow : viewport.phone);
   const CELL = $derived(phone ? 12 : 14);
   const PITCH = $derived(phone ? 13 : 16);
   const LABEL_W = 40;

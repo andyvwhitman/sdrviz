@@ -24,8 +24,9 @@
   import type { Channel, Word } from "$lib/types/live";
   import { BACKOFF_S } from "$lib/ws/link";
   import BankTabs from "./BankTabs.svelte";
-  import ChannelInspector from "./ChannelInspector.svelte";
   import FeedInspector from "./FeedInspector.svelte";
+  import FrequencyPane from "./FrequencyPane.svelte";
+  import { liveOpsPrefs } from "./liveOpsPrefs.svelte";
   import FrontWall from "./FrontWall.svelte";
     import { elsewhereLabel, heroFor, offBankLabel } from "./hero";
   import HeroStrip from "./HeroStrip.svelte";
@@ -94,31 +95,47 @@
   const offBank = $derived(snapshot ? offBankLabel(snapshot.active_transmissions, bankIds) : null);
   const elsewhere = $derived(snapshot && displayed ? elsewhereLabel(snapshot.active_transmissions, displayed.id, feedName) : null);
 
-  /* ---- selection and inspector (URL: select, inspect) */
+  /* ---- selection (URL: `?select=<frequency id>`) and the feed inspector (`?inspect=<feed id>`) */
   const inspectId = $derived(router.query("inspect"));
+  /** an old `?inspect=<channel id>` link selects that channel */
   const selectedId = $derived(router.query("select") ?? (inspectId && channelById.has(inspectId) ? inspectId : null));
-  const inspectChannel = $derived(inspectId ? channelById.get(inspectId) : undefined);
   const inspectFeed = $derived(inspectId ? feedById.get(inspectId) : undefined);
+  let pane = $state<ReturnType<typeof FrequencyPane>>();
 
+  /** Select a frequency into the pane. Selecting the selected one again does nothing: a mis-click must not empty the pane. */
   function selectChannel(id: string): void {
-    if (selectedId === id && inspectId === id) router.setQuery({ select: null, inspect: null });
-    else router.setQuery({ select: id, inspect: id });
+    if (selectedId === id && !inspectId) return;
+    router.setQuery({ select: id, inspect: null });
   }
+  function clearSelection(): void {
+    liveOpsPrefs.selected = null;
+    liveOpsPrefs.save();
+    router.setQuery({ select: null, inspect: null });
+  }
+  /** The previous or next frequency in the bank's tile order, wrapping. */
+  function stepSelection(direction: -1 | 1): void {
+    if (!tileIds.length) return;
+    const at = selectedId ? tileIds.indexOf(selectedId) : -1;
+    const next = at < 0 ? (direction > 0 ? 0 : tileIds.length - 1) : (at + direction + tileIds.length) % tileIds.length;
+    selectChannel(tileIds[next]);
+  }
+  // remember the selection for the next visit, and come back to it when this one starts with none
+  $effect(() => {
+    if (!selectedId || liveOpsPrefs.selected === selectedId) return;
+    liveOpsPrefs.selected = selectedId;
+    liveOpsPrefs.save();
+  });
+  let restored = false;
+  $effect(() => {
+    if (restored || !snapshot) return;
+    restored = true;
+    const last = liveOpsPrefs.selected;
+    const known = last && (channelById.has(last) || snapshot.banks.some((b) => b.frequency_ids.includes(last)));
+    if (known && !untrack(() => router.query("select")) && !untrack(() => router.query("inspect"))) router.setQuery({ select: last });
+  });
   const closeInspector = () => router.setQuery({ inspect: null });
   const showFeed = (feedId: string) => prefs.update({ displayed_feed: feedId }).catch((e) => console.warn("feed not changed", e));
   const inspectFeedId = (feedId: string) => router.setQuery({ inspect: feedId });
-
-  /* LOG +n: rows that arrived in the log while the inspector covered it */
-  let logBase = $state<string | null>(null);
-  $effect(() => {
-    const open = inspectId; // re-run when the inspector opens, changes or closes
-    logBase = open ? untrack(() => live.state?.transcript.rows[0]?.id ?? null) : null;
-  });
-  const logCount = $derived.by(() => {
-    if (!inspectId || !snapshot || logBase == null) return 0;
-    const at = snapshot.transcript.rows.findIndex((r) => r.id === logBase);
-    return at < 0 ? 0 : at;
-  });
 
   /* ---- tiles */
   function tileState(c: Channel): TileInput {
@@ -208,9 +225,11 @@
   let lastDigit = { key: "", at: 0 };
 
   function globalKeys(event: KeyboardEvent): void {
-    if (event.ctrlKey || event.metaKey || event.altKey || !/^[0-9]$/.test(event.key)) return;
+    if (event.ctrlKey || event.metaKey || event.altKey) return;
     const target = event.target as HTMLElement;
     if (target.closest("input, textarea, select, [contenteditable]")) return;
+    if (event.key === "Escape") return escapeKey(event);
+    if (!/^[0-9]$/.test(event.key)) return;
     const now = performance.now();
     const pair = now - lastDigit.at < DIGIT_PAIR_MS ? Number(lastDigit.key + event.key) : NaN;
     const single = event.key === "0" ? 10 : Number(event.key);
@@ -221,15 +240,15 @@
       event.preventDefault();
       targetedId = tiles[index - 1].id;
       tile.focus();
+      selectChannel(tiles[index - 1].id);
     }
   }
 
-  /** A click anywhere that is not a control, a tile, a transcript row or the inspector closes the inspector. */
-  function clickAway(event: MouseEvent): void {
-    if (!inspectId) return;
-    const target = event.target as HTMLElement;
-    if (target.closest(".inspector, .tile, .txrow, button, a, input, select, textarea, [role='button']")) return;
-    router.setQuery({ select: null, inspect: null });
+  /** Esc steps back one layer: a menu or the feed inspector (they handle it), playback, a bucket jump, then the selection. */
+  function escapeKey(event: KeyboardEvent): void {
+    if (inspectFeed || document.querySelector(".lo-menu") || !selectedId) return;
+    event.preventDefault();
+    if (!pane?.escape()) clearSelection();
   }
 
   const downCap = BACKOFF_S[BACKOFF_S.length - 1];
@@ -237,8 +256,7 @@
 
 <svelte:window onkeydown={globalKeys} />
 
-<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-<div class="lo-frame" data-link={linkState ?? undefined} onclick={clickAway}>
+<div class="lo-frame" data-link={linkState ?? undefined}>
   <div class="lo" class:is-down={linkState === "no-link"}>
     {#if blank || !snapshot || !bank || !displayed}
       <!-- nothing has arrived yet: the same boxes, empty -->
@@ -306,11 +324,13 @@
         <div class="lo__gutter"></div>
 
         <div class="lo__pane br">
-          <PaneEmpty />
-          {#if inspectChannel}
-            <ChannelInspector channel={inspectChannel} state={snapshot} {now} {logCount} onclose={closeInspector} />
-          {:else if inspectFeed}
-            <FeedInspector feed={inspectFeed} state={snapshot} {logCount} onclose={closeInspector} />
+          {#if selectedId}
+            <FrequencyPane bind:this={pane} frequencyId={selectedId} onstep={stepSelection} onclose={clearSelection} />
+          {:else}
+            <PaneEmpty />
+          {/if}
+          {#if inspectFeed}
+            <FeedInspector feed={inspectFeed} state={snapshot} onclose={closeInspector} />
           {/if}
         </div>
       </div>

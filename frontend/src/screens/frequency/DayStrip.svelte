@@ -34,13 +34,18 @@
     range?: "day" | "week";
     dayLabel?: string;
     onrange?: (range: "day" | "week") => void;
+    /** the Live Ops pane's open lid: a column, not a page (64 px plot, 48 px gutter) */
+    pane?: boolean;
+    /** pane: the column is phone-narrow (under 480 px): the phone's 56 px plot, no gutter, short readout */
+    narrow?: boolean;
   }
-  let { day, failed, tz, heading, isToday, nowMs, keyedElapsed, jumped, lastHeardMs, canBack, canForward, onstep, onjump, range, dayLabel = "TODAY", onrange }: Props = $props();
+  let { day, failed, tz, heading, isToday, nowMs, keyedElapsed, jumped, lastHeardMs, canBack, canForward, onstep, onjump, range, dayLabel = "TODAY", onrange, pane = false, narrow = false }: Props = $props();
 
-  const phone = $derived(viewport.phone);
-  const PLOT_H = $derived(phone ? 56 : 96);
+  /** the compact form: the phone's, or a pane narrower than 480 px */
+  const phone = $derived(pane ? narrow : viewport.phone);
+  const PLOT_H = $derived(phone ? 56 : pane ? 64 : 96);
   const TOP = $derived(phone ? 14 : 26);
-  const GUTTER = $derived(phone ? 0 : 64);
+  const GUTTER = $derived(phone ? 0 : pane ? 48 : 64);
   const LABEL_PX = 7.4; // an approximate glyph width of the 11-step label type, to see whether a label fits its span
 
   let width = $state(0);
@@ -130,7 +135,7 @@
   const svgHeight = $derived(baseY + 8 + 18 + 22);
 </script>
 
-<section class="ds" aria-label="Activity, {heading}">
+<section class="ds" class:ds--pane={pane} aria-label="Activity, {heading}">
   <div class="ds__read">
     {#if range && onrange}<RangeSwitch {range} {dayLabel} {onrange} />{:else}<span class="ds__day">{heading}</span>{/if}
     <span class="ds__steps">
@@ -290,8 +295,13 @@
   .ds__empty { font: 500 var(--fs-13) var(--font-label); letter-spacing: var(--track-label); fill: var(--ink-2); }
 
   @media (min-width: 900px) {
-    .ds { padding: 0 var(--margin-x) 8px; }
-    .ds__read { flex-wrap: nowrap; min-height: 32px; }
-    .ds__totals { flex: 1; order: 0; padding: 0 0 0 8px; }
+    .ds:not(.ds--pane) { padding: 0 var(--margin-x) 8px; }
+    .ds:not(.ds--pane) .ds__read { flex-wrap: nowrap; min-height: 32px; }
+    .ds:not(.ds--pane) .ds__totals { flex: 1; order: 0; padding: 0 0 0 8px; }
+  }
+  /* the pane: the heading row wraps its totals under it while the column is narrow, as on the phone */
+  @container pane (min-width: 480px) {
+    .ds--pane .ds__read { flex-wrap: nowrap; min-height: 32px; }
+    .ds--pane .ds__totals { flex: 1; order: 0; padding: 0 0 0 8px; }
   }
 </style>

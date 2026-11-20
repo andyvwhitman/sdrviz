@@ -25,8 +25,11 @@
     onplay: (rec: Recording) => void;
     /** a viewer is at the top of the list, so new rows may join without moving anything */
     attop?: boolean;
+    /** the Live Ops pane: the log scrolls inside this box (not the window) and takes its row layout from the pane's width */
+    pane?: boolean;
+    scroller?: HTMLElement | null;
   }
-  let { store, tz, todayKey, mhz, inBank, selectedId, bucket, onAir, onplay, attop = $bindable(true) }: Props = $props();
+  let { store, tz, todayKey, mhz, inBank, selectedId, bucket, onAir, onplay, attop = $bindable(true), pane = false, scroller = null }: Props = $props();
 
   let expanded = $state<number | null>(null);
   let focusId = $state<number | null>(null);
@@ -68,18 +71,18 @@
 
   // the sentinel at the foot loads the next page when it scrolls near
   function sentinel(node: HTMLElement): { destroy: () => void } {
-    const observer = new IntersectionObserver((entries) => entries.some((e) => e.isIntersecting) && void store.more(), { rootMargin: "400px" });
+    const observer = new IntersectionObserver((entries) => entries.some((e) => e.isIntersecting) && void store.more(), { root: scroller, rootMargin: "400px" });
     observer.observe(node);
     return { destroy: () => observer.disconnect() };
   }
   function top(node: HTMLElement): { destroy: () => void } {
-    const observer = new IntersectionObserver((entries) => (attop = entries.some((e) => e.isIntersecting)));
+    const observer = new IntersectionObserver((entries) => (attop = entries.some((e) => e.isIntersecting)), { root: scroller });
     observer.observe(node);
     return { destroy: () => observer.disconnect() };
   }
 </script>
 
-<section class="lg" bind:this={root} aria-label="Transmissions">
+<section class="lg" class:lg--pane={pane} bind:this={root} aria-label="Transmissions">
   {#if !player.supported}
     <p class="lg__note">THIS BROWSER CANNOT PLAY THE RECORDINGS · OGG OPUS</p>
   {/if}
@@ -155,7 +158,9 @@
   .lg__air-t { font: 400 var(--fs-13)/1 var(--font-data); color: var(--state-tx); }
   .lg__air-d { font: 400 var(--fs-13)/1 var(--font-data); color: var(--state-tx); }
   .lg__air-k { font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink-2); }
-  .lg__new { display: block; margin: 8px auto; min-height: 32px; padding: 0 16px; font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); position: sticky; top: calc(var(--header-h) + max(var(--fq-top, 0px), 44px) + 8px); z-index: 5; background: var(--bg-void); }
+  /* just under the pinned log head: constant token offsets, nothing measured except on the desktop page's tall block */
+  .lg__new { display: block; margin: 8px auto; min-height: 32px; padding: 0 16px; font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); position: sticky; top: calc(var(--header-h) + var(--fq-line-h) + 48px); z-index: 5; background: var(--bg-void); }
+  .lg--pane .lg__new { top: calc(var(--fq-line-h) + 48px); }
   .lg__msg { margin: 0; padding: 16px 16px 4px; font: 500 var(--fs-13)/1.3 var(--font-label); letter-spacing: var(--track-label); color: var(--ink-2); }
   .lg__sentence { margin: 0; padding: 0 16px 16px; max-width: 60ch; font: 400 var(--fs-15)/1.45 var(--font-read); color: var(--ink-3); }
   .lg__sentence a { color: var(--line); }
@@ -163,9 +168,10 @@
   .lg__older { display: block; margin: 12px 16px 0; min-height: 44px; padding: 0 16px; font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink-2); box-shadow: inset 0 0 0 1px var(--line-faint); }
 
   @media (min-width: 900px) {
-    .lg__list { padding: 0 24px 0 var(--margin-x); }
-    .lg__msg, .lg__sentence { padding-left: var(--margin-x); }
-    .lg__note { padding-left: var(--margin-x); }
-    .lg__older { margin-left: var(--margin-x); }
+    .lg:not(.lg--pane) .lg__list { padding: 0 24px 0 var(--margin-x); }
+    .lg:not(.lg--pane) .lg__msg, .lg:not(.lg--pane) .lg__sentence { padding-left: var(--margin-x); }
+    .lg:not(.lg--pane) .lg__note { padding-left: var(--margin-x); }
+    .lg:not(.lg--pane) .lg__older { margin-left: var(--margin-x); }
+    .lg:not(.lg--pane) .lg__new { top: calc(var(--header-h) + max(var(--fq-top, 0px), 44px) + 8px); }
   }
 </style>

@@ -17,10 +17,9 @@
   interface Props {
     feed: Feed;
     state: LiveState;
-    logCount: number;
     onclose: () => void;
   }
-  let { feed, state: snapshot, logCount, onclose }: Props = $props();
+  let { feed, state: snapshot, onclose }: Props = $props();
 
   const fault = $derived(snapshot.faults.find((f) => f.object === feed.id));
   const glyph = $derived<GlyphState>(fault ? "fault" : feed.state === "stale" ? "stale" : feed.state === "offline" ? "offline" : "idle");
@@ -63,7 +62,7 @@
   }
 </script>
 
-<Inspector title={feed.name.toUpperCase()} kind="FEED · {feed.site.toUpperCase()}" {glyph} sim={feed.sim} {logCount} {onclose}>
+<Inspector title={feed.name.toUpperCase()} kind="FEED · {feed.site.toUpperCase()}" {glyph} sim={feed.sim} {onclose}>
   {#snippet lead()}
     <div class="lo-lead">
       {#if fault || feed.state !== "ok"}

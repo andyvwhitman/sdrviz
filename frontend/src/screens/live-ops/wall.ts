@@ -86,3 +86,13 @@ export function frameDbAt(frame: SpectrumFrame, mhz: number): number {
   const near = frame.bins.slice(Math.max(0, bin - 1), bin + 2);
   return near.reduce((sum, db) => sum + db, 0) / near.length;
 }
+
+/**
+ * Which dB divisions get a numeral: every 1st, 2nd or 3rd, the smallest step that leaves 1.6 lines of type between two
+ * numerals (the top one hangs from the top edge, which pulls it towards the next). A tall spectrum labels every division.
+ */
+export function dbRows(height: number, fontPx: number): number[] {
+  const division = height / DB_DIVS;
+  const step = [1, 2].find((n) => n * division >= 1.6 * fontPx) ?? 3;
+  return Array.from({ length: DB_DIVS }, (_, j) => j).filter((j) => j % step === 0);
+}

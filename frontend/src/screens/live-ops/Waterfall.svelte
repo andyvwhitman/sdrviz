@@ -11,7 +11,7 @@
   import { BAND } from "$lib/hud/band";
   import type { Snippet } from "svelte";
   import { WaterfallModel, NO_SAMPLE_DBFS, PX_PER_S, ROW_PX, rowsFor, secondsFor } from "./waterfallModel.svelte";
-  import { bandX, hash, rampClamp, slotWidth, type Carrier } from "./wall";
+  import { bandX, rampClamp, slotWidth, type Carrier } from "./wall";
 
   interface Props {
     /** the box, in CSS px (the parent measures it once) */
@@ -91,9 +91,9 @@
     const fillLine = (source: number): void => {
       const row = rows[rows.length - 1 - source];
       for (let x = 0; x < backW; x++) {
-        let v = row ? row.bins[binOf[x]] : floor + (hash(cssX(x), source) - 0.5) * 4;
-        if (v <= NO_SAMPLE_DBFS) v = floor + (hash(cssX(x), source) - 0.5) * 4; // a frozen feed shows its floor, not black
-        const rgb = colour((v - low) / (high - low));
+        // history that never happened is void: a row the model does not hold, or a bin the receiver never delivered
+        const v = row ? row.bins[binOf[x]] : NO_SAMPLE_DBFS;
+        const rgb = v <= NO_SAMPLE_DBFS ? void0 : colour((v - low) / (high - low));
         line.set([rgb[0], rgb[1], rgb[2], 255], x * 4);
       }
     };

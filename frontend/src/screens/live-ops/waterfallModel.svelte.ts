@@ -28,7 +28,11 @@ export const secondsFor = (height: number): number => height / PX_PER_S;
 
 export interface WaterfallRow {
   bins: Int8Array;
+  /** when the row happened, wall-clock ms (estimated for a backfilled row), to merge a backfill with what is held */
+  at: number;
 }
+
+const isEmpty = (bins: Int8Array): boolean => bins.every((db) => db <= NO_SAMPLE_DBFS);
 
 export class WaterfallModel {
   /** oldest first */
@@ -41,19 +45,36 @@ export class WaterfallModel {
 
   constructor(private capacity = MIN_ROWS) {}
 
-  /** Replace the contents with the backend's backfill for `feedId`. */
+  /**
+   * Merge the backend's backfill for `feedId` with what is held. A row the receiver never delivered (all no-sample) is
+   * not history and is dropped, so a real receiver's empty backfill adds nothing, and a reload (a taller box) never
+   * leaves the model with fewer real rows than it had: the backfill only supplies rows older than the oldest held.
+   */
   async load(feedId: string): Promise<void> {
     const generation = ++this.generation;
-    if (feedId !== this.feedId) this.rows = [];
+    if (feedId !== this.feedId) {
+      this.rows = [];
+      this.lastRowMs = -Infinity;
+    }
     this.feedId = feedId;
-    this.lastRowMs = -Infinity;
+    const requestedAt = Date.now();
     try {
-      const fill = await api.feeds.waterfall(feedId, this.capacity);
+      // the backfill may come in finer rows than the 500 ms the wall draws: ask for double and keep every n-th
+      const fill = await api.feeds.waterfall(feedId, Math.min(MAX_ROWS, this.capacity * 2));
       if (generation !== this.generation || !fill.bins) return;
       this.centerMhz = fill.centerMhz;
       this.spanMhz = fill.spanMhz;
       const count = Math.floor(fill.data.length / fill.bins);
-      this.rows = Array.from({ length: count }, (_, i) => ({ bins: fill.data.subarray(i * fill.bins, (i + 1) * fill.bins) }));
+      const rowMs = (fill.rowSeconds || ROW_MS / 1000) * 1000;
+      const stride = Math.max(1, Math.round(ROW_MS / rowMs));
+      const fetched: WaterfallRow[] = [];
+      for (let i = count - 1; i >= 0; i -= stride) {
+        const bins = fill.data.subarray(i * fill.bins, (i + 1) * fill.bins);
+        if (!isEmpty(bins)) fetched.unshift({ bins, at: requestedAt - (count - 1 - i) * rowMs });
+      }
+      const oldestHeld = this.rows[0]?.at ?? Infinity;
+      const older = fetched.filter((row) => row.at < oldestHeld - ROW_MS / 2);
+      this.rows = [...older, ...this.rows].slice(-this.capacity);
     } catch (error) {
       console.warn("waterfall backfill failed", error);
     }
@@ -73,7 +94,7 @@ export class WaterfallModel {
     this.lastRowMs = frame.tMs;
     this.centerMhz = frame.centerMhz;
     this.spanMhz = frame.spanMhz;
-    const next = [...this.rows, { bins: frame.bins }];
+    const next = [...this.rows, { bins: frame.bins, at: Date.now() }];
     this.rows = next.slice(-this.capacity);
   }
 }

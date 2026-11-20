@@ -10,7 +10,7 @@ from sqlmodel import select
 
 from ..config import Settings
 from ..db import open_session
-from ..models import Bank, Feed, Frequency, Receiver
+from ..models import Assignment, Bank, Feed, Frequency, Receiver
 
 if TYPE_CHECKING:
     from ..nodes.service import NodeRegistry
@@ -62,8 +62,10 @@ def load_world(
         freqs = {f.id: f for f in table(Frequency)}
         banks = list(table(Bank))
         feeds = {f.id: f for f in table(Feed)} if settings.sim else {}  # the seeded feeds are fictional
+        enabled = enabled_assignments(table(Assignment), freqs)
+    feeds = {fid: feed.model_copy(update={"hears": enabled.get(fid, [])}) for fid, feed in feeds.items()}
     if receiver and receiver.host:
-        feed = live_feed(receiver, freqs)
+        feed = live_feed(receiver, freqs, enabled.get(LIVE_FEED_ID, []))
         feeds[feed.id] = feed
     if nodes:
         feeds |= {feed.id: feed for feed in nodes.feeds(freqs)}
@@ -73,8 +75,17 @@ def load_world(
 LIVE_FEED_ID = "feed-live"
 
 
-def live_feed(receiver: Receiver, freqs: dict[str, Frequency]) -> Feed:
-    """The real rtl_tcp receiver, as a feed that hears every channel inside its tuned window."""
+def enabled_assignments(assignments: list[Assignment], freqs: dict[str, Frequency]) -> dict[str, list[str]]:
+    """The frequency ids each feed has enabled, in the order they were assigned. A feed hears exactly these."""
+    enabled: dict[str, list[str]] = {}
+    for a in assignments:
+        if a.enabled and a.frequency_id in freqs:
+            enabled.setdefault(a.feed_id, []).append(a.frequency_id)
+    return enabled
+
+
+def live_feed(receiver: Receiver, freqs: dict[str, Frequency], assigned: list[str]) -> Feed:
+    """The real rtl_tcp receiver, as a feed that hears its enabled frequencies inside its tuned window."""
     center, half = receiver.freq_hz / 1e6, 0.45 * receiver.rate / 1e6
     return Feed(
         id=LIVE_FEED_ID,
@@ -84,7 +95,7 @@ def live_feed(receiver: Receiver, freqs: dict[str, Frequency]) -> Feed:
         lat=receiver.lat,
         lon=receiver.lon,
         coverage_radius_km=20,
-        hears=[cid for cid, f in freqs.items() if abs(f.freq_mhz - center) <= half],
+        hears=[cid for cid in assigned if abs(freqs[cid].freq_mhz - center) <= half],
         host=receiver.host,
         port=receiver.port,
         center_mhz=center,

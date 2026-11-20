@@ -108,12 +108,6 @@ ADMIN_ONLY = [
     ("post", "/api/transit/sources/x/refresh", None),
     ("get", "/api/radio/settings", None),
     ("put", "/api/radio/settings", {}),
-    ("post", "/api/banks", {}),
-    ("post", "/api/banks/live/channels", {"aar_channel": 54}),
-    ("delete", "/api/banks/live/channels/54", None),
-    ("put", "/api/banks/bank-commuter", {}),
-    ("delete", "/api/banks/bank-commuter", None),
-    ("post", "/api/banks/bank-commuter/activate", None),
     ("post", "/api/feeds", {}),
     ("put", "/api/feeds/feed-x", {}),
     ("delete", "/api/feeds/feed-x", None),
@@ -128,7 +122,6 @@ VIEWER_OK = [
     "/api/live/state",
     "/api/prefs",
     "/api/frequencies",
-    "/api/banks",
     "/api/feeds",
     "/api/radio",
     "/api/transit/vehicles",
@@ -218,7 +211,7 @@ def test_cookie_is_secure_only_on_https(anonymous, settings):
 
 def test_cross_origin_writes_and_sockets_are_refused(client):
     foreign = {"Origin": "https://evil.example"}
-    assert client.post("/api/banks/bank-commuter/activate", headers=foreign).status_code == 403
+    assert client.put("/api/frequencies/x/assignments/feed-lnd", json={}, headers=foreign).status_code == 403
     assert client.post("/api/auth/logout", headers=foreign).status_code == 403
     assert client.get("/api/system", headers=foreign).status_code == 200  # reads are not state-changing
     with pytest.raises(WebSocketDisconnect), client.websocket_connect("/ws/live", headers=foreign):

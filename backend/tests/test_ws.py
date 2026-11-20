@@ -75,7 +75,7 @@ def test_jump_pushes_a_new_snapshot_to_connected_clients(client):
 def test_bank_activation_pushes_a_snapshot(client):
     with client.websocket_connect("/ws/live") as ws:
         receive_until(ws, is_type("snapshot"))
-        client.post("/api/banks/bank-freight/activate")
+        client.patch("/api/prefs", json={"active_bank": "bank-freight", "displayed_feed": "feed-bay"})
         snapshot = receive_until(
             ws,
             lambda m: isinstance(m, dict) and m["type"] == "snapshot" and m["state"]["active_bank"] == "bank-freight",

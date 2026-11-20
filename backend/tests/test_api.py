@@ -117,43 +117,64 @@ class TestFrequencies:
         assert client.put("/api/frequencies/amtk-nec-road", json=body).json()["label"] == "AMTK RENAMED"
         assert client.put("/api/frequencies/other", json=body).status_code in (404, 422)
 
-    def test_delete_refuses_a_channel_in_a_bank_unless_forced(self, client):
-        assert client.delete("/api/frequencies/amtk-nec-road").status_code == 409
-        assert client.delete("/api/frequencies/amtk-nec-road?force=true").status_code == 204
-        assert "amtk-nec-road" not in client.get("/api/banks/bank-nec").json()["frequency_ids"]
+    def test_delete_removes_the_frequency_and_its_assignments(self, client):
+        assert client.delete("/api/frequencies/amtk-nec-road").status_code == 204
         assert client.get("/api/frequencies/amtk-nec-road").status_code == 404
         assert client.get("/api/live/state").status_code == 200  # recorded rows of the gone channel are ignored
+        client.post("/api/frequencies", json=self.NEW | {"id": "amtk-nec-road", "label": "NEW"})
+        assert client.get("/api/frequencies/amtk-nec-road").json()["assignments"] == []
 
+    def test_list_and_read_carry_the_assignments(self, client):
+        road = client.get("/api/frequencies/amtk-nec-road").json()
+        assert {"feed_id": "feed-lnd", "enabled": True} in road["assignments"]
+        listed = next(f for f in client.get("/api/frequencies").json() if f["id"] == "amtk-nec-road")
+        assert listed["assignments"] == road["assignments"]
 
-class TestBanks:
-    def test_list_has_ordered_membership(self, client):
-        banks = client.get("/api/banks").json()
-        assert [b["id"] for b in banks] == ["bank-nec", "bank-freight", "bank-commuter", "bank-harbor"]
-        assert banks[0]["frequency_ids"][0] == "amtk-nec-road" and banks[0]["short"] == "NEC"
+    def test_assign_enable_disable_and_unassign(self, client):
+        url = "/api/frequencies/csx-road/assignments/feed-bwi"
 
-    def test_create_update_delete(self, client):
-        body = {"id": "bank-new", "name": "New Bank", "home_feed": "feed-lnd", "frequency_ids": []}
-        created = client.post("/api/banks", json=body)
-        assert created.status_code == 201 and created.json()["short"] == "NEW"
-        body["frequency_ids"] = ["csx-road", "amtk-nec-road"]
-        assert client.put("/api/banks/bank-new", json=body).json()["frequency_ids"] == ["csx-road", "amtk-nec-road"]
-        assert client.delete("/api/banks/bank-new").status_code == 204
-        assert client.get("/api/banks/bank-new").status_code == 404
+        def states(response) -> dict[str, bool]:
+            return {a["feed_id"]: a["enabled"] for a in response.json()["assignments"]}
 
-    def test_validation(self, client):
-        base = {"id": "b", "name": "B", "home_feed": "feed-lnd", "frequency_ids": []}
-        assert client.post("/api/banks", json={**base, "frequency_ids": ["nope"]}).status_code == 422
-        assert client.post("/api/banks", json={**base, "home_feed": "nope"}).status_code == 422
-        assert client.post("/api/banks", json={**base, "id": "bank-nec"}).status_code == 409
+        def hears() -> list[str]:
+            return client.app.state.rt.world.feeds["feed-bwi"].hears
 
-    def test_activate_changes_prefs_and_live_state(self, client):
-        prefs = client.post("/api/banks/bank-freight/activate").json()
-        assert prefs["active_bank"] == "bank-freight"
-        state = client.get("/api/live/state").json()
-        assert state["active_bank"] == "bank-freight" and state["displayed_feed"] == "feed-bay"
+        assert states(client.put(url, json={"enabled": False}))["feed-bwi"] is False
+        assert "csx-road" not in hears()
+        assert states(client.put(url, json={"enabled": True}))["feed-bwi"] is True
+        assert "csx-road" in hears()
+        again = client.put(url, json={"enabled": True})
+        assert [a["feed_id"] for a in again.json()["assignments"]].count("feed-bwi") == 1
+        assert "feed-bwi" not in states(client.delete(url))
+        assert "csx-road" not in hears()
+        assert client.delete(url).status_code == 404
 
-    def test_the_active_bank_cannot_be_deleted(self, client):
-        assert client.delete("/api/banks/bank-nec").status_code == 409
+    def test_assignment_errors(self, client):
+        assert client.put("/api/frequencies/nope/assignments/feed-lnd", json={"enabled": True}).status_code == 404
+        assert client.put("/api/frequencies/amtk-nec-road/assignments/nope", json={"enabled": True}).status_code == 404
+
+    def test_from_channel_makes_a_frequency_labelled_with_the_number_twice(self, client):
+        body = {"aar_channel": 7, "feed_id": "feed-lnd"}
+        first = client.post("/api/frequencies/from-channel", json=body)
+        made = first.json()
+        assert made["created"] is True
+        assert made["frequency"]["id"] == "live-ch07" and made["frequency"]["label"] == "0707"
+        assert made["frequency"]["freq_mhz"] == 160.215
+        assert made["frequency"]["assignments"] == [{"feed_id": "feed-lnd", "enabled": True}]
+        again = client.post("/api/frequencies/from-channel", json=body).json()
+        assert again["created"] is False and again["frequency"]["assignments"] == made["frequency"]["assignments"]
+
+    def test_from_channel_reuses_a_frequency_and_enables_it(self, client):
+        client.put("/api/frequencies/amtk-nec-road/assignments/feed-bwi", json={"enabled": False})
+        body = {"aar_channel": 54, "feed_id": "feed-bwi"}
+        reused = client.post("/api/frequencies/from-channel", json=body).json()
+        assert reused["created"] is False and reused["frequency"]["id"] == "amtk-nec-road"
+        assert {"feed_id": "feed-bwi", "enabled": True} in reused["frequency"]["assignments"]
+        assert client.post("/api/frequencies/from-channel", json={**body, "feed_id": "nope"}).status_code == 422
+        assert client.post("/api/frequencies/from-channel", json={**body, "aar_channel": 0}).status_code == 422
+
+    def test_banks_are_gone(self, client):
+        assert client.get("/api/banks").status_code == 404
 
 
 class TestFeeds:
@@ -250,7 +271,6 @@ class TestOther:
         paths = client.get("/openapi.json").json()["paths"]
         for path in (
             "/api/feeds/{feed_id}/ack",
-            "/api/banks/{bank_id}/activate",
             "/api/sim/jump",
         ):
             assert path in paths
@@ -258,7 +278,7 @@ class TestOther:
 
 def test_prefs_patch_changes_only_the_fields_sent(client):
     start = client.get("/api/prefs").json()
-    client.post("/api/banks/bank-commuter/activate")
+    client.patch("/api/prefs", json={"active_bank": "bank-commuter"})
     saved = client.patch("/api/prefs", json={"muted": ["amtk-nec-road"]}).json()
     assert saved["muted"] == ["amtk-nec-road"]
     assert saved["active_bank"] == "bank-commuter"  # a stale copy of the bank is not re-sent

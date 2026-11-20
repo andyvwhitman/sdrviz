@@ -169,3 +169,11 @@ def test_a_viewer_can_read_recordings(settings):
         assert viewer.get("/api/recordings").status_code == 200
         assert viewer.get(f"/api/frequencies/{FREQ}/activity/week").status_code == 200
         assert viewer.get("/api/frequencies/activity").status_code == 200
+
+
+def test_deleting_a_frequency_keeps_its_recordings(client, settings):
+    recording = add(client, settings, utc(2026, 11, 16, 19, 20), transcript="K tower clear", freq="amtk-wash-term")
+    assert client.delete("/api/frequencies/amtk-wash-term").status_code == 204
+    rows = client.get("/api/recordings", params={"frequency_id": "amtk-wash-term"}).json()
+    assert [r["id"] for r in rows] == [recording] and rows[0]["transcript"] == "K tower clear"
+    assert client.get(f"/api/recordings/{recording}/audio").status_code == 200

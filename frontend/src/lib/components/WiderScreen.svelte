@@ -1,5 +1,5 @@
 <script lang="ts">
-  /** What a phone shows in place of a screen that is built for a wide display (Live Ops, Feeds & Banks, Settings). */
+  /** What a phone shows in place of a screen that is built for a wide display (Live Ops, Feeds, Settings). */
   import { carryGlobals } from "$lib/params";
   import { followLink, router } from "$lib/router.svelte";
   import type { Route } from "../../routes";

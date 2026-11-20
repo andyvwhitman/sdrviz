@@ -145,7 +145,7 @@
         <h4>ACTIONS</h4>
         <div class="insp-btns">
           <Button primary={!f.acked} disabled={f.acked || acking} onclick={() => ack(f)}>{f.acked ? "ACK'D" : "ACK"}</Button>
-          <Button onclick={() => router.go(`/feeds?feed=${f.id.replace(/^feed-/, "")}`)}>OPEN IN FEEDS &amp; BANKS</Button>
+          <Button onclick={() => router.go(`/feeds?feed=${f.id.replace(/^feed-/, "")}`)}>OPEN IN FEEDS</Button>
         </div>
       </section>
     {/if}

@@ -1,19 +1,20 @@
 <script lang="ts">
-  /** Hero strip (spec 9.4): feeds nominal n/m, the worst feeds, the keyed channels, the active bank. */
+  /** Hero strip (spec 9.4): feeds nominal n/m, the worst feeds, the transit sources, and what the feeds hear. */
   import PositionGlyph from "$lib/components/PositionGlyph.svelte";
+  import { followLink } from "$lib/router.svelte";
   import * as fmt from "$lib/hud/fmt";
-  import { feedName } from "$lib/hud/roles";
   import type { Feed, LiveState } from "$lib/types/live";
+  import type { TransitSource } from "$lib/types/sources";
   import { feedLook } from "./look";
+  import { transitSummary } from "./transit";
 
-  let { snapshot }: { snapshot: LiveState } = $props();
+  /** `sources` is null until the list loads, and for a viewer (the list is admin-only) */
+  let { snapshot, sources, now }: { snapshot: LiveState; sources: TransitSource[] | null; now: number } = $props();
 
   const feeds = $derived(new Map(snapshot.feeds.map((f) => [f.id, f])));
   const enabled = $derived(snapshot.feeds.filter((f) => f.enabled));
   const nominal = $derived(enabled.filter((f) => f.state === "ok").length);
   const zone = $derived(snapshot.tz.name);
-  const activeBank = $derived(snapshot.banks.find((b) => b.id === snapshot.active_bank));
-  const view = $derived(snapshot.views[snapshot.active_bank]);
 
   /** the worst feeds in the fixture's own ranking (unacked fault > acked fault > offline > stale) */
   interface Ranked {
@@ -27,13 +28,12 @@
   }
   const ranked = $derived(((snapshot.header.feeds_hero_ranked ?? []) as Ranked[]).flatMap((r) => (feeds.has(r.feed_id) ? [{ r, feed: feeds.get(r.feed_id) as Feed }] : [])));
 
-  const monitored = $derived(snapshot.channels.filter((c) => c.monitored));
-  const unbanked = $derived(snapshot.channels.filter((c) => !c.banks.length));
-  const unheard = $derived(snapshot.channels.filter((c) => !c.monitored));
+  /** channels the enabled feeds hear */
+  const heardCount = $derived(new Set(enabled.flatMap((f) => f.hears)).size);
+  const transit = $derived(sources ? transitSummary(sources, now) : null);
 
-  /** only active-bank key-ups are orange here, oldest first; off-bank traffic is a quiet count */
+  /** key-ups on air, as a quiet count of receptions */
   const live = $derived(snapshot.active_transmissions ?? []);
-  const inBank = $derived(live.filter((t) => activeBank?.frequency_ids.includes(t.frequency_id)).sort((a, b) => (b.elapsed_s ?? 0) - (a.elapsed_s ?? 0)));
   const receptionCount = $derived(live.reduce((n, t) => n + (t.receptions?.length ?? 0), 0));
   const receivingFeeds = $derived(new Set(live.flatMap((t) => (t.receptions ?? []).map((r) => r.feed_id))).size);
 </script>
@@ -54,16 +54,18 @@
   {/each}
   <span class="hero__aside">
     {#if live.length}
-      {#if inBank.length}
-        <span class="fb-keyed-k">KEYED</span>
-        <span class="fb-keyed-list">{#each inBank as t, i}{#if i}<span class="sep"></span>{/if}{t.aar4}{/each}</span>
-      {/if}
-      {#if view?.off_bank_label}<span class="fb-offbank">{view.off_bank_label}</span>{/if}
       <span class="hero__stack"><span class="a">{receptionCount} RECEPTIONS</span><span class="b">ON {receivingFeeds} FEEDS</span></span>
       <span class="fb-rule"></span>
     {/if}
-    <span class="hero__stack"><span class="a">{activeBank?.name}</span><span class="b">ACTIVE BANK · HOME {feedName(activeBank?.home_feed)}</span></span>
-    <span class="fb-rule"></span>
-    <span class="hero__stack"><span class="a">{monitored.length} CH MONITORED</span><span class="b">{unheard.length} NOT HEARD · {unbanked.length} UNBANKED</span></span>
+    <a class="hero__stack fb-link" href="/frequencies" onclick={followLink}>
+      <span class="a">{heardCount} ENABLED ON {enabled.length} {enabled.length === 1 ? "NODE" : "NODES"} ›</span><span class="b">OPEN THE FREQUENCIES LIST</span>
+    </a>
+    {#if transit}
+      <span class="fb-rule"></span>
+      <span class="hero__stack">
+        <span class="a">TRANSIT {transit.fresh}/{transit.enabled} FRESH</span>
+        <span class="b {transit.worst?.tone ?? ''}">{transit.worst?.text ?? "ALL SOURCES CURRENT"}</span>
+      </span>
+    {/if}
   </span>
 </div>

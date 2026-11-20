@@ -5,7 +5,8 @@
   import * as fmt from "$lib/hud/fmt";
   import type { ChipKind } from "$lib/hud/chips";
   import { bytes, uptime } from "./format";
-  import type { BackendStats, RadioStatus, SourceState, TransitSource } from "./types";
+  import type { SourceState, TransitSource } from "$lib/types/sources";
+  import type { BackendStats, RadioStatus } from "./types";
 
   interface Props {
     stats: BackendStats | null;

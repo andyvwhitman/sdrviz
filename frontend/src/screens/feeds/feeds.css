@@ -18,6 +18,8 @@
 .fb-col--transit .grow { flex: 1; }
 .fb-hero .fb-link { text-decoration: none; color: inherit; }
 .fb-hero .fb-link:hover .a { color: var(--ink); }
+.fb-hero .fb-jump { padding: 0; border: 0; background: none; cursor: pointer; text-align: left; }
+.fb-hero .fb-jump:hover { color: var(--ink); }
 .fb-hero .hero__stack .b.is-stale { color: var(--state-stale); }
 .fb-hero .hero__stack .b.is-fault { color: var(--state-fault); }
 
@@ -25,7 +27,8 @@
 .fb-right, .fb-pane { display: contents; }
 .fb-right.is-stacked { display: block; position: absolute; left: 470px; right: -6px; top: 74px; bottom: 0; padding: 6px 6px 0 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--line-faint) transparent; }
 .is-stacked .fb-pane { display: block; position: relative; width: 760px; max-width: 100%; }
-.is-stacked .fb-pane--insp { width: 602px; height: 920px; }
+/* the inspector leaves the head of the transit sources in view at the foot of the column */
+.is-stacked .fb-pane--insp { width: 602px; height: min(920px, calc(100% - 64px)); }
 .is-stacked .fb-pane--transit { height: 780px; margin: 24px 0 12px; }
 .is-stacked .fb-col, .is-stacked .fb-col--transit { left: 0; top: 0; bottom: 0; width: auto; right: 0; }
 
@@ -104,6 +107,9 @@
 .fb-insp__kind .mono { font: 400 var(--fs-11)/1 var(--font-data); color: var(--ink-2); letter-spacing: 0; }
 .fb-insp__kind .is-fault { color: var(--state-fault); }
 .fb-insp__kind .is-stale { color: var(--state-stale); }
+/* the sections sit at fixed offsets in a body that scrolls above the pinned lid, so a short pane never overprints it */
+.fb-insp__body { position: absolute; left: 0; right: 0; top: 70px; bottom: 40px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--line-faint) transparent; }
+.fb-insp__scroll { position: relative; height: 810px; }
 .fb-sec { position: absolute; left: 16px; right: 16px; }
 .fb-sec > h4 {
   margin: 0; height: 20px; display: flex; align-items: flex-start; gap: 8px;

@@ -25,10 +25,18 @@
   const centre = $derived(bandX(chToMhz(Math.min(BAND.last, Math.max(BAND.first, channel))), width));
   const x0 = $derived(Math.round(centre - half) + 0.5);
   const x1 = $derived(Math.round(centre + half) + 0.5);
+
+  /** On release both halves draw back in to the ruler (the t-commit duration, none under reduced motion). */
+  const RETRACT_MS = 250;
+  function retract(_node: Element) {
+    const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const middle = (rulerTop + rulerBottom) / 2;
+    return { duration: still ? 0 : RETRACT_MS, css: (t: number) => `transform: scaleY(${t}); transform-origin: 0 ${middle}px` };
+  }
 </script>
 
 <div class="lo-box hm" style={boxStyle([left, top, width, height])}>
-  <svg class="hud" {width} {height} viewBox="0 0 {width} {height}">
+  <svg class="hud" {width} {height} viewBox="0 0 {width} {height}" out:retract|global>
     <!-- each half draws on from the ruler outward -->
     <g class="hm__up" style="transform-origin: 0 {rulerTop}px">
       <path class="s-emph k-select" class:d-measure={tuning} d="M{x0 + ARM} 0.75H{x0}V{rulerTop}M{x1 - ARM} 0.75H{x1}V{rulerTop}" />

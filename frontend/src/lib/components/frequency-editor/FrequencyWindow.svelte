@@ -16,13 +16,15 @@
     frequencyId: string;
     /** the tile or the `⋯` button; the window opens beside it and focus goes back to it */
     anchor: HTMLElement;
+    /** where focus goes on close, when not the anchor (the tile's `⋯`, while the tile stays the placement anchor) */
+    returnFocus?: HTMLElement;
     kind: "tile" | "button";
     onclose: () => void;
     ondone: (outcome: Outcome, id: string) => void;
     openPage?: boolean;
     listenedFeedId?: string;
   }
-  let { frequencyId, anchor, kind, onclose, ondone, openPage = true, listenedFeedId }: Props = $props();
+  let { frequencyId, anchor, returnFocus, kind, onclose, ondone, openPage = true, listenedFeedId }: Props = $props();
 
   let box = $state<HTMLElement>();
   let editor = $state<ReturnType<typeof FrequencyEditor>>();
@@ -68,7 +70,8 @@
     return () => {
       document.removeEventListener("pointerdown", outside, true);
       window.removeEventListener("keydown", keys, true);
-      if (anchor.isConnected) anchor.focus({ preventScroll: true });
+      const back = returnFocus ?? anchor;
+      if (back.isConnected) back.focus({ preventScroll: true });
     };
   });
 </script>

@@ -14,6 +14,8 @@
     isAdmin?: boolean;
     /** show the dwell hint (not on the phone, not while listening) */
     hints?: boolean;
+    /** the listened node delivers; if not, a hold is refused and the hint does not offer one */
+    nodeOk?: boolean;
     /** pointer x inside the plots, in pixels */
     x: number;
     spectrum: Box;
@@ -23,7 +25,7 @@
     /** replaces the frequency readout (the phone's held touch also reads the level) */
     readout?: string;
   }
-  let { x, spectrum, ruler, waterfall, channels, isAdmin = false, hints = true, readout }: Props = $props();
+  let { x, spectrum, ruler, waterfall, channels, isAdmin = false, hints = true, nodeOk = true, readout }: Props = $props();
 
   /** how far the cursor reaches into the ruler: a labelled tick (8 px) and 2 */
   const STUB = 10;
@@ -51,7 +53,7 @@
     return () => clearTimeout(timer);
   });
 
-  const hint = $derived(dwelled && hints && onSlot ? dwellHint(channel !== undefined, isAdmin) : null);
+  const hint = $derived(dwelled && hints && onSlot ? dwellHint(channel !== undefined, isAdmin, nodeOk) || null : null);
 
   /* keep the readout inside the plot near either edge, and clear of the waterfall's time-axis labels */
   const AXIS_GUTTER = 56;
@@ -78,7 +80,8 @@
 </div>
 
 <style>
-  .lo-cursor { pointer-events: none; z-index: 2; }
+  /* above FrontWallMessage (z 2): the readout sits on its plate, never overprinted */
+  .lo-cursor { pointer-events: none; z-index: 3; }
   .lo-cursor svg { position: absolute; left: 0; top: 0; overflow: visible; }
   .lo-cursor__back { fill-opacity: 0.85; }
   .hud .lo-cursor__text { font-weight: 500; fill: var(--ink); letter-spacing: 0.04em; }

@@ -265,7 +265,7 @@
   </div>
 
   {#if hoverX !== null && !blank}
-    <FrequencyCursor isAdmin={session.isAdmin} hints={!viewOnly && !held} readout={touchReadout} x={hoverX} spectrum={spectrumBox} ruler={rulerBox} waterfall={waterfallBox} channels={snapshot.channels} />
+    <FrequencyCursor isAdmin={session.isAdmin} hints={!viewOnly && !held} nodeOk={feed.state === "ok"} readout={touchReadout} x={hoverX} spectrum={spectrumBox} ruler={rulerBox} waterfall={waterfallBox} channels={snapshot.channels} />
   {/if}
   {#if held && listenHold.state && !blank}
     <HoldMarker channel={held.channel} tuning={listenHold.state === "tuning"} spectrum={spectrumBox} ruler={rulerBox} waterfall={waterfallBox} />

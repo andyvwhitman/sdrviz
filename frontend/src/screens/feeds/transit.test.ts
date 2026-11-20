@@ -19,10 +19,17 @@ describe("transitSummary", () => {
     expect(s).toEqual({ fresh: 2, enabled: 2, worst: null });
   });
 
-  it("names a stale source with its age, in the stale tone", () => {
-    const s = transitSummary([source("MARC", "stale", {}, "2026-11-20T11:57:00Z"), source("AMTK", "ok")], NOW);
-    expect(s.worst).toEqual({ text: "MARC · STALE 3M", tone: "is-stale" });
+  it("names a stale source, the part that is late and its age, in the stale tone", () => {
+    const realtime = { rt_trip_updates_url: "https://x/rt", rt_poll_s: 30 };
+    const s = transitSummary([source("MARC", "stale", realtime, "2026-11-20T11:57:00Z"), source("AMTK", "ok")], NOW);
+    expect(s.worst).toEqual({ text: "MARC · STALE REALTIME 3M", tone: "is-stale" });
     expect(s.fresh).toBe(1);
+  });
+
+  it("reads the static age, not the fresh realtime one, when only the static load failed", () => {
+    const stale = source("BRIGHTLINE", "stale", { rt_trip_updates_url: "https://x/rt", rt_poll_s: 30 }, "2026-11-20T11:59:50Z");
+    stale.status.static_loaded_at = "2026-11-19T12:00:00Z";
+    expect(transitSummary([stale], NOW).worst?.text).toBe("BRIGHTLINE · STALE STATIC 1D 0H");
   });
 
   it("calls an errored source a fault", () => {

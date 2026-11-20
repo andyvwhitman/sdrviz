@@ -32,6 +32,9 @@
   const snapshot = $derived(live.state);
   const stacked = $derived(feedsColumns(stage.width) === 2);
 
+  /** In the stacked layout the transit sources sit below the inspector: bring them to the top of the column. */
+  const showTransit = (): void => document.querySelector(".fb-pane--transit")?.scrollIntoView({ block: "start" });
+
   // -- selection: the inspector opens on the feed the fixture names for the admin view (?feed=alx overrides) --
   let pickedFeed = $state<string | null>(null);
   const feedFromUrl = $derived(router.query("feed") ? `feed-${router.query("feed")}` : null);
@@ -148,7 +151,7 @@
 </script>
 
 {#if snapshot}
-  <FeedsHero {snapshot} {sources} {now} />
+  <FeedsHero {snapshot} {sources} {now} {stacked} onshowtransit={showTransit} />
 
   <div class="fb-col fb-col--feeds">
     <div class="fb-ph"><span class="t-panel">SDR FEEDS</span><span class="mono">{snapshot.feeds.length}</span></div>

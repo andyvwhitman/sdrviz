@@ -21,10 +21,11 @@
 <ul class="frl" aria-label="Frequencies">
   {#each rows as f (f.id)}
     {@const nodes = assigned(f)}
+    {@const glyph = glyphOf(f, columns, keyed.has(f.id))}
     <li>
       <button class="frl__row" class:is-tx={keyed.has(f.id)} type="button" onclick={() => onrow(f)} id="fr-row-{f.id}">
         <span class="frl__l1">
-          <PositionGlyph state={glyphOf(f, columns, keyed.has(f.id))} />
+          {#if glyph}<PositionGlyph state={glyph} />{:else}<span class="frl__noglyph"></span>{/if}
           <span class="frl__mhz">{mhzText(f.freq_mhz)}</span>
           <span class="frl__aar">{aarPair(f.aar_channel)}</span>
           <span class="frl__grow"></span>

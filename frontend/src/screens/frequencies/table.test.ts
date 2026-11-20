@@ -90,8 +90,12 @@ describe("numbers", () => {
     expect(glyphOf(rows[2], columns, true)).toBe("tx");
     expect(glyphOf(rows[2], columns, false)).toBe("idle");
     expect(glyphOf(f("x", "X", 160.2, [["b", true]]), columns, false)).toBe("stale");
-    expect(glyphOf(rows[1], columns, false)).toBe("offline");
-    expect(glyphOf(rows[3], columns, false)).toBe("offline");
+    expect(glyphOf(f("y", "Y", 160.3, [["gone", true]]), columns, false)).toBe("offline");
+  });
+
+  it("shows no glyph for a disabled or unassigned row", () => {
+    expect(glyphOf(rows[1], columns, false)).toBeNull();
+    expect(glyphOf(rows[3], columns, false)).toBeNull();
   });
 
   it("writes the status line", () => {

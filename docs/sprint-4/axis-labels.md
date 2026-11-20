@@ -138,8 +138,9 @@ The margin column (desktop 56, landscape 66) carries the over-running label text
 - Numerals label the gridlines, top included: `−10` (the reference) in `ink-2`, the rest in `ink-3`. Use U+2212 minus,
   not a hyphen (round 2 used `-`). 11 px desktop, 13 px landscape, left-aligned 4 px right of the plot edge, each
   centred on its gridline. The top one is top-aligned so it stays inside the bezel.
-- Every division when divisions are ≥ 14 px, otherwise every other one starting at the top (`−10 −30 −50`: the
-  1280 default with a 48 px spectrum).
+- Numerals every `step` divisions from the top, where `step` is the smallest of 1, 2, 3 with
+  step × division ≥ 1.6 × font px (F-6 must-fix 3): `−10 −40` at 1280 and phone landscape, `−10 −30 −50` at 1920
+  and 2560, every division at 144 px.
 - Phone portrait has no margin. The scale lives only in the layer's status line (`REF −10 dBFS · 10 dB/div`, §9.3),
   with no in-plot caption.
 - The waterfall row of the margin stays empty.

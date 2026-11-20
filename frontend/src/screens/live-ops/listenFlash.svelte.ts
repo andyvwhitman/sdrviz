@@ -1,19 +1,25 @@
 /**
- * What the last click on the waterfall did ("LISTENING CH54 · LIVE BANK"), kept for a few seconds. It lives outside
- * the front wall component because a click switches banks and the wall is rebuilt, and because the pointer may have
- * left (or never been there, on a touch screen) by the time the request finishes.
+ * The wall's one plate for gesture messages ("CH52 NOT ENABLED", "5454 ADDED · ENABLED ON SDR-01"), kept for a few
+ * seconds. It lives outside the front wall component because the pointer may have left (or never been there, on a
+ * touch screen) by the time a request finishes.
  */
-
-const SHOWN_MS = 4000;
+import type { Message, Tone } from "./gesture";
 
 class ListenFlash {
   text = $state<string | null>(null);
+  tone = $state<Tone>("ink");
   #timer: ReturnType<typeof setTimeout> | undefined;
 
-  say(text: string): void {
+  say({ text, tone, ms }: Message): void {
     this.text = text;
+    this.tone = tone;
     clearTimeout(this.#timer);
-    this.#timer = setTimeout(() => (this.text = null), SHOWN_MS);
+    this.#timer = setTimeout(() => (this.text = null), ms);
+  }
+
+  clear(): void {
+    clearTimeout(this.#timer);
+    this.text = null;
   }
 }
 

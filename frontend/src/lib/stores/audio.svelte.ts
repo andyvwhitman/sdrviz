@@ -32,6 +32,8 @@ class AudioStore {
   soloCount = $derived(prefs.solo.size);
 
   private engine = new AudioEngine();
+  /** the AAR channel held on the waterfall: not a tile, so it has no mixer gain of its own */
+  private heldAar: number | null = null;
 
   constructor() {
     onAudioFrame((frame) => this.engine.play(frame));
@@ -71,6 +73,25 @@ class AudioStore {
     this.engine.duck(on);
   }
 
+  /** Play the AAR channel held on the waterfall (the server streams it to the holder); null stops it. */
+  hold(aar: number | null): void {
+    const before = this.heldAar;
+    this.heldAar = aar;
+    this.subscribe();
+    if (before !== null && before !== aar && !this.channelOf(before)) this.engine.setGain(before, 0); // let go of the voice
+  }
+
+  private channelOf(aar: number) {
+    return live.state?.channels.find((c) => Number.parseInt(c.aar.replace(/\D/g, ""), 10) === aar);
+  }
+
+  /** Nothing would be heard for this AAR channel: all audio is muted, or its tile is muted in the mixer. */
+  silent(aar: number): boolean {
+    if (this.muted) return true;
+    const channel = this.channelOf(aar);
+    return channel ? gainOf({ muted: prefs.muted, solo: prefs.solo, volumes: volumesOf(prefs.value) }, channel.id) === 0 : false;
+  }
+
   /** Tell the server which channels to stream and set each voice's gain. */
   private subscribe(): void {
     const channels = live.state?.channels ?? [];
@@ -84,6 +105,7 @@ class AudioStore {
       const aar = Number.parseInt(channel.aar.replace(/\D/g, ""), 10);
       if (Number.isFinite(aar)) gains.set(aar, Math.max(gains.get(aar) ?? 0, gainOf(mix, channel.id)));
     }
+    if (this.heldAar !== null && !gains.has(this.heldAar)) gains.set(this.heldAar, 1);
     gains.forEach((gain, aar) => this.engine.setGain(aar, gain));
   }
 }

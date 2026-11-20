@@ -2,28 +2,28 @@
   /**
    * Hover readout for the front wall: a hairline through the spectrum and waterfall, a diamond on the
    * ruler, and the frequency under the pointer (plus the nearest AAR channel) just below the ruler.
-   * Purely visual: it ignores the pointer, FrontWall tracks it.
+   * Purely visual: it ignores the pointer, FrontWall tracks it. After a dwell on a slot the second line says what a press does.
    */
   import { BAND, chToMhz, mhzToCh } from "$lib/hud/band";
   import * as fmt from "$lib/hud/fmt";
   import type { Channel } from "$lib/types/live";
+  import { dwellHint } from "./gesture";
   import { boxStyle, type Box } from "./wall";
 
   interface Props {
-    /** false for a viewer: the hint that a click listens is not shown */
-    listenable?: boolean;
+    isAdmin?: boolean;
+    /** show the dwell hint (not on the phone, not while listening) */
+    hints?: boolean;
     /** pointer x inside the plots, in pixels */
     x: number;
     spectrum: Box;
     ruler: Box;
     waterfall: Box;
     channels: Channel[];
-    /** the result of the last click, if recent */
-    flash?: string | null;
     /** replaces the frequency readout (the phone's held touch also reads the level) */
     readout?: string;
   }
-  let { x, spectrum, ruler, waterfall, channels, flash = null, listenable = true, readout }: Props = $props();
+  let { x, spectrum, ruler, waterfall, channels, isAdmin = false, hints = true, readout }: Props = $props();
 
   /** how far the cursor reaches into the ruler: a labelled tick (8 px) and 2 */
   const STUB = 10;
@@ -51,14 +51,7 @@
     return () => clearTimeout(timer);
   });
 
-  const dropKey = /Mac|iPhone|iPad/.test(navigator.platform) ? "\u2325" : "ALT";
-  const instruction = $derived(
-    channel?.banks.includes("bank-live")
-      ? `IN LIVE BANK \u00b7 ${dropKey}-CLICK TO DROP`
-      : "CLICK TO LISTEN \u00b7 SWITCHES TO LIVE BANK",
-  );
-  /** the confirmation of the last click wins over the instruction */
-  const hint = $derived(flash ?? (dwelled && listenable ? instruction : null));
+  const hint = $derived(dwelled && hints && onSlot ? dwellHint(channel !== undefined, isAdmin) : null);
 
   /* keep the readout inside the plot near either edge, and clear of the waterfall's time-axis labels */
   const AXIS_GUTTER = 56;

@@ -100,6 +100,9 @@ export const api = {
     info: (id: string, signal?: AbortSignal) => get<FrequencyInfo>(`/frequencies/${encodeURIComponent(id)}`, undefined, signal),
     update: (id: string, frequency: Json) => put(`/frequencies/${id}`, frequency),
     remove: (id: string, force = false) => del(`/frequencies/${id}`, { force }),
+    /** right-click on the waterfall (admin): the frequency on that AAR channel, made if need be, enabled on the feed */
+    fromChannel: (aarChannel: number, feedId: string) =>
+      post<{ frequency: { id: string; label: string }; created: boolean }>("/frequencies/from-channel", { aar_channel: aarChannel, feed_id: feedId }),
   },
   /** Saved transmissions and per-frequency activity (docs/recordings-api.md). Times are UTC. */
   recordings: {
@@ -119,9 +122,6 @@ export const api = {
     update: (id: string, bank: Json) => put(`/banks/${id}`, bank),
     remove: (id: string) => del(`/banks/${id}`),
     activate: (id: string) => post<Prefs>(`/banks/${id}/activate`),
-    /** listen to an AAR channel: it joins the live bank, and nodes on the banks preset start decoding it */
-    addLive: (aarChannel: number, feedId: string) => post<Json>("/banks/live/channels", { aar_channel: aarChannel, feed_id: feedId }),
-    removeLive: (aarChannel: number) => del(`/banks/live/channels/${aarChannel}`),
   },
   feeds: {
     list: () => get<Json[]>("/feeds"),

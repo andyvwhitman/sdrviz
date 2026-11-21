@@ -56,8 +56,9 @@ Write clients to ignore message types they do not know and fields they do not us
 
 ## Client ops
 
-Send each as a JSON text frame: `{"op": "<name>", ...}`. A malformed frame, an unknown op, or bad values are
-**ignored without an error message** (except where `listen_state` says otherwise).
+Send each as a JSON text frame: `{"op": "<name>", ...}`. A malformed frame (not JSON, not an object, no string `op`) or an unknown op is
+answered with one [`error`](#error) message and the socket stays open. Bad field values on a known op are
+**ignored without a message** (except where `listen_state` says otherwise).
 
 | Op | Fields | Effect |
 |---|---|---|
@@ -278,6 +279,12 @@ To the holding connection only: `{"type":"listen_state","feed_id":"node-1","aar_
 ### `pong`
 
 `{"type":"pong","t":50866.27}`, the answer to `ping`; `t` is the server clock.
+
+## Errors
+
+### `error`
+
+`{"type":"error","op":"dance","detail":"unknown op"}`, the answer to a client frame the server cannot act on. `op` is the op name that was sent, or `null` when there was none (malformed JSON, no `op`, or an `op` that is not a string). `detail` is `"unknown op"` or `"expected a JSON object with an op"`. The connection is not closed and later ops work. Clients should log it and move on; a client that does not know the `error` type should ignore it like any other unknown message type.
 
 ## Binary frames
 

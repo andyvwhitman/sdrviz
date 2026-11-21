@@ -6,7 +6,7 @@ column below says who may call it. Bodies are JSON. Conventions (ids, times, err
 `cookies.txt` from a login.
 
 Contents: [Auth](#auth) · [Frequencies and assignments](#frequencies-and-assignments) · [Feeds](#feeds) ·
-[Nodes](#nodes) · [Recordings](#recordings) · [Live state](#live-state-and-system) · [Prefs](#prefs) ·
+[Nodes](#nodes) · [Recordings](#recordings) · [Live state](#live-state-and-system) ·
 [Trains and transit](#trains-and-transit) · [Geo](#geo) · [Receiver](#receiver-settings) · [Replay clock](#replay-clock)
 
 | Role | Meaning |
@@ -104,7 +104,7 @@ labelled with the channel number twice, for example `5454`), assign it to the fe
 
 Request: `{"aar_channel": 54, "feed_id": "node-1"}` (`aar_channel` 1 to 97).
 Response: `{"frequency": <frequency object>, "created": false}`. `created` is `false` when an existing frequency was
-reused. 422 for an unknown feed or channel.
+reused. 404 for an unknown feed (as for `PUT .../assignments/{feed_id}`); 422 for a bad channel.
 
 ### Activity per frequency (any)
 
@@ -308,24 +308,6 @@ Signal-strength history per feed and frequency. `minutes` 1 to 360.
 Each list has `rows` values in dBFS, oldest first, `null` for silence; row `i` starts at `row0_t + i * row_s` (day
 offset). Fed by replay data and live key-ups.
 
-## Prefs
-
-Shared operator preferences, one row for everyone. The current app keeps mute, solo, record and volume in the browser
-instead, so these calls are mostly vestigial. The node a client listens to is **not** a pref any more: it is per
-WebSocket connection ([live-websocket.md](live-websocket.md#listen)).
-
-```json
-{"muted": [], "solo": [], "record": [], "volume": {}}
-```
-
-| Call | Role | Notes |
-|---|---|---|
-| `GET /api/prefs` | any | Returns the object |
-| `PUT /api/prefs` | any | Replaces all four fields. A `listen_feed` key is ignored |
-| `PATCH /api/prefs` | any | Changes only the fields sent |
-
-`muted`, `solo` and `record` are lists of frequency ids; `volume` maps frequency id to a number. The server stores
-them without checking the ids. Any logged-in user may change them, and the change is visible to everyone.
 
 ## Trains and transit
 

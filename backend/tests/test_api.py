@@ -5,7 +5,7 @@ from .conftest import PASSWORD
 
 class TestAuth:
     def test_everything_but_login_and_session_needs_a_cookie(self, anonymous):
-        for path in ("/api/system", "/api/live/state", "/api/prefs", "/api/frequencies", "/api/trains"):
+        for path in ("/api/system", "/api/live/state", "/api/frequencies", "/api/trains"):
             assert anonymous.get(path).status_code == 401
         assert anonymous.get("/api/auth/session").json() == {"authenticated": False, "sim": True, "role": None}
 
@@ -82,7 +82,6 @@ class TestSim:
     def test_jump_to_a_scenario_sets_clock_node_and_state(self, client):
         response = client.post("/api/sim/jump", json={"scenario": "fault", "speed": 0})
         assert response.json() == {"scenario": "fault", "clock": "14:06:22", "speed": 0.0, "scenario_feed": "feed-lnd"}
-        assert "listen_feed" not in client.get("/api/prefs").json()  # the node listened to is each client's own
         state = client.get("/api/live/state").json()
         assert state["header"]["feeds_chip"] == "FEEDS 2/4" and state["scenario"] == "fault"
         assert [f["object"] for f in state["faults"]] == ["feed-lnd"]
@@ -99,19 +98,7 @@ class TestSim:
         assert client.post("/api/sim/jump", json={"speed": -1}).status_code == 422
 
 
-class TestPrefs:
-    def test_round_trip(self, client):
-        prefs = client.get("/api/prefs").json()
-        prefs.update(muted=["amtk-nec-road"], solo=[], volume={"amtk-nec-road": 0.4})
-        assert client.put("/api/prefs", json=prefs).json()["volume"] == {"amtk-nec-road": 0.4}
-        assert client.get("/api/prefs").json()["muted"] == ["amtk-nec-road"]
-
-    def test_the_listened_feed_is_not_a_pref(self, client):
-        prefs = client.get("/api/prefs").json()
-        assert "listen_feed" not in prefs and "active_bank" not in prefs and "displayed_feed" not in prefs
-        client.put("/api/prefs", json={**prefs, "listen_feed": "feed-bay"})  # ignored
-        assert client.get("/api/live/state").json()["listen_feed"] == "feed-alx"
-
+class TestLiveStateListen:
     def test_live_state_listens_to_the_feed_asked_for_and_falls_back_to_the_default(self, client):
         assert client.get("/api/live/state", params={"listen_feed": "feed-bay"}).json()["listen_feed"] == "feed-bay"
         assert client.get("/api/live/state", params={"listen_feed": "feed-x"}).json()["listen_feed"] == "feed-alx"
@@ -194,7 +181,7 @@ class TestFrequencies:
         reused = client.post("/api/frequencies/from-channel", json=body).json()
         assert reused["created"] is False and reused["frequency"]["id"] == "amtk-nec-road"
         assert {"feed_id": "feed-bwi", "enabled": True} in reused["frequency"]["assignments"]
-        assert client.post("/api/frequencies/from-channel", json={**body, "feed_id": "nope"}).status_code == 422
+        assert client.post("/api/frequencies/from-channel", json={**body, "feed_id": "nope"}).status_code == 404
         assert client.post("/api/frequencies/from-channel", json={**body, "aar_channel": 0}).status_code == 422
 
     def test_banks_are_gone(self, client):
@@ -301,12 +288,3 @@ class TestOther:
             "/api/sim/jump",
         ):
             assert path in paths
-
-
-def test_prefs_patch_changes_only_the_fields_sent(client):
-    start = client.get("/api/prefs").json()
-    client.patch("/api/prefs", json={"volume": {"amtk-nec-road": 0.4}})
-    saved = client.patch("/api/prefs", json={"muted": ["amtk-nec-road"]}).json()
-    assert saved["muted"] == ["amtk-nec-road"]
-    assert saved["volume"] == {"amtk-nec-road": 0.4}  # a stale copy of the volume is not re-sent
-    assert saved["solo"] == start["solo"]

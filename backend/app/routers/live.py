@@ -74,11 +74,13 @@ def _known_feed(rt, feed_id: object) -> str | None:
 
 
 def _handle(rt, client: Client, raw: str) -> None:
-    """Client ops: listen, audio, watch, ping, and listen_hold / listen_release (see live/listen.py)."""
+    """Client ops: listen, audio, watch, ping, and listen_hold / listen_release (see live/listen.py). A bad frame is
+    answered with one `error` message and the socket stays open."""
     try:
         msg = json.loads(raw)
         op = msg["op"]
     except (ValueError, KeyError, TypeError):
+        client.queue.put_nowait(protocol.message("error", op=None, detail="expected a JSON object with an op"))
         return
     if op == "listen":  # the node this connection shows; only this connection gets the new snapshot
         client.listen_feed = _known_feed(rt, msg.get("feed_id"))
@@ -94,3 +96,5 @@ def _handle(rt, client: Client, raw: str) -> None:
         rt.listening.release(client, msg.get("feed_id"), msg.get("aar_channel"))
     elif op == "ping":
         client.queue.put_nowait(protocol.message("pong", t=rt.clock.now()))
+    else:
+        client.queue.put_nowait(protocol.message("error", op=op if isinstance(op, str) else None, detail="unknown op"))

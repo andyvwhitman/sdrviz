@@ -1,5 +1,6 @@
 <script lang="ts">
-  /** Hero strip (spec 9.4): feeds nominal n/m, the worst feeds, the transit sources, and what the feeds hear. */
+  /** Hero strip (spec 9.4): feeds nominal n/m, the worst feeds, the transit feeds, and what the feeds hear. */
+  import Glyph from "$lib/components/Glyph.svelte";
   import PositionGlyph from "$lib/components/PositionGlyph.svelte";
   import { followLink } from "$lib/router.svelte";
   import * as fmt from "$lib/hud/fmt";
@@ -13,11 +14,10 @@
     snapshot: LiveState;
     sources: TransitSource[] | null;
     now: number;
-    /** the transit sources sit under the inspector, out of sight: the transit count then becomes a button to them */
-    stacked?: boolean;
-    onshowtransit?: () => void;
+    /** the transit count is a button that switches to the TRANSIT FEEDS tab */
+    onshowtransit: () => void;
   }
-  let { snapshot, sources, now, stacked = false, onshowtransit }: Props = $props();
+  let { snapshot, sources, now, onshowtransit }: Props = $props();
 
   const feeds = $derived(new Map(snapshot.feeds.map((f) => [f.id, f])));
   const enabled = $derived(snapshot.feeds.filter((f) => f.enabled));
@@ -66,17 +66,13 @@
       <span class="fb-rule"></span>
     {/if}
     <a class="hero__stack fb-link" href="/frequencies" onclick={followLink}>
-      <span class="a">{heardCount} ENABLED ON {enabled.length} {enabled.length === 1 ? "NODE" : "NODES"} ›</span><span class="b">OPEN THE FREQUENCIES LIST</span>
+      <span class="a">{heardCount} ENABLED ON {enabled.length} {enabled.length === 1 ? "NODE" : "NODES"} <Glyph name="chevron-right" /></span><span class="b">OPEN THE FREQUENCIES LIST</span>
     </a>
     {#if transit}
       <span class="fb-rule"></span>
       <span class="hero__stack">
-        {#if stacked}
-          <button type="button" class="a fb-jump" onclick={onshowtransit}>TRANSIT {transit.fresh}/{transit.enabled} FRESH ›</button>
-        {:else}
-          <span class="a">TRANSIT {transit.fresh}/{transit.enabled} FRESH</span>
-        {/if}
-        <span class="b {transit.worst?.tone ?? ''}">{transit.worst?.text ?? "ALL SOURCES CURRENT"}</span>
+        <button type="button" class="a fb-jump" onclick={onshowtransit}>TRANSIT {transit.fresh}/{transit.enabled} FRESH <Glyph name="chevron-right" /></button>
+        <span class="b {transit.worst?.tone ?? ''}">{transit.worst?.text ?? "ALL FEEDS CURRENT"}</span>
       </span>
     {/if}
   </span>

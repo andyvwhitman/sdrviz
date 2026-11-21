@@ -2,11 +2,11 @@
 
 Contract between the server (backend), the `sdrviz-node` agent, the fake node (`tools/fake_node.py`) and the Settings UI. Design background: `docs/deployment-architecture.md`, decisions 35-39 and 49. Code: `backend/app/live/node_protocol.py` (messages, node key, frames) and `backend/app/live/opus.py`. Change this file in the same commit as any change to the contract.
 
-Part 1 is the uplink a node speaks to `/ws/node`. Part 2 is the REST API the browser uses (`/api/nodes`, behind the session cookie like every other endpoint, JSON, times ISO 8601 with offset).
+Part 1 is the uplink a node speaks to `/ws/node`. Part 2 is the REST API the browser uses (`/api/nodes`, behind the admin session cookie, a viewer gets 403, JSON, times ISO 8601 with offset).
 
 ## Part 1. Uplink `/ws/node`
 
-One WebSocket per node, node to server, `wss://<server>/ws/node` (`ws://` only for a laptop). Text frames are JSON messages `{"type": ..., ...}`; unknown fields are ignored, unknown `type` is a protocol error. Binary frames carry audio and spectrum, node to server only. Epoch times (`t`, `peer_t`, `server_time`) are milliseconds since 1970; the server does not trust the node's clock for anything except audio age and display.
+One WebSocket per node, node to server, `wss://<server>/ws/node` (`ws://` only for a laptop). Text frames are JSON messages `{"type": ..., ...}`; unknown fields are ignored, an unknown `type` is a protocol error: the server closes with 4400. Binary frames carry audio and spectrum, node to server only. Epoch times (`t`, `peer_t`, `server_time`) are milliseconds since 1970; the server does not trust the node's clock for anything except audio age and display.
 
 ### Handshake
 
@@ -14,7 +14,7 @@ One WebSocket per node, node to server, `wss://<server>/ws/node` (`ws://` only f
 2. `hello`: `{type, protocol: 1, agent_version, node: "<node id>", mode: "enroll"|"connect", secret}`. `mode: "enroll"` carries the enrollment secret from the node key; `"connect"` carries the permanent node secret.
 3. The server answers `welcome` or closes with a code (table below).
    `welcome`: `{type, protocol: 1, node: {id, number, name}, heartbeat_s: 5, server_time, config: {channels: [<AAR channel numbers>]}, node_secret?}`.
-   - `config.channels` is the node's preset as AAR channel numbers (preset `aar` = 7 to 97, all 91). The node receives these channels until a `channels` command changes them. Tuning (`center_hz`, `rate`, gain, squelch) stays on the node; it applies `tune`, `gain` and `squelch` commands and keeps them across restarts (agent config), and reports the current values in `health.tune`.
+   - `config.channels` is the node's preset as AAR channel numbers (preset `assigned`, the default, = the enabled assignments of its feed plus held listens; preset `aar` = 7 to 97, all 91). The node receives these channels until a `channels` command changes them. Tuning (`center_hz`, `rate`, gain, squelch) stays on the node; it applies `tune`, `gain` and `squelch` commands and keeps them across restarts (agent config), and reports the current values in `health.tune`.
    - `node_secret` is present only in answer to `mode: "enroll"`. The node saves it (atomically, mode 0600), then sends `enrolled_ack`.
 4. `enrolled_ack` `{type}`: the server then burns the enrollment secret. Until it arrives, the enrollment key stays valid (it can only be used by this node anyway).
    - Lost ack: the node reconnects with `mode: "connect"` and the new node secret. The server accepts it and treats that as the ack. If the node never saved the secret it reconnects with `mode: "enroll"` again and gets a fresh `welcome` with a new `node_secret` (the key is still within its 24 h and unburned).
@@ -102,7 +102,7 @@ Delay before attempt n (n = 0, 1, 2, ...) = `min(60, 2^n)` seconds times a rando
 
 ## Part 2. REST API (browser, Settings)
 
-All under `/api`, session cookie required (401 without it). Errors: `{"detail": ...}` with 404 (unknown id), 409 (state does not allow it), 422 (validation). Keys and secrets are never returned by any GET; the node key appears once, in the answer to the call that created it.
+All under `/api`, admin session required (401 without a session, 403 for a viewer). Errors: `{"detail": ...}` with 404 (unknown id), 409 (state does not allow it), 422 (validation). Keys and secrets are never returned by any GET; the node key appears once, in the answer to the call that created it.
 
 ```
 Node {
@@ -111,7 +111,7 @@ Node {
   feed_id: string               // "node-<number>", the spectrum feed to watch on /ws/live
   name: string
   location: { lat: number, lon: number }
-  preset: string                // channel preset; "aar" = AAR 07-97 (default)
+  preset: string                // "assigned" (default): the channels enabled on this node's feed plus held listens; "aar": AAR 07-97, all 91
   status: "PENDING" | "ONLINE" | "OFFLINE" | "REVOKED"
   link_quality: number | null   // 0-100, only ONLINE
   lag_ms: number | null         // only ONLINE
@@ -148,7 +148,7 @@ POST   /nodes/{id}/commands        -> CommandResult                   (body: Com
 
 - Node ids and numbers are never reused. Tables: `node`, `node_credential` (hashes only, plus the secret of an enrollment still waiting for its `enrolled_ack`), `node_event`.
 - `POST /nodes`: creates a PENDING node and a key valid 24 h. `name` 1-40 characters, `lat` -90..90, `lon` -180..180. `key` is the text to show once and offer as a file (`<name>.key`).
-- `PATCH`: changing `preset` of an ONLINE node sends it a `channels` command; a node that is offline gets the list in its next `welcome`. `preset` must be a known one (422 otherwise); the only one in v1 is `aar`.
+- `PATCH`: changing `preset` of an ONLINE node sends it a `channels` command; a node that is offline gets the list in its next `welcome`. `preset` must be a known one (422 otherwise): `assigned` or `aar`.
 - `rekey`: new enrollment secret, 24 h. The old node secret keeps working until the new enrollment completes. On a REVOKED node it makes the node PENDING again. Answers `key` once.
 - `revoke`: the node secret and any enrollment secret are deleted at once, the socket is closed (4403), status REVOKED. Revoke twice is a 200 no-op. There is no delete in v1.
 - `commands`: body `{type: "tune", center_hz, rate}`, `{type: "gain", gain_db}` (null = auto), `{type: "squelch", squelch_db}`, `{type: "channels", channels}`, `{type: "restart"}` or `{type: "set_server", url}`. The server sends it to the node and waits for the ack (10 s; 30 s for restart and set_server). 409 when the node is not ONLINE. Answer 200 `CommandResult { id, type, status: "acked" | "failed" | "timeout", error: {code, message} | null }`.

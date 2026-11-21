@@ -11,6 +11,9 @@ export const slotOf = (f: Frequency, feedId: string): Slot => {
 /** The state with every node taken together: on if any node has it on, else off if any has it assigned. */
 export const overallSlot = (f: Frequency): Slot => (f.assignments.some((a) => a.enabled) ? "on" : f.assignments.length ? "off" : "none");
 
+/** How many nodes have the frequency enabled. */
+export const enabledCount = (f: Frequency): number => f.assignments.filter((a) => a.enabled).length;
+
 /** The slot a click leads to: on goes off, off goes on, and unassigned is assigned and enabled. */
 export const flipped = (slot: Slot): Exclude<Slot, "none"> => (slot === "on" ? "off" : "on");
 

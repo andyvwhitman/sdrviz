@@ -1,29 +1,29 @@
 <script lang="ts">
-  /** The desktop table (direction 2.3): a head of sort buttons, then one grid row per frequency. Only the body scrolls. */
+  /**
+   * The desktop table (direction 2.3): a head of sort buttons, then one grid row per frequency. Only the body scrolls.
+   * One read-only ON column says on how many nodes a frequency is enabled (or on the chosen node).
+   */
+  import Glyph from "$lib/components/Glyph.svelte";
   import PositionGlyph from "$lib/components/PositionGlyph.svelte";
   import { aar as aarPair, freq as mhzText } from "$lib/hud/fmt";
   import { followLink } from "$lib/router.svelte";
-  import { slotOf } from "$lib/slots";
   import type { Frequency, NodeColumn } from "$lib/types/frequencies";
-  import AssignSlot from "./AssignSlot.svelte";
-  import { glyphOf, type Counts, type Sort, type SortKey } from "./table";
+  import OnCell from "./OnCell.svelte";
+  import { glyphOf, type Sort, type SortKey } from "./table";
 
   interface Props {
     rows: Frequency[];
     columns: NodeColumn[];
-    counts: Counts;
+    /** the node filter's feed id, or null for all nodes */
+    node: string | null;
     sort: Sort;
     keyed: Set<string>;
     shared: Set<string>;
     pickedId: string | null;
-    admin: boolean;
-    /** `${frequency id}|${feed id}` of the requests in flight */
-    busy: Set<string>;
     onsort: (key: SortKey) => void;
     onrow: (f: Frequency) => void;
-    onflip: (f: Frequency, column: NodeColumn) => void;
   }
-  let { rows, columns, counts, sort, keyed, shared, pickedId, admin, busy, onsort, onrow, onflip }: Props = $props();
+  let { rows, columns, node, sort, keyed, shared, pickedId, onsort, onrow }: Props = $props();
 
   const HEADS: { key: SortKey; text: string; cls: string }[] = [
     { key: "mhz", text: "MHz", cls: "" },
@@ -35,7 +35,8 @@
   ];
 
   const ariaSort = (key: SortKey): "ascending" | "descending" | "none" => (sort.key !== key ? "none" : sort.dir === "asc" ? "ascending" : "descending");
-  const arrow = (key: SortKey): string => (sort.key !== key ? "" : sort.dir === "asc" ? " ▲" : " ▼");
+  /** the ON column's head: ON, or the short name of the chosen node */
+  const onHead = $derived(columns.find((c) => c.feedId === node)?.short ?? "ON");
 
   /** Arrow keys move focus between rows. */
   function rowKeys(event: KeyboardEvent, f: Frequency): void {
@@ -52,21 +53,23 @@
   }
 </script>
 
-<div class="fr-table" role="table" aria-label="Frequencies" aria-rowcount={rows.length + 1} style:--nodes={columns.length}>
+{#snippet sortButton(key: SortKey, text: string)}
+  <button type="button" class="fr-sort" class:is-active={sort.key === key} onclick={() => onsort(key)}>
+    {text}{#if sort.key === key}<Glyph name={sort.dir === "asc" ? "caret-up" : "caret-down"} size={10} />{/if}
+  </button>
+{/snippet}
+
+<div class="fr-table" role="table" aria-label="Frequencies" aria-rowcount={rows.length + 1} >
   <div class="fr-row fr-head" role="row">
     <span role="presentation"></span>
     {#each HEADS as head (head.key)}
       <div role="columnheader" class={head.cls} aria-sort={ariaSort(head.key)}>
-        <button type="button" class="fr-sort" class:is-active={sort.key === head.key} onclick={() => onsort(head.key)}>{head.text}{arrow(head.key)}</button>
+        {@render sortButton(head.key, head.text)}
       </div>
     {/each}
-    {#each columns as column (column.feedId)}
-      <div role="columnheader" class="fr-node-h" aria-sort={ariaSort(`node:${column.feedId}`)}>
-        <button type="button" class="fr-sort" class:is-active={sort.key === `node:${column.feedId}`} onclick={() => onsort(`node:${column.feedId}`)} title="{column.short}: {counts.perNode[column.feedId] ?? 0} enabled">
-          {#if column.state !== "ok"}<PositionGlyph state={column.state === "stale" ? "stale" : "offline"} />{/if}{column.short}{arrow(`node:${column.feedId}`)} <span class="fr-n">{counts.perNode[column.feedId] ?? 0}</span>
-        </button>
-      </div>
-    {/each}
+    <div role="columnheader" aria-sort={ariaSort("on")}>
+      {@render sortButton("on", onHead)}
+    </div>
     <span role="presentation"></span>
   </div>
 
@@ -91,19 +94,8 @@
         <span role="cell" class="fr-rr">{f.railroad}</span>
         <span role="cell" class="fr-use fr-c-use">{f.use}</span>
         <span role="cell" class="fr-line fr-c-line">{f.line}</span>
-        {#each columns as column (column.feedId)}
-          <span role="cell" class="fr-slot">
-            <AssignSlot
-              slot={slotOf(f, column.feedId)}
-              name="{column.short}, {aarPair(f.aar_channel)} {f.label}"
-              nodeState={column.state}
-              readonly={!admin}
-              busy={busy.has(`${f.id}|${column.feedId}`)}
-              onflip={() => onflip(f, column)}
-            />
-          </span>
-        {/each}
-        <a class="fr-open" href="/frequency/{encodeURIComponent(f.id)}" onclick={(event) => (event.stopPropagation(), followLink(event))} aria-label="Open the {f.label} frequency page" title="Open the {f.label} frequency page">›</a>
+        <span role="cell" class="fr-on"><OnCell {f} {node} /></span>
+        <a class="fr-open" href="/frequency/{encodeURIComponent(f.id)}" onclick={(event) => (event.stopPropagation(), followLink(event))} aria-label="Open the {f.label} frequency page" title="Open the {f.label} frequency page"><Glyph name="chevron-right" size={12} /></a>
       </div>
     {/each}
   </div>

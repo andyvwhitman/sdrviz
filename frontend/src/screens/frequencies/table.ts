@@ -1,7 +1,7 @@
 /** The Frequencies table's pure logic: slots, filters, sorting, counts, the row glyph, and the URL. */
 
 import type { GlyphState } from "$lib/hud/tile";
-import { overallSlot, slotOf } from "$lib/slots";
+import { enabledCount, overallSlot, slotOf } from "$lib/slots";
 import type { Frequency, NodeColumn, Slot } from "$lib/types/frequencies";
 
 // ---- filters
@@ -52,7 +52,7 @@ export const railroadsOf = (rows: Frequency[]): string[] => [...new Set(rows.map
 
 // ---- sorting
 
-export type SortKey = "mhz" | "aar" | "label" | "railroad" | "use" | "line" | `node:${string}`;
+export type SortKey = "mhz" | "aar" | "label" | "railroad" | "use" | "line" | "on";
 export interface Sort {
   key: SortKey;
   dir: "asc" | "desc";
@@ -60,11 +60,13 @@ export interface Sort {
 
 export const DEFAULT_SORT: Sort = { key: "mhz", dir: "asc" };
 
-const SLOT_ORDER: Record<Slot, number> = { on: 0, off: 1, none: 2 };
+/** What the ON column shows as a number: the nodes it is enabled on, or 1 or 0 for the chosen node. */
+export const onValue = (f: Frequency, node: string | null): number => (node ? Number(slotOf(f, node) === "on") : enabledCount(f));
 
-function compareBy(key: SortKey, a: Frequency, b: Frequency): number {
-  if (key.startsWith("node:")) return SLOT_ORDER[slotOf(a, key.slice(5))] - SLOT_ORDER[slotOf(b, key.slice(5))];
+function compareBy(key: SortKey, a: Frequency, b: Frequency, node: string | null): number {
   switch (key) {
+    case "on":
+      return onValue(b, node) - onValue(a, node); // ascending puts the most enabled first
     case "mhz":
       return a.freq_mhz - b.freq_mhz;
     case "aar":
@@ -80,10 +82,10 @@ function compareBy(key: SortKey, a: Frequency, b: Frequency): number {
   }
 }
 
-/** Sorted by the chosen column; ties always break by MHz, then label, whatever the direction. */
-export function sorted(rows: Frequency[], sort: Sort): Frequency[] {
+/** Sorted by the chosen column; ties always break by MHz, then label, whatever the direction. `node` is the node filter, which the ON column reads. */
+export function sorted(rows: Frequency[], sort: Sort, node: string | null = null): Frequency[] {
   const sign = sort.dir === "asc" ? 1 : -1;
-  return [...rows].sort((a, b) => sign * compareBy(sort.key, a, b) || a.freq_mhz - b.freq_mhz || a.label.localeCompare(b.label));
+  return [...rows].sort((a, b) => sign * compareBy(sort.key, a, b, node) || a.freq_mhz - b.freq_mhz || a.label.localeCompare(b.label));
 }
 
 /** A click on a header: the first click sorts ascending, the next on the same column descending. */
@@ -135,7 +137,7 @@ export interface View {
   sort: Sort;
 }
 
-const SORT_KEYS = ["mhz", "aar", "label", "railroad", "use", "line"];
+const SORT_KEYS = ["mhz", "aar", "label", "railroad", "use", "line", "on"];
 
 /** The view in a query string: `?node=feed-alx&state=enabled&rr=Amtrak&q=nec&sort=label&dir=desc`; defaults are left out. */
 export function viewToQuery(view: View): Record<string, string | null> {
@@ -161,6 +163,6 @@ export function viewFromQuery(get: (name: string) => string | null): View {
       railroad: get("rr") || null,
       search: get("q") ?? "",
     },
-    sort: { key: key && (SORT_KEYS.includes(key) || key.startsWith("node:")) ? (key as SortKey) : DEFAULT_SORT.key, dir: get("dir") === "desc" ? "desc" : "asc" },
+    sort: { key: key && SORT_KEYS.includes(key) ? (key as SortKey) : DEFAULT_SORT.key, dir: get("dir") === "desc" ? "desc" : "asc" },
   };
 }

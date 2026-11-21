@@ -26,7 +26,7 @@
 }
 
 .tile__glyph  { left: 8px; top: 7px; }
-.tile__label  { left: 32px; top: 8px; height: 16px; line-height: 16px; max-width: 96px;
+.tile__label  { left: 32px; top: 8px; height: 16px; line-height: 16px; max-width: calc(100% - 152px);
   font: 600 var(--fs-13)/16px var(--font-label); text-transform: uppercase; letter-spacing: 0.08em; white-space: nowrap; overflow: hidden; }
 .tile__ember  { left: 32px; top: 25px; height: 2px; width: var(--ember-w, 56px); background: var(--state-recent); display: none; }
 .tile[data-ember="recent"] .tile__ember     { display: block; background: var(--state-recent); }
@@ -41,7 +41,7 @@
 .tile__aar small { font: 400 var(--fs-12)/1 var(--font-data); color: var(--ink-2); margin-left: 6px; letter-spacing: 0; }
 .tile__mhz  { left: 8px; top: 58px; font: 400 var(--fs-12)/12px var(--font-data); color: var(--ink-2); }
 .tile__spark { right: 8px; top: 42px; width: 64px; height: 14px; }
-.tile__timer { right: 8px; top: 30px; font: 500 var(--fs-32)/32px var(--font-data); color: var(--state-tx); display: none; white-space: nowrap; }
+.tile__timer { right: 8px; top: 32px; width: 96px; text-align: right; font: 500 var(--fs-18)/24px var(--font-data); font-variant-numeric: tabular-nums; color: var(--state-tx); display: none; white-space: nowrap; }
 .tile__meter { left: 8px; top: 84px; width: 104px; height: 12px; }
 /* M and S snap to the bottom right, inside the 2 px TX frame; the `⋯` sits 8 px to their left (admin only) */
 .tile__levers { right: 0; bottom: 4px; display: flex; align-items: center; }
@@ -60,12 +60,11 @@
 .tile__pips { display: none; }
 .tile[data-coverage="partial"] .tile__pips { display: inline-flex; }
 
-/* TX: AAR steps down to 13 px in place; MHz + sparkline hide; 32 px timer in right zone */
-.tile[data-tx] .tile__aar { font-size: var(--fs-13); line-height: 24px; color: var(--ink); }
-.tile[data-tx] .tile__aar small { font-size: var(--fs-11); }
+/* TX: the AAR keeps its size and shares row 2 with the 18 px timer (its own 96 px, right-aligned); MHz + sparkline hide */
+.tile[data-tx] .tile__aar { max-width: calc(100% - 120px); overflow: hidden; text-overflow: ellipsis; color: var(--ink); }
 .tile[data-tx] .tile__mhz, .tile[data-tx] .tile__spark, .tile[data-tx] .tile__status { display: none; }
 .tile[data-tx] .tile__timer { display: block; }
-.tile[data-tx] .tile__label { max-width: 150px; }
+.tile[data-tx] .tile__label { max-width: calc(100% - 48px); }
 
 /* bank index (1, 2, ...): typing the number targets the tile; the label moves right to make room */
 .tile__index { left: 30px; top: 8px; height: 16px; line-height: 16px; min-width: 12px; text-align: center;
@@ -84,7 +83,6 @@
 .tile--compact .tile__meter { display: none; }
 .tile--compact .tile__status { top: 8px; } /* the levers own row 2 right, so the status readout sits in row 1 */
 .tile--compact .tile__spark, .tile--compact .tile__foot { display: none; }
-.tile--compact .tile__timer { top: 3px; font-size: var(--fs-24); line-height: 24px; }
 .tile--compact[data-tx] .tile__aar { font-size: var(--fs-18); line-height: 18px; }
 .tile--compact[data-tx] .tile__meter { display: none; }
 .tile--compact .tile__reason { left: 64px; right: 88px; top: 33px; font: 500 var(--fs-11)/12px var(--font-label); letter-spacing: 0.06em; text-transform: uppercase; color: var(--state-fault); white-space: nowrap; }

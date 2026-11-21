@@ -5,6 +5,7 @@
    * same plots as the desktop wall, sized to the layer by the same rules.
    */
   import AudioToggle from "$lib/components/AudioToggle.svelte";
+  import Glyph from "$lib/components/Glyph.svelte";
   import * as fmt from "$lib/hud/fmt";
   import { ui } from "$lib/stores/ui.svelte";
   import { parseUtcOffset } from "$lib/time";
@@ -27,7 +28,7 @@
 
 <div class="sv" role="region" aria-label="Spectrum">
   <div class="sv__bar">
-    <button class="sv__back" type="button" onclick={onback}>‹ LIVE OPS</button>
+    <button class="sv__back" type="button" onclick={onback}><Glyph name="chevron-left" size={12} />LIVE OPS</button>
     <span class="sv__feed">FEED <b>{feed.short}</b></span>
     <span class="sv__grow"></span>
     <span class="sv__clock">{clock}</span>
@@ -48,7 +49,7 @@
     --spectrum-h: 120px;
   }
   .sv__bar { flex: none; height: 44px; display: flex; align-items: center; gap: 12px; padding: 0 8px; border-bottom: 1px solid var(--grid); font: 500 var(--fs-13)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink-2); }
-  .sv__back { height: 44px; padding: 0 8px; color: var(--ink-2); font: inherit; letter-spacing: inherit; }
+  .sv__back { display: inline-flex; align-items: center; gap: 6px; height: 44px; padding: 0 8px; color: var(--ink-2); font: inherit; letter-spacing: inherit; }
   .sv__back:hover { color: var(--ink); }
   .sv__feed b { font-weight: 500; color: var(--ink); }
   .sv__grow { flex: 1; }

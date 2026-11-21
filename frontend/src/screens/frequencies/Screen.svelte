@@ -1,26 +1,24 @@
 <script lang="ts">
   /**
-   * /frequencies: every frequency in one table, with a matrix of nodes on the right (direction 2). An admin flips a
-   * node's slot in place and edits a row in the drawer (`?edit=<id>`, `?edit=new`); a viewer reads. The filters and
+   * /frequencies: every frequency in one table with a read-only ON column (direction 2, Sprint 6 C.6). An admin edits a
+   * row, its nodes included, in the drawer (`?edit=<id>`, `?edit=new`); a viewer reads. The filters and
    * the sort live in the URL. On a phone the table is a list and the editor a full-screen layer.
    */
   import { onMount, tick } from "svelte";
-  import { ApiError } from "$lib/api/client";
   import Button from "$lib/components/Button.svelte";
   import Chip from "$lib/components/Chip.svelte";
+  import Glyph from "$lib/components/Glyph.svelte";
   import EmptyState from "$lib/components/EmptyState.svelte";
   import FrequencyLayer from "$lib/components/frequency-editor/FrequencyLayer.svelte";
   import type { Outcome } from "$lib/components/frequency-editor/editorForm";
   import { nodeColumns } from "$lib/components/frequency-editor/nodes";
-  import { aar as aarPair } from "$lib/hud/fmt";
   import { router } from "$lib/router.svelte";
-  import { slotOf, flipped } from "$lib/slots";
   import { frequencies } from "$lib/stores/frequencies.svelte";
   import { live } from "$lib/stores/live.svelte";
   import { session } from "$lib/stores/session.svelte";
   import { shell } from "$lib/stores/shell.svelte";
   import { viewport } from "$lib/stores/viewport.svelte";
-  import type { Frequency, NodeColumn } from "$lib/types/frequencies";
+  import type { Frequency } from "$lib/types/frequencies";
   import FilterBar from "./FilterBar.svelte";
   import FrequencyDrawer from "./FrequencyDrawer.svelte";
   import FrequencyList from "./FrequencyList.svelte";
@@ -47,8 +45,6 @@
   } from "./table";
   import "./frequencies.css";
 
-  const FAILURE_MS = 6000;
-
   const admin = $derived(session.isAdmin);
   const phone = $derived(viewport.handset);
 
@@ -61,7 +57,7 @@
 
   // ---- the view, in the URL
   const view = $derived(viewFromQuery((name) => router.query(name)));
-  const rows = $derived(sorted(filtered(all, view.filters), view.sort));
+  const rows = $derived(sorted(filtered(all, view.filters), view.sort, view.filters.node));
   const stateCounts = $derived(stateCountsOf(all, view.filters));
   const railroads = $derived(railroadsOf(all));
 
@@ -111,28 +107,6 @@
     if (editParam && !admin) openEditor(null);
   });
 
-  // ---- flipping a slot
-  let busy = $state(new Set<string>());
-  let failure = $state("");
-  let failureTimer: ReturnType<typeof setTimeout> | undefined;
-
-  async function flip(f: Frequency, column: NodeColumn): Promise<void> {
-    const slot = flipped(slotOf(f, column.feedId));
-    const key = `${f.id}|${column.feedId}`;
-    busy = new Set(busy).add(key);
-    try {
-      await frequencies.setSlot(f.id, column.feedId, slot);
-    } catch (error) {
-      const reason = (error instanceof ApiError ? error.message : "Backend unreachable").toUpperCase();
-      failure = `${column.short} · ${aarPair(f.aar_channel)} NOT ${slot === "on" ? "ENABLED" : "DISABLED"}: ${reason}`;
-      clearTimeout(failureTimer);
-      failureTimer = setTimeout(() => (failure = ""), FAILURE_MS);
-    } finally {
-      busy.delete(key);
-      busy = new Set(busy);
-    }
-  }
-
   // ---- shell
   $effect(() => {
     shell.statusFallback = counts ? statusLine(counts, columns.length) : undefined;
@@ -141,15 +115,14 @@
   onMount(() => {
     void frequencies.load();
     return () => {
-      clearTimeout(failureTimer);
       shell.statusFallback = undefined;
     };
   });
 
   // ---- the phone's sort select
   const SORTS: { value: string; text: string; sort: Sort }[] = [
-    { value: "mhz:asc", text: "MHz ▲", sort: { key: "mhz", dir: "asc" } },
-    { value: "mhz:desc", text: "MHz ▼", sort: { key: "mhz", dir: "desc" } },
+    { value: "mhz:asc", text: "MHz LOW TO HIGH", sort: { key: "mhz", dir: "asc" } },
+    { value: "mhz:desc", text: "MHz HIGH TO LOW", sort: { key: "mhz", dir: "desc" } },
     { value: "aar:asc", text: "AAR", sort: { key: "aar", dir: "asc" } },
     { value: "label:asc", text: "LABEL", sort: { key: "label", dir: "asc" } },
     { value: "railroad:asc", text: "RAILROAD", sort: { key: "railroad", dir: "asc" } },
@@ -176,7 +149,7 @@
       </div>
       <div class="frp__find">
         <label class="fr-search">
-          <span class="fr-k" aria-hidden="true">⌕</span>
+          <span class="fr-k" aria-hidden="true"><Glyph name="search" size={14} /></span>
           <input type="search" placeholder="SEARCH" aria-label="Search frequencies" value={view.filters.search} oninput={(event) => filter({ search: event.currentTarget.value })} />
         </label>
         <label class="frp__sort">
@@ -202,7 +175,7 @@
     </div>
     <div class="frp__list" inert={editing}>
       {#if rows.length}
-        <FrequencyList {rows} {columns} {keyed} onrow={pick} />
+        <FrequencyList {rows} {columns} node={view.filters.node} {keyed} onrow={pick} />
       {:else}
         <div class="frp__empty">{@render empty()}</div>
       {/if}
@@ -214,9 +187,9 @@
 {:else}
   <div class="fr" class:has-drawer={editing}>
     <Hero {counts} {columns} {admin} onadd={() => (drawer ? drawer.requestClose(() => openEditor("new")) : openEditor("new"))} />
-    <FilterBar filters={view.filters} {columns} counts={counts ?? { enabled: 0, total: 0, perNode: {} }} {stateCounts} {railroads} shown={rows.length} {failure} onfilter={filter} />
+    <FilterBar filters={view.filters} {columns} counts={counts ?? { enabled: 0, total: 0, perNode: {} }} {stateCounts} {railroads} shown={rows.length} onfilter={filter} />
     <div class="fr-box">
-      <FrequencyTable {rows} {columns} counts={counts ?? { enabled: 0, total: 0, perNode: {} }} sort={view.sort} {keyed} {shared} pickedId={editId} {admin} {busy} onsort={sortBy} onrow={pick} onflip={flip} />
+      <FrequencyTable {rows} {columns} node={view.filters.node} sort={view.sort} {keyed} {shared} pickedId={editId} onsort={sortBy} onrow={pick} />
       {#if rows.length === 0}<div class="fr-empty">{@render empty()}</div>{/if}
     </div>
     {#if editing}

@@ -68,8 +68,13 @@ describe("sorting", () => {
     expect(sorted(all, { key: "railroad", dir: "asc" }).map((r) => r.id)).toEqual(["d", "a", "e", "c", "b"]);
   });
 
-  it("orders a node column on, off, unassigned", () => {
-    expect(sorted(rows, { key: "node:a", dir: "asc" }).map((r) => r.id)).toEqual(["a", "c", "b", "d"]);
+  it("orders the ON column by the nodes enabled, most first, ties by MHz", () => {
+    expect(sorted(rows, { key: "on", dir: "asc" }).map((r) => r.id)).toEqual(["a", "c", "d", "b"]);
+    expect(sorted(rows, { key: "on", dir: "desc" }).map((r) => r.id)).toEqual(["d", "b", "c", "a"]);
+  });
+
+  it("reads one node's on or off when a node is chosen", () => {
+    expect(sorted(rows, { key: "on", dir: "asc" }, "b").map((r) => r.id)).toEqual(["a", "d", "c", "b"]);
   });
 
   it("goes ascending on the first click and descending on the second", () => {

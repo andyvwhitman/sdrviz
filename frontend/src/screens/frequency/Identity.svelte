@@ -8,6 +8,7 @@
    * is the scroll box, so the line sticks to its top (docs/sprint-4/liveops-direction.md 5.8). Widths come from
    * container queries on the nearest `pane` container.
    */
+  import Glyph from "$lib/components/Glyph.svelte";
   import CoveragePips from "$lib/components/CoveragePips.svelte";
   import type { Outcome } from "$lib/components/frequency-editor/editorForm";
   import FrequencyLayer from "$lib/components/frequency-editor/FrequencyLayer.svelte";
@@ -64,6 +65,8 @@
 
   const aar4 = $derived(info.aar_channel != null ? fmt.aar(info.aar_channel) : (channel?.aar4 ?? fmt.BLANK));
   const feeds = $derived((channel?.heard_by ?? []).map((id) => snapshot?.feeds.find((feed) => feed.id === id)?.short ?? id));
+  /** each node the frequency is assigned to and whether it is enabled there (read-only; edited in Frequencies) */
+  const nodes = $derived((info.assignments ?? []).map((a) => ({ short: snapshot?.feeds.find((feed) => feed.id === a.feed_id)?.short ?? a.feed_id, on: a.enabled })));
   const sub = $derived([info.railroad, info.use, ...(viewport.phone ? [] : [info.line])].filter(Boolean).join(" · "));
   const partial = $derived(channel?.coverage.state === "partial");
   const pips = $derived((channel?.coverage.pips ?? []).map((pip) => pip.state === "ok"));
@@ -143,6 +146,10 @@
       <div class="id__mhz"><span>{fmt.freq(info.freq_mhz)}</span> <span class="id__unit">MHz</span><span class="id__sub"> · {sub}</span></div>
       <div class="id__more">
         {#if feeds.length}<span>HEARD BY <b>{feeds.join(" · ")}</b></span>{/if}
+        {#if nodes.length}
+          <span class="id__nodes">NODES {#each nodes as node, i (node.short)}{#if i}{" · "}{/if}<b class="mono" class:is-off={!node.on}>{node.short} {node.on ? "ON" : "OFF"}</b>{/each}</span>
+        {/if}
+        {#if session.isAdmin && nodes.length}<a class="id__editnodes" href="/frequencies?edit={encodeURIComponent(info.id)}" onclick={followLink}>EDIT NODES<Glyph name="chevron-right" size={12} /></a>{/if}
       </div>
     </div>
 
@@ -189,6 +196,8 @@
   .id__unit { color: var(--ink-2); }
   .id__sub { font: 500 var(--fs-13)/1.3 var(--font-label); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--ink-2); }
   .id__more { display: none; gap: 24px; font: 500 var(--fs-13)/1.3 var(--font-label); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--ink-2); }
+  .id__nodes b.is-off { color: var(--ink-3); }
+  .id__editnodes { display: inline-flex; align-items: center; gap: 6px; }
   .id__more b, .id__lidbody b { font-weight: 500; color: var(--ink); }
 
   .id__hero { display: grid; justify-items: end; gap: 2px; flex: none; text-align: right; }

@@ -11,7 +11,9 @@
   import EmptyState from "$lib/components/EmptyState.svelte";
   import TileGrid from "$lib/components/TileGrid.svelte";
   import Waveform from "$lib/components/Waveform.svelte";
+  import type { ChipKind } from "$lib/hud/chips";
   import * as fmt from "$lib/hud/fmt";
+  import NodePicker from "$lib/components/NodePicker.svelte";
   import PositionGlyph from "$lib/components/PositionGlyph.svelte";
   import { feedName } from "$lib/hud/roles";
   import { identityFrom, sharedFrequencySuffix, tileInputFrom, type TileInput } from "$lib/hud/tile";
@@ -30,7 +32,6 @@
   import { session } from "$lib/stores/session.svelte";
   import type { Channel, Word } from "$lib/types/live";
   import { BACKOFF_S } from "$lib/ws/link";
-  import NodeTabs from "./NodeTabs.svelte";
   import FeedInspector from "./FeedInspector.svelte";
   import FrequencyPane from "./FrequencyPane.svelte";
   import { liveOpsPrefs } from "./liveOpsPrefs.svelte";
@@ -89,6 +90,12 @@
   const feedById = $derived(new Map((snapshot?.feeds ?? []).map((f) => [f.id, f])));
   const displayed = $derived(snapshot ? (feedById.get(snapshot.listen_feed ?? "") ?? snapshot.feeds[0]) : null);
   const nodeShort = $derived(displayed?.short ?? "");
+  /** feeds that hear a frequency keyed right now, for the picker's lights */
+  const keyedFeeds = $derived(
+    new Set((snapshot?.active_transmissions ?? []).filter((row) => row.live).flatMap((row) => (row.receptions?.length ? row.receptions.map((r) => r.feed_id) : [row.feed_id]))),
+  );
+  const displayedFault = $derived(!!snapshot?.faults.some((f) => f.object === displayed?.id));
+  const displayedKind = $derived<ChipKind>(displayedFault ? "fault" : displayed?.state === "stale" ? "degraded" : "active");
   const channelNumbers = $derived(tiles.map((c) => Number(c.aar.replace(/\D/g, ""))));
 
   $effect(() => {
@@ -331,21 +338,6 @@
     if (!pane?.escape()) clearSelection();
   }
 
-  /* ---- tile density: the chip's choice, or compact when the tile area is shorter than two standard rows */
-  let tilesH = $state(0);
-  const AUTO_COMPACT_BELOW_PX = 232;
-  const autoCompact = $derived(tilesH > 0 && tilesH < AUTO_COMPACT_BELOW_PX);
-  const density = $derived<"std" | "cmp">(liveOpsPrefs.density === "cmp" || autoCompact ? "cmp" : "std");
-  const tileVariant = $derived(density === "cmp" ? "compact" : "standard");
-  const densityChip = $derived({
-    shown: density,
-    auto: autoCompact && liveOpsPrefs.density === "std",
-    ontoggle: () => {
-      liveOpsPrefs.density = liveOpsPrefs.density === "std" ? "cmp" : "std";
-      liveOpsPrefs.save();
-    },
-  });
-
   /* ---- keyed channels out of view get an edge chip; the tile area never scrolls by itself on a key-up */
   let keyedAbove = $state<string[]>([]);
   let keyedBelow = $state<string[]>([]);
@@ -367,8 +359,6 @@
   const keyedKey = $derived(tiles.filter((c) => c.tx).map((c) => c.id).join());
   $effect(() => {
     void keyedKey;
-    void tilesH;
-    void density;
     void tiles.length;
     void frameW;
     measureEdges();
@@ -443,7 +433,7 @@
       <div class="hs__top"><div class="hs__hero"><span class="hs__k">LAST KEY-UP</span><span class="hs__age">{fmt.BLANK}</span></div></div>
     {:else}
       <div class="hs__top">
-        <div class="hs__tabs"><NodeTabs nodes={snapshot.feeds_listenable} feeds={snapshot.feeds} active={snapshot.listen_feed} /></div>
+        <NodePicker variant="row" nodes={snapshot.feeds_listenable} feeds={snapshot.feeds} active={displayed?.id ?? ""} {keyedFeeds} kind={displayedKind} fault={displayedFault} />
         <div class="hs__hero">
           {#if hero.mode === "keyed"}
             <button class="hs__keyed" type="button" onclick={() => selectChannel(hero.id)}>
@@ -518,7 +508,7 @@
       </div>
     {:else}
       <div class="lo__hero">
-        <HeroStrip {hero} onselect={selectChannel} {displayed} faults={snapshot.faults} {elsewhere} onshowfeed={showFeed} oninspectfeed={inspectFeedId} />
+        <HeroStrip {hero} nodes={snapshot.feeds_listenable} feeds={snapshot.feeds} {keyedFeeds} onselect={selectChannel} {displayed} faults={snapshot.faults} {elsewhere} onshowfeed={showFeed} oninspectfeed={inspectFeedId} />
       </div>
 
       <div class="lo__wall">
@@ -541,10 +531,6 @@
 
       <div class="lo__lower">
         <div class="lo__bank">
-          <div class="lo__tabs">
-            <NodeTabs nodes={snapshot.feeds_listenable} feeds={snapshot.feeds} active={snapshot.listen_feed} density={densityChip} />
-          </div>
-
           <div class="lo__tilebox">
           {#if keyedAbove.length}
             <button class="lo-edge lo-edge--above" type="button" onclick={() => showTile(keyedAbove[0])}><PositionGlyph state="tx" />▲ {keyedAbove.length === 1 ? tiles.find((c) => c.id === keyedAbove[0])?.aar : `${keyedAbove.length}`} KEYED</button>
@@ -553,7 +539,7 @@
             <button class="lo-edge lo-edge--below" type="button" onclick={() => showTile(keyedBelow[0])}><PositionGlyph state="tx" />▼ {keyedBelow.length === 1 ? tiles.find((c) => c.id === keyedBelow[0])?.aar : `${keyedBelow.length}`} KEYED</button>
           {/if}
           <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-          <div bind:this={tilesBox} bind:clientHeight={tilesH} onscroll={measureEdges} class="lo__tiles" class:has-solo={prefs.solo.size > 0} role="group" aria-label="Channels" onkeydown={tileKeys} ondblclick={tileDoubleClick} onfocusout={(e) => !(e.relatedTarget as HTMLElement | null)?.closest(".tile") && (targetedId = null)}>
+          <div bind:this={tilesBox} onscroll={measureEdges} class="lo__tiles" class:has-solo={prefs.solo.size > 0} role="group" aria-label="Channels" onkeydown={tileKeys} ondblclick={tileDoubleClick} onfocusout={(e) => !(e.relatedTarget as HTMLElement | null)?.closest(".tile") && (targetedId = null)}>
             {#if tiles.length === 0}
               <div class="lo-empty br">
                 {@render emptyTiles(true)}
@@ -561,7 +547,7 @@
             {:else}
               <TileGrid>
                 {#each tiles as c, i (c.id)}
-                  {@render tileItem(c, i, tileVariant)}
+                  {@render tileItem(c, i, "standard")}
                 {/each}
               </TileGrid>
             {/if}

@@ -128,7 +128,7 @@ export function dwellHint(listed: boolean, isAdmin: boolean, nodeOk: boolean): s
 }
 
 export const addingMessage = (ch: number): Message => ({ text: `ADDING · ${chName(ch)} …`, tone: "ink-2", ms: 30000 });
-export const needsAdmin = (): Message => ({ text: "□ ADDING NEEDS ADMIN", tone: "ink-2", ms: 2500 });
+export const needsAdmin = (): Message => ({ text: "BOX · ADDING NEEDS ADMIN", tone: "ink-2", ms: 2500 });
 export const alreadyOn = (ch: number, node: string): Message => ({ text: `${aar4(ch)} ALREADY ON ${node}`, tone: "ink-2", ms: 4000 });
 
 /** The result of POST /api/frequencies/from-channel. */

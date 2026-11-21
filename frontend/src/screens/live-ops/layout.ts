@@ -20,11 +20,14 @@ const LOWER_MIN_PX = 240;
 export const WALL_MIN_PX = SPECTRUM.min + RULER_PX + MIN_WATERFALL_PX + STRIP_PX;
 
 export const PANE_MIN_PX = 360;
-const PANE_DEFAULT = { share: 0.4, min: 400, max: 880 };
+/** The default pane leaves the bank two tile columns: 2 x 320, the 8 px gap, 8 px padding, a 16 px scrollbar gutter, plus the 24 px divider gutter. */
+const PANE_DEFAULT = { reserved: 696, min: 360, max: 960 };
 const GUTTER_PX = 24;
 /** One tile column and the scrollbar must stay beside the pane. */
 const TILES_MIN_PX = 216;
-const TILE_COLUMN_PX = 208;
+/** A tile column (minimum 320) and the 8 px gap beside it. */
+const TILE_COLUMN_PX = 328;
+const TILES_GAP_PX = 8;
 
 export interface Bounds {
   min: number;
@@ -51,11 +54,11 @@ export const waterfallPx = (wall: number): number => wall - RULER_PX - STRIP_PX 
 
 export const paneBounds = (width: number): Bounds => ({ min: PANE_MIN_PX, max: Math.max(PANE_MIN_PX, width - GUTTER_PX - TILES_MIN_PX) });
 
-/** The pane's width for a saved fraction (null: the default, 40% of the width within 400 to 880 px). */
+/** The pane's width for a saved fraction (null: the default, the width less 696 px, within 360 to 960 px). */
 export const panePx = (fraction: number | null, width: number): number =>
-  Math.round(fraction === null ? clamp(PANE_DEFAULT.share * width, PANE_DEFAULT) : clamp(fraction * width, paneBounds(width)));
+  Math.round(fraction === null ? clamp(width - PANE_DEFAULT.reserved, PANE_DEFAULT) : clamp(fraction * width, paneBounds(width)));
 
 export const paneFraction = (px: number, width: number): number => px / width;
 
 /** How many tile columns fit beside a pane `pane` px wide. */
-export const tileColumns = (width: number, pane: number): number => Math.max(1, Math.floor((width - GUTTER_PX - pane) / TILE_COLUMN_PX));
+export const tileColumns = (width: number, pane: number): number => Math.max(1, Math.floor((width - GUTTER_PX - pane - TILES_GAP_PX) / TILE_COLUMN_PX));

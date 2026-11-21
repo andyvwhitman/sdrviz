@@ -7,6 +7,7 @@
    */
   import { untrack } from "svelte";
   import { api, ApiError } from "$lib/api/client";
+  import Glyph from "$lib/components/Glyph.svelte";
   import { followLink } from "$lib/router.svelte";
   import * as fmt from "$lib/hud/fmt";
   import { live } from "$lib/stores/live.svelte";
@@ -305,16 +306,16 @@
 <div class="pane" class:pane--layer={variant === "layer"} bind:clientWidth={width} role="region" aria-label="Frequency" onkeydown={keys}>
   <div class="pane__bar">
     {#if variant === "layer"}
-      <button class="pane__back" type="button" onclick={onback}>‹ {backLabel}</button>
+      <button class="pane__back" type="button" onclick={onback}><Glyph name="chevron-left" size={12} />{backLabel}</button>
     {:else}
       <span class="pane__steps">
-        <button type="button" aria-label="Previous frequency" onclick={() => onstep?.(-1)}>◂</button>
-        <button type="button" aria-label="Next frequency" onclick={() => onstep?.(1)}>▸</button>
+        <button type="button" aria-label="Previous frequency ([)" title="Previous frequency ([)" onclick={() => onstep?.(-1)}><Glyph name="chevron-left" size={16} /></button>
+        <button type="button" aria-label="Next frequency (])" title="Next frequency (])" onclick={() => onstep?.(1)}><Glyph name="chevron-right" size={16} /></button>
       </span>
     {/if}
     <span class="pane__grow"></span>
-    <a class="chip pane__open" data-chip="active" href="/frequency/{encodeURIComponent(frequencyId)}" onclick={followLink}>OPEN FULL PAGE ›</a>
-    {#if variant === "column"}<button class="pane__x" type="button" aria-label="Clear selection" onclick={onclose}>×</button>{/if}
+    <a class="chip pane__open" data-chip="active" href="/frequency/{encodeURIComponent(frequencyId)}" onclick={followLink}>OPEN FULL PAGE<Glyph name="chevron-right" size={12} /></a>
+    {#if variant === "column"}<button class="pane__x" type="button" aria-label="Clear selection" onclick={onclose}><Glyph name="close" size={16} /></button>{/if}
   </div>
 
   <div class="pane__scroll" bind:this={scroller}>
@@ -331,17 +332,17 @@
       {:else}
         <div class="pane__nodecode">
           <p>NOT DECODED · NOT ENABLED ON ANY NODE</p>
-          {#if session.isAdmin}<a href="/frequencies" onclick={followLink}>ENABLE IT IN FREQUENCIES ›</a>{/if}
+          {#if session.isAdmin}<a href="/frequencies" onclick={followLink}>ENABLE IT IN FREQUENCIES<Glyph name="chevron-right" size={12} /></a>{/if}
         </div>
       {/if}
 
       {#if !enabledAnywhere}
-        <div class="pane__lid"><span class="pane__lid-k">▸ TODAY · NOT RECORDED · NOT ENABLED ON ANY NODE</span></div>
+        <div class="pane__lid"><span class="pane__lid-k"><Glyph name="chevron-right" size={12} />TODAY · NOT RECORDED · NOT ENABLED ON ANY NODE</span></div>
       {:else if day && day.recording_since === null}
-        <div class="pane__lid"><span class="pane__lid-k">▸ TODAY · NO RECORDINGS YET</span></div>
+        <div class="pane__lid"><span class="pane__lid-k"><Glyph name="chevron-right" size={12} />TODAY · NO RECORDINGS YET</span></div>
       {:else}
         <button class="pane__lid pane__lid--btn" type="button" aria-expanded={lidOpen} onclick={toggleLid}>
-          <span class="pane__lid-k">{lidOpen ? "▾" : "▸"} {dayLabel}</span>
+          <span class="pane__lid-k"><Glyph name={lidOpen ? "chevron-down" : "chevron-right"} size={12} />{dayLabel}</span>
           {#if !lidOpen && day}
             <MiniStrip buckets={day.buckets} recordingSince={day.recording_since} {nowMs} {keyed} lastS={lastHeardMs === null || width < 440 ? null : (nowMs - lastHeardMs) / 1000} label={info.label} />
           {/if}
@@ -406,10 +407,13 @@
   .pane__bar { flex: none; height: 32px; display: flex; align-items: center; gap: 8px; padding: 0 8px 0 12px; border-bottom: 1px solid var(--grid); }
   .pane--layer .pane__bar { height: 44px; }
   .pane__grow { flex: 1; }
+  /* previous and next are one pair: the same 32 px button and glyph, the second a mirror of the first, a grid rule between */
   .pane__steps { display: inline-flex; }
-  .pane__steps button, .pane__x { width: 32px; height: 32px; font: 400 var(--fs-15)/1 var(--font-label); color: var(--ink-2); }
+  .pane__steps button + button { box-shadow: inset 1px 0 0 var(--grid); }
+  .pane__steps button, .pane__x { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; color: var(--ink-2); }
   .pane__steps button:hover, .pane__x:hover { color: var(--ink); }
-  .pane__back { height: 44px; min-width: 44px; padding: 0 8px 0 0; font: 500 var(--fs-13)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pane__steps button:focus-visible, .pane__x:focus-visible { outline: none; box-shadow: inset 0 0 0 1px var(--state-select); }
+  .pane__back { display: inline-flex; align-items: center; gap: 6px; height: 44px; min-width: 44px; padding: 0 8px 0 0; font: 500 var(--fs-13)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .pane__back:hover { color: var(--ink); }
   .pane--layer .pane__open { height: 44px; display: inline-flex; align-items: center; }
   .pane--layer :global(.lr__play) { height: 44px; }
@@ -423,7 +427,7 @@
   .pane__lid :global(.ms__text) { display: flex; gap: 0 6px; white-space: nowrap; }
   .pane__lid :global(.ms__fs)::after { content: " ·"; }
   @container pane (max-width: 399px) { .pane__lid :global(.ms__fs) { display: none; } }
-  .pane__open { height: 24px; font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); border: 0; }
+  .pane__open { display: inline-flex; align-items: center; gap: 6px; height: 24px; font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); border: 0; }
   .pane__scroll { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; scrollbar-width: thin; scrollbar-color: var(--line-faint) transparent; }
 
   .pane__nodecode { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 16px; min-height: var(--pane-row-h); padding: 0 16px; background: var(--bg-void); }
@@ -438,7 +442,7 @@
   .pane__lidbody.is-open { grid-template-rows: 1fr; }
   .pane__lidinner { min-height: 0; overflow: hidden; }
   @media (prefers-reduced-motion: reduce) { .pane__lidbody { transition: none; } }
-  .pane__lid-k { font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink-2); white-space: nowrap; }
+  .pane__lid-k { display: inline-flex; align-items: center; gap: 6px; font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink-2); white-space: nowrap; }
 
   .pane__plate { display: grid; gap: 12px; justify-items: start; margin: 24px 16px; padding: 16px 20px; box-shadow: inset 0 0 0 1px var(--line-faint); width: fit-content; max-width: calc(100% - 32px); }
   .pane__plate-k { margin: 0; font: 600 var(--fs-15)/1.2 var(--font-label); letter-spacing: var(--track-title); color: var(--ink); overflow-wrap: anywhere; }

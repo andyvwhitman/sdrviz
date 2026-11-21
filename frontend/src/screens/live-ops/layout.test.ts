@@ -27,11 +27,11 @@ describe("the wall's height", () => {
 });
 
 describe("the pane's width", () => {
-  it("defaults to 40% of the width, held between 400 and 880 px", () => {
-    expect(panePx(null, 960)).toBe(400);
-    expect(panePx(null, 1216)).toBe(486);
-    expect(panePx(null, 1856)).toBe(742);
-    expect(panePx(null, 2496)).toBe(880);
+  it("defaults to the width less 696 px (two tiles wide), held between 360 and 960 px", () => {
+    expect(panePx(null, 960)).toBe(360);
+    expect(panePx(null, 1216)).toBe(520);
+    expect(panePx(null, 1856)).toBe(960);
+    expect(panePx(null, 2496)).toBe(960);
   });
 
   it("keeps 360 px for the pane and one tile column beside it, whatever the saved fraction", () => {
@@ -42,8 +42,9 @@ describe("the pane's width", () => {
   });
 
   it("counts the tile columns that fit beside it", () => {
-    expect(tileColumns(1856, 742)).toBe(5);
-    expect(tileColumns(1216, 486)).toBe(3);
-    expect(tileColumns(2496, 880)).toBe(7);
+    expect(tileColumns(1856, 960)).toBe(2);
+    expect(tileColumns(1216, 520)).toBe(2);
+    expect(tileColumns(960, 360)).toBe(1);
+    expect(tileColumns(2496, 960)).toBe(4);
   });
 });

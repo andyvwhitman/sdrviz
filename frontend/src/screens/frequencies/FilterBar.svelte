@@ -1,6 +1,7 @@
 <script lang="ts">
   /** The desktop filter bar (direction 2.2): node, state, railroad, search, and how many rows are shown. */
   import Chip from "$lib/components/Chip.svelte";
+  import Glyph from "$lib/components/Glyph.svelte";
   import type { NodeColumn } from "$lib/types/frequencies";
   import { STATE_FILTERS, isFiltered, type Counts, type Filters, type StateFilter } from "./table";
 
@@ -16,10 +17,9 @@
     railroads: string[];
     shown: number;
     /** a refused change, in the fault tone, for a few seconds */
-    failure: string;
     onfilter: (changes: Partial<Filters>) => void;
   }
-  let { filters, columns, counts, stateCounts, railroads, shown, failure, onfilter }: Props = $props();
+  let { filters, columns, counts, stateCounts, railroads, shown, onfilter }: Props = $props();
 
   // The field writes to the URL after a short pause; the field itself follows the URL when it changes elsewhere.
   let query = $state("");
@@ -90,10 +90,9 @@
     </select>
   </label>
   <label class="fr-search fr-ruled">
-    <span class="fr-k" aria-hidden="true">⌕</span>
+    <span class="fr-k" aria-hidden="true"><Glyph name="search" size={14} /></span>
     <input bind:this={searchInput} type="search" placeholder="SEARCH" aria-label="Search frequencies" value={query} oninput={(event) => typed(event.currentTarget.value)} onkeydown={searchKeys} />
   </label>
-  {#if failure}<span class="fr-fail" role="alert">{failure}</span>{/if}
   <span class="fr-shown">{shown} SHOWN</span>
   {#if isFiltered(filters)}<button type="button" class="fr-clear" onclick={() => onfilter({ node: null, state: "all", railroad: null, search: "" })}>CLEAR</button>{/if}
 </div>

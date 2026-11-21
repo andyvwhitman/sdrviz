@@ -13,7 +13,7 @@
   /* the share the wall takes is 36% of the content height less 128 px of fixed chrome (the direction's figures) */
   --below-hero: calc(100cqh - 128px);
   --wall-h: clamp(194px, calc(var(--wall-frac, 0.36) * var(--below-hero)), calc(100cqh - 4 * var(--lo-gap) - var(--hero-h) - 240px));
-  --pane-w: clamp(400px, 40cqw, 880px);
+  --pane-w: clamp(360px, calc(100cqw - 696px), 960px);
   position: relative; height: 100%;
   display: grid; grid-template-rows: var(--hero-h) var(--wall-h) minmax(0, 1fr); row-gap: var(--lo-gap);
   padding: var(--lo-gap) 0;
@@ -25,8 +25,7 @@
 .lo__hero, .lo__wall { min-width: 0; min-height: 0; }
 .lo__lower { min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) var(--lo-gutter) var(--pane-w); }
 .lo__bank { min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 8px; }
-.lo__tabs { flex: none; height: 32px; }
-.lo__tiles { position: relative; flex: 1; min-height: 0; overflow-y: auto; padding: 4px; scrollbar-width: thin; scrollbar-color: var(--line-faint) transparent; }
+.lo__tiles { position: relative; flex: 1; min-height: 0; overflow-y: auto; scrollbar-gutter: stable; padding: 4px; scrollbar-width: thin; scrollbar-color: var(--line-faint) transparent; }
 .lo__pane { position: relative; min-width: 0; min-height: 0; overflow: hidden; }
 /* the tile is a 200 px graphic drawn for the original type ramp; at 1:1 it takes the standard sizes, never a zoom */
 .lo .tile { zoom: 1; }
@@ -91,9 +90,6 @@
 .lo-wallmsg .m2 { font: 400 var(--fs-11)/1 var(--font-data); color: var(--ink-3); }
 .lo-wallmsg .m2 .label { font-size: var(--fs-11); letter-spacing: var(--track-label); }
 
-/* ---- bank tabs row ------------------------------------------------------ */
-.lo-tabs { height: 100%; display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; }
-.lo-tabs .t-micro { padding-bottom: 8px; }
 
 /* ---- tile wall ----------------------------------------------------------- */
 .lo-empty { position: absolute; inset: 0; }
@@ -103,9 +99,7 @@
 /* solo: the channels that are not soloed go quiet (their level and waveform dim) */
 .lo-tiles.has-solo .tile:not([data-solo]) .tile__meter,
 .lo-tiles.has-solo .tile:not([data-solo]) .tile__wave { opacity: 0.4; }
-/* key-up commit (spec 6.3): the AAR steps 24 > 20 > 16 > 13 px inside the 120 ms flash, the timer waits */
-@keyframes lo-aar-lock { 0% { font-size: var(--fs-24); } 33% { font-size: 23px; } 66% { font-size: 19px; } 100% { font-size: var(--fs-13); } }
-.tile--standard:has(.frame[data-commit]) .tile__aar { animation: lo-aar-lock var(--t-flash) steps(1, end) 1; }
+/* key-up commit (spec 6.3): the frame flashes for 120 ms and the timer waits */
 .tile:has(.frame[data-commit]) .tile__timer { visibility: hidden; }
 
 /* settle ghost: the tile keeps its keyed look for t-settle (KeyupMotion.held), then goes idle while this TX frame retracts over t-settle */
@@ -144,11 +138,6 @@ body.lo-resizing-row, body.lo-resizing-row * { cursor: row-resize !important; us
    ========================================================================== */
 .hs { min-height: 100%; }
 .hs__top { position: sticky; top: var(--header-h); z-index: 8; background: var(--bg-void); border-bottom: 1px solid var(--grid); }
-.hs__tabs { height: 44px; padding: 0 16px; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; display: flex; align-items: flex-end; }
-.hs__tabs::-webkit-scrollbar { display: none; }
-.hs__tabs .lo-tabs { width: max-content; }
-.hs__tabs .tabs { --tabs-h: 44px; flex: none; }
-.hs__tabs .tab { height: 44px; flex: none; white-space: nowrap; }
 .hs__hero { height: 44px; display: flex; align-items: center; gap: 10px; padding: 0 16px; white-space: nowrap; min-width: 0; }
 .hs__k { font: 500 var(--fs-13)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink-2); }
 .hs__age { font: 500 var(--fs-18)/1 var(--font-data); color: var(--ink-2); }
@@ -171,7 +160,7 @@ body.lo-resizing-row, body.lo-resizing-row * { cursor: row-resize !important; us
 .hs .tile.tile--compact .tile__status { top: 12px; right: 140px; }
 .hs .tile.tile--compact .tile__aar { top: 36px; }
 .hs .tile.tile--compact .tile__mhz { left: 84px; top: 40px; font-size: var(--fs-13); }
-.hs .tile.tile--compact .tile__timer { top: 33px; right: 140px; } /* keyed: row 2, where the MHz was */
+.hs .tile.tile--compact .tile__timer { top: 36px; right: 140px; font-size: var(--fs-18); line-height: 24px; } /* keyed: row 2, where the MHz was */
 .hs .tile.tile--compact .tile__levers { top: 0; bottom: auto; right: 0; height: 64px; }
 .hs .tile.tile--compact .tile__more { width: 44px; height: 64px; margin-right: 0; padding-top: 0; box-shadow: inset -1px 0 0 var(--grid); }
 .hs .tile.tile--compact .lever { width: 44px; height: 64px; }
@@ -197,9 +186,6 @@ body.lo-resizing-row, body.lo-resizing-row * { cursor: row-resize !important; us
 .lo-herolink { padding: 0; background: none; border: 0; color: inherit; font: inherit; cursor: pointer; }
 .lo-herosel:hover .hero__stack .a, .lo-herolink:hover { text-decoration: underline; text-underline-offset: 4px; }
 
-/* density chip: a bracketed toggle; compact forced by a short tile area reads in ink-3 */
-.lo-density { height: 24px; font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); border: 0; background: none; cursor: pointer; align-self: center; }
-.lo-density.is-auto { color: var(--ink-3); }
 
 /* keyed channels scrolled out of the tile area: an edge chip says so, and a click brings the tile into view */
 .lo__tilebox { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; }
@@ -208,11 +194,9 @@ body.lo-resizing-row, body.lo-resizing-row * { cursor: row-resize !important; us
 .lo-edge--above { top: 6px; }
 .lo-edge--below { bottom: 6px; }
 
-/* a node tab is one line, whatever its name: the row scrolls sideways instead (the same as on the phone) */
-.lo-tabs > .tabs { min-width: 0; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
-.lo-tabs > .tabs::-webkit-scrollbar { display: none; }
-.lo-tabs .tab { flex: none; white-space: nowrap; }
-.lo-tabs > .density, .lo-tabs > .lo-density { flex: none; }
 
 /* a keyed hero line on a narrow phone: glyph, channel, timer and +N; the row below names the channel */
 @media (max-width: 419px) { .hs__name { display: none; } }
+
+/* Live Ops tiles are at least 320 px wide: two frequencies fit in the default bank */
+.lo .tile-grid { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }

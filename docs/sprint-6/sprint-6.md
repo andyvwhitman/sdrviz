@@ -43,3 +43,12 @@ agent per lane in its own worktree; clean-worktree tests, push, deploy, verify o
 Merge lanes to main, clean-worktree tests (frontend check, vitest, build; backend pytest), push, deploy, then verify
 on production: two browsers listen to different nodes independently, the footer key-up strip on a real key-up, no
 page errors and no sideways scroll at 1920/1280/390.
+
+## Status (2026-11-20, evening)
+
+Done and deployed (main 6820ed8). Lanes A-H merged; GMUNK review (review.md) returned CHANGES with 8 MUSTs, all fixed
+and deployed with three SHOULDs (tile timer m:ss, plurals, Settings timings header). Verified on production: bar 36 /
+footer 32 on every route (44/44 at 390), no horizontal scroll or console errors on 9 routes at 3 sizes, footer key-up
+frame on a real SDR-01 key-up, SDR-01 spectrum drawn on Feeds, BUILD 0.1.0, /api/prefs gone, Swagger at /api/docs.
+Open: review.md SHOULD/LATER items; leaders also avoiding ring labels and detector blocks; map labels on a crowded
+phone canvas; a GMUNK re-review of the fix pass was not run.

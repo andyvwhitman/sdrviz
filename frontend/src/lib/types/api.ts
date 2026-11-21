@@ -11,6 +11,8 @@ export interface SimStatus {
   scenario: string | null;
   clock: string;
   speed: number;
+  /** the node a scenario is about: the page that asked for the scenario listens to it */
+  scenario_feed?: string | null;
 }
 
 export interface SimJump {
@@ -19,13 +21,13 @@ export interface SimJump {
   speed?: number;
 }
 
+/** How this browser mixes the channels; kept in localStorage (stores/prefs.svelte.ts), not on the server. */
 export interface Prefs {
-  /** the node Live Ops listens to; admin only to change. GET returns the resolved default */
-  listen_feed: string | null;
   muted: string[];
   solo: string[];
   record: string[];
-  volumes: Record<string, number>;
+  /** per channel, 0..1; a channel with no entry plays at full volume */
+  volume: Record<string, number>;
 }
 
 /** A frequency assigned to a feed (node); a feed hears, decodes and records its enabled assignments. */

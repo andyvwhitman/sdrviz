@@ -52,12 +52,12 @@ class TestLiveState:
         feed = rt.world.feeds[state["listen_feed"]]
         mhz = [c["freq_mhz"] for c in state["channels"]]
         assert {c["id"] for c in state["channels"]} == set(feed.hears) and mhz == sorted(mhz)
-        client.put("/api/prefs", json={**client.get("/api/prefs").json(), "listen_feed": "feed-bay"})
-        state = client.get("/api/live/state").json()
+        state = client.get("/api/live/state", params={"listen_feed": "feed-bay"}).json()
         assert state["listen_feed"] == "feed-bay"
         assert {c["id"] for c in state["channels"]} == set(rt.world.feeds["feed-bay"].hears)
         client.put("/api/frequencies/amtk-nec-road/assignments/feed-bay", json={"enabled": False})
-        assert "amtk-nec-road" not in [c["id"] for c in client.get("/api/live/state").json()["channels"]]
+        state = client.get("/api/live/state", params={"listen_feed": "feed-bay"}).json()
+        assert "amtk-nec-road" not in [c["id"] for c in state["channels"]]
 
     def test_the_node_picker_lists_every_feed(self, client):
         listed = client.get("/api/live/state").json()["feeds_listenable"]
@@ -81,8 +81,8 @@ class TestLiveState:
 class TestSim:
     def test_jump_to_a_scenario_sets_clock_node_and_state(self, client):
         response = client.post("/api/sim/jump", json={"scenario": "fault", "speed": 0})
-        assert response.json() == {"scenario": "fault", "clock": "14:06:22", "speed": 0.0}
-        assert client.get("/api/prefs").json()["listen_feed"] == "feed-lnd"
+        assert response.json() == {"scenario": "fault", "clock": "14:06:22", "speed": 0.0, "scenario_feed": "feed-lnd"}
+        assert "listen_feed" not in client.get("/api/prefs").json()  # the node listened to is each client's own
         state = client.get("/api/live/state").json()
         assert state["header"]["feeds_chip"] == "FEEDS 2/4" and state["scenario"] == "fault"
         assert [f["object"] for f in state["faults"]] == ["feed-lnd"]
@@ -106,21 +106,15 @@ class TestPrefs:
         assert client.put("/api/prefs", json=prefs).json()["volume"] == {"amtk-nec-road": 0.4}
         assert client.get("/api/prefs").json()["muted"] == ["amtk-nec-road"]
 
-    def test_unknown_feed_is_rejected(self, client):
+    def test_the_listened_feed_is_not_a_pref(self, client):
         prefs = client.get("/api/prefs").json()
-        assert client.put("/api/prefs", json={**prefs, "listen_feed": "feed-x"}).status_code == 422
-        assert "active_bank" not in prefs and "displayed_feed" not in prefs
+        assert "listen_feed" not in prefs and "active_bank" not in prefs and "displayed_feed" not in prefs
+        client.put("/api/prefs", json={**prefs, "listen_feed": "feed-bay"})  # ignored
+        assert client.get("/api/live/state").json()["listen_feed"] == "feed-alx"
 
-    def test_listen_feed_reaches_the_live_state(self, client):
-        prefs = client.get("/api/prefs").json()
-        assert prefs["listen_feed"] == "feed-alx"  # the default is shown resolved
-        client.put("/api/prefs", json={**prefs, "listen_feed": "feed-bay"})
-        assert client.get("/api/live/state").json()["listen_feed"] == "feed-bay"
-
-    def test_sending_the_default_back_does_not_pin_it(self, client):
-        rt = client.app.state.rt
-        client.put("/api/prefs", json=client.get("/api/prefs").json())
-        assert rt.prefs.listen_feed is None
+    def test_live_state_listens_to_the_feed_asked_for_and_falls_back_to_the_default(self, client):
+        assert client.get("/api/live/state", params={"listen_feed": "feed-bay"}).json()["listen_feed"] == "feed-bay"
+        assert client.get("/api/live/state", params={"listen_feed": "feed-x"}).json()["listen_feed"] == "feed-alx"
 
 
 class TestFrequencies:
@@ -311,9 +305,8 @@ class TestOther:
 
 def test_prefs_patch_changes_only_the_fields_sent(client):
     start = client.get("/api/prefs").json()
-    client.patch("/api/prefs", json={"listen_feed": "feed-bay"})
+    client.patch("/api/prefs", json={"volume": {"amtk-nec-road": 0.4}})
     saved = client.patch("/api/prefs", json={"muted": ["amtk-nec-road"]}).json()
     assert saved["muted"] == ["amtk-nec-road"]
-    assert saved["listen_feed"] == "feed-bay"  # a stale copy of the node is not re-sent
+    assert saved["volume"] == {"amtk-nec-road": 0.4}  # a stale copy of the volume is not re-sent
     assert saved["solo"] == start["solo"]
-    assert client.patch("/api/prefs", json={"listen_feed": "feed-x"}).status_code == 422

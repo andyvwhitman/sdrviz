@@ -14,7 +14,7 @@
   import { viewport } from "$lib/stores/viewport.svelte";
   import type { FrequencyInfo, Recording } from "$lib/types/recordings";
   import * as fmt from "$lib/hud/fmt";
-  import { cyclicAge } from "$lib/time";
+  import { keyAge } from "$lib/time";
   import { endsOf, spanLabel, totalsOf } from "./dayStrip";
   import DayStrip from "./DayStrip.svelte";
   import WeekGrid from "./WeekGrid.svelte";
@@ -255,7 +255,7 @@
   /** seconds keyed so far, or null; whole seconds, so the strip's current bucket grows once a second */
   const keyedElapsed = $derived.by(() => {
     if (!activeTx && !channel?.tx) return null;
-    return activeTx ? Math.max(0, cyclicAge(simClock.now, activeTx.t_offset_s)) : (channel?.tx?.elapsed_s ?? 0);
+    return activeTx ? keyAge(simClock.now, activeTx.t_offset_s) : (channel?.tx?.elapsed_s ?? 0);
   });
   const keyed = $derived(keyedElapsed !== null);
   const onAir = $derived(keyedElapsed !== null && store?.fromHead && !jumped ? { startedAt: nowMs - keyedElapsed * 1000, elapsed: keyedElapsed } : null);
@@ -289,9 +289,6 @@
       player.stop();
       shell.statusFallback = undefined;
     };
-  });
-  $effect(() => {
-    if (snapshot) simClock.sync(snapshot.t_offset_s);
   });
 
   // ---- keyboard (logKeys). Captured before the header's tab keys (T is the SPOT tab's letter), only while this page is open.

@@ -27,6 +27,7 @@ async def live(websocket: WebSocket) -> None:
         await websocket.close(code=CLOSE_UNAUTHENTICATED)  # accepted first so the client sees the code
         return
     client = rt.hub.register()
+    client.listen_feed = _known_feed(rt, websocket.query_params.get("listen"))
     sender = asyncio.create_task(_send_loop(websocket, client))
     try:
         client.queue.put_nowait(
@@ -42,7 +43,7 @@ async def live(websocket: WebSocket) -> None:
                 server_time=datetime.now(UTC).isoformat(timespec="milliseconds"),
             )
         )
-        client.queue.put_nowait(protocol.message("snapshot", state=rt.live_state()))
+        client.queue.put_nowait(protocol.message("snapshot", state=rt.live_state(client.listen_feed)))
         async for raw in websocket.iter_text():
             _handle(rt, client, raw)
     except WebSocketDisconnect:
@@ -68,14 +69,21 @@ async def _send_loop(websocket: WebSocket, client: Client) -> None:
         pass
 
 
+def _known_feed(rt, feed_id: object) -> str | None:
+    return feed_id if isinstance(feed_id, str) and feed_id in rt.world.feeds else None
+
+
 def _handle(rt, client: Client, raw: str) -> None:
-    """Client ops: audio, watch, ping, and listen_hold / listen_release (see live/listen.py)."""
+    """Client ops: listen, audio, watch, ping, and listen_hold / listen_release (see live/listen.py)."""
     try:
         msg = json.loads(raw)
         op = msg["op"]
     except (ValueError, KeyError, TypeError):
         return
-    if op == "audio":
+    if op == "listen":  # the node this connection shows; only this connection gets the new snapshot
+        client.listen_feed = _known_feed(rt, msg.get("feed_id"))
+        rt.hub.send_to(client, protocol.message("snapshot", state=rt.live_state(client.listen_feed)))
+    elif op == "audio":
         client.audio = {c for c in msg.get("channels", []) if c in rt.world.freqs}
     elif op == "watch":
         feed_id = msg.get("feed_id")

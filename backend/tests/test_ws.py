@@ -72,15 +72,48 @@ def test_jump_pushes_a_new_snapshot_to_connected_clients(client):
         assert snapshot["state"]["scenario"] == "listening" and snapshot["state"]["active_transmissions"] == []
 
 
-def test_choosing_a_node_pushes_a_snapshot(client):
+def snapshot_for(ws, feed_id):
+    return receive_until(
+        ws, lambda m: isinstance(m, dict) and m["type"] == "snapshot" and m["state"]["listen_feed"] == feed_id
+    )["state"]
+
+
+def test_choosing_a_node_pushes_a_snapshot_to_that_connection(client):
     with client.websocket_connect("/ws/live") as ws:
         receive_until(ws, is_type("snapshot"))
-        client.patch("/api/prefs", json={"listen_feed": "feed-bay"})
-        snapshot = receive_until(
-            ws,
-            lambda m: isinstance(m, dict) and m["type"] == "snapshot" and m["state"]["listen_feed"] == "feed-bay",
-        )
-        assert len(snapshot["state"]["channels"]) == 11
+        ws.send_text(json.dumps({"op": "listen", "feed_id": "feed-bay"}))
+        assert len(snapshot_for(ws, "feed-bay")["channels"]) == 11
+
+
+def test_the_listen_query_picks_the_first_snapshot_and_an_unknown_feed_falls_back(client):
+    with client.websocket_connect("/ws/live?listen=feed-bay") as ws:
+        assert receive_until(ws, is_type("snapshot"))["state"]["listen_feed"] == "feed-bay"
+    with client.websocket_connect("/ws/live?listen=feed-x") as ws:
+        assert receive_until(ws, is_type("snapshot"))["state"]["listen_feed"] == "feed-alx"
+
+
+def test_two_clients_listen_to_different_nodes_and_do_not_affect_each_other(client):
+    with (
+        client.websocket_connect("/ws/live?listen=feed-alx") as laptop,
+        client.websocket_connect("/ws/live?listen=feed-bay") as phone,
+    ):
+        rt = client.app.state.rt
+        laptop_first = receive_until(laptop, is_type("snapshot"))["state"]
+        phone_first = receive_until(phone, is_type("snapshot"))["state"]
+        assert {c["id"] for c in laptop_first["channels"]} == set(rt.world.feeds["feed-alx"].hears)
+        assert {c["id"] for c in phone_first["channels"]} == set(rt.world.feeds["feed-bay"].hears)
+
+        # The phone moves to another node: the laptop's listened node does not change...
+        phone.send_text(json.dumps({"op": "listen", "feed_id": "feed-lnd"}))
+        snapshot_for(phone, "feed-lnd")
+        assert sorted(c.listen_feed for c in rt.hub.clients) == ["feed-alx", "feed-lnd"]
+
+        # ...and shared changes still reach both, each with its own node's channels.
+        client.put("/api/frequencies/amtk-nec-road/assignments/feed-alx", json={"enabled": False})
+        laptop_after = snapshot_for(laptop, "feed-alx")
+        phone_after = snapshot_for(phone, "feed-lnd")
+        assert "amtk-nec-road" not in {c["id"] for c in laptop_after["channels"]}
+        assert {c["id"] for c in phone_after["channels"]} == set(rt.world.feeds["feed-lnd"].hears)
 
 
 def test_an_ack_is_echoed_as_feed_and_faults_messages(client):

@@ -11,7 +11,12 @@ router = APIRouter(prefix="/sim", tags=["sim"])
 
 
 def _state(rt: RT) -> SimOut:
-    return SimOut(scenario=rt.scenario.name if rt.scenario else None, clock=hms(rt.clock.now()), speed=rt.clock.speed)
+    return SimOut(
+        scenario=rt.scenario.name if rt.scenario else None,
+        clock=hms(rt.clock.now()),
+        speed=rt.clock.speed,
+        scenario_feed=rt.scenario.feed if rt.scenario else None,
+    )
 
 
 @router.get("")

@@ -1,13 +1,12 @@
 <script lang="ts">
   /**
    * Node tabs (spec 5.24, direction 4.1) and, on the desktop, the density chip. One tab per node feed with its enabled
-   * count; the selected one is `prefs.listen_feed`. Switching is an admin action (PATCH /api/prefs), a viewer's tabs
-   * are not buttons. A node that is not ok shows its position light first and its name in ink-3.
+   * count; the selected one is this browser's own choice (`listen` store), which any role may change. A node that is
+   * not ok shows its position light first and its name in ink-3.
    */
   import type { GlyphState } from "$lib/hud/tile";
   import Tabs from "$lib/components/Tabs.svelte";
-  import { prefs } from "$lib/stores/prefs.svelte";
-  import { session } from "$lib/stores/session.svelte";
+  import { listen } from "$lib/stores/listen.svelte";
   import type { Feed, ListenableFeed } from "$lib/types/live";
 
   interface Props {
@@ -28,13 +27,13 @@
       return { id: node.feed_id, name: node.short, n: feed?.hears.length, glyph, dim: feed?.state === "offline" || feed?.state === "disabled" };
     }),
   );
-  const listen = (id: string) => {
-    if (id !== active) prefs.update({ listen_feed: id }).catch((error) => console.warn("node not switched", error));
+  const choose = (id: string) => {
+    if (id !== active) listen.choose(id);
   };
 </script>
 
 <div class="lo-tabs">
-  <Tabs {items} selected={active ?? ""} onselect={session.isAdmin ? listen : undefined} />
+  <Tabs {items} selected={active ?? ""} onselect={choose} />
   {#if density}
     <button class="chip lo-density" class:is-auto={density.auto} data-chip="nominal" type="button" title="Tile density: standard or compact" onclick={density.ontoggle}>
       DENSITY {density.shown.toUpperCase()}{density.auto ? " · AUTO" : ""}

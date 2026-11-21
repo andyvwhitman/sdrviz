@@ -22,6 +22,7 @@ class Client:
     queue: asyncio.Queue[str | bytes | None] = field(default_factory=lambda: asyncio.Queue(QUEUE_SIZE))  # None: close
     audio: set[str] = field(default_factory=set)  # frequency ids
     watch: str | None = None  # feed id for spectrum frames
+    listen_feed: str | None = None  # the node this connection listens to (its snapshots); None: the default
     holds: dict[tuple[str, int], Hold] = field(default_factory=dict)  # (feed id, AAR channel) held to listen
 
 

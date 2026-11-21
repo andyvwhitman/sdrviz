@@ -131,7 +131,6 @@ class Prefs(SQLModel, table=True):
     """The single row of operator preferences."""
 
     id: int = Field(default=1, primary_key=True)
-    listen_feed: str | None = None  # the node Live Ops listens to; None: the first online node, else the first feed
     muted: list[str] = Field(default_factory=list, sa_column=Column(JSON))
     solo: list[str] = Field(default_factory=list, sa_column=Column(JSON))
     record: list[str] = Field(default_factory=list, sa_column=Column(JSON))

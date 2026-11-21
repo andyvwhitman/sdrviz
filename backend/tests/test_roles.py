@@ -148,12 +148,9 @@ def test_viewer_reads(viewer, path):
     assert viewer.get(path).status_code == 200
 
 
-def test_viewer_can_ack_and_keep_personal_prefs_but_not_switch_the_node(viewer):
+def test_viewer_can_ack_and_keep_personal_prefs(viewer):
     prefs = viewer.get("/api/prefs").json()
     assert viewer.patch("/api/prefs", json={"muted": ["x"], "volume": {"x": 0.5}}).status_code == 200
-    other = "feed-bay" if prefs["listen_feed"] != "feed-bay" else "feed-lnd"
-    assert viewer.patch("/api/prefs", json={"listen_feed": other}).status_code == 403
-    assert viewer.put("/api/prefs", json={**prefs, "listen_feed": other}).status_code == 403
     assert viewer.put("/api/prefs", json={**prefs, "muted": ["y"]}).status_code == 200
     assert viewer.post("/api/feeds/feed-x/ack", json={"reason": "seen"}).status_code != 403
 

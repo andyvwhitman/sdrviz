@@ -23,6 +23,15 @@ export function cyclicAge(now: number, then: number): number {
   return age > DAY_S - CLOCK_SKEW_S ? 0 : age;
 }
 
+/**
+ * Seconds a key-up has been on the air. A key-up lasts minutes, so the difference is read as a signed one on the
+ * cyclic day (-12 h to +12 h) and a key-up that "has not happened yet" counts 0. Whatever the clocks disagree by,
+ * it can never read as almost a day (the "1436:xx" timer of a key-up stamped 4 minutes ahead).
+ */
+export function keyAge(now: number, then: number): number {
+  return Math.max(0, wrapDay(now - then + DAY_S / 2) - DAY_S / 2);
+}
+
 /** "14:07:30" or "14:07" -> 50850; null when the text has no clock in it. */
 export function parseClock(text: string): number | null {
   const m = text.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?/);

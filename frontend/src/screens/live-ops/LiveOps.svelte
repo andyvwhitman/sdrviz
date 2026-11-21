@@ -16,10 +16,11 @@
   import { feedName } from "$lib/hud/roles";
   import { identityFrom, sharedFrequencySuffix, tileInputFrom, type TileInput } from "$lib/hud/tile";
     import { router } from "$lib/router.svelte";
-  import { cyclicAge } from "$lib/time";
+  import { cyclicAge, keyAge } from "$lib/time";
   import { levels } from "$lib/stores/levels.svelte";
   import { link as linkStore } from "$lib/stores/link.svelte";
   import { live } from "$lib/stores/live.svelte";
+  import { listen } from "$lib/stores/listen.svelte";
   import { prefs } from "$lib/stores/prefs.svelte";
   import { shell } from "$lib/stores/shell.svelte";
   import { simClock } from "$lib/stores/simClock.svelte";
@@ -75,9 +76,6 @@
     },
   );
   onMount(() => simClock.start());
-  $effect(() => {
-    if (snapshot) simClock.sync(snapshot.t_offset_s);
-  });
   $effect(() => {
     if (snapshot) motion.observe(snapshot.channels);
   });
@@ -187,7 +185,7 @@
     if (known && !untrack(() => router.query("select")) && !untrack(() => router.query("inspect"))) router.setQuery({ select: last });
   });
   const closeInspector = () => router.setQuery({ inspect: null });
-  const showFeed = (feedId: string) => prefs.update({ listen_feed: feedId }).catch((e) => console.warn("node not switched", e));
+  const showFeed = (feedId: string) => listen.choose(feedId);
   const inspectFeedId = (feedId: string) => router.setQuery({ inspect: feedId });
 
   /* ---- the edit window (the tile's `⋯`, or `E` on a focused tile): a floating window on desktop, a layer on a phone */
@@ -229,7 +227,7 @@
     if (held) base.elapsed = held.elapsed;
     else if (dropAge == null) {
       const active = c.tx ? snapshot!.active_transmissions.find((row) => row.id === c.tx!.tx_id) : undefined;
-      if (active) base.elapsed = Math.max(0, cyclicAge(now, active.t_offset_s));
+      if (active) base.elapsed = keyAge(now, active.t_offset_s);
       if (c.last_heard && !c.tx) base.lastS = cyclicAge(now, c.last_heard.end_t);
       const level = levels.last[c.id];
       if (level && (c.tx || c.state === "squelch")) base.meter = { ...base.meter, db: level.db, peak: level.peak };
@@ -249,12 +247,12 @@
     const held = motion.held.get(c.id);
     if (held) return held.env;
     const active = c.tx ? snapshot!.active_transmissions.find((row) => row.id === c.tx!.tx_id) : undefined;
-    const elapsed = c.tx ? Math.max(0, active ? cyclicAge(now, active.t_offset_s) : c.tx.elapsed_s) : 0;
+    const elapsed = c.tx ? (active ? keyAge(now, active.t_offset_s) : c.tx.elapsed_s) : 0;
     return envelopeOf(c, elapsed, active?.words);
   }
 
   function leverPressed(channelId: string, key: LeverKey): void {
-    prefs.toggle(LEVER_LIST[key], channelId).catch((error) => console.warn("lever not saved", error));
+    prefs.toggle(LEVER_LIST[key], channelId);
   }
 
   /** The columns the tile grid has right now (it re-flows with the window). */

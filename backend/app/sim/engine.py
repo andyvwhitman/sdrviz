@@ -214,6 +214,7 @@ class ReplayEngine:
                 train_id=tx.train_id,
                 place_id=tx.place_id,
                 t=tx.t,
+                now=t,  # the server clock when sent: the one clock key-up timers count against
                 clock_tenths=hms(tx.t, tenths=True),
                 row=row_view(world, tx, tx.t) | {"elapsed_s": 0.0, "receptions": list(tx.receptions)},
             )

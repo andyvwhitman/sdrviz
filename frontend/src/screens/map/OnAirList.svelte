@@ -4,7 +4,7 @@
   import * as fmt from "$lib/hud/fmt";
   import { live } from "$lib/stores/live.svelte";
   import { simClock } from "$lib/stores/simClock.svelte";
-  import { cyclicAge } from "$lib/time";
+  import { keyAge } from "$lib/time";
   import type { TxRow } from "$lib/types/live";
 
   interface Props {
@@ -16,7 +16,7 @@
   let { rows, demoMs = null, demoRow }: Props = $props();
 
   /** Running time on the sim clock (tenths); a frozen sim shows the snapshot's own value. */
-  const elapsed = (t: TxRow): number => (live.simSpeed === 0 ? (t.elapsed_s ?? 0) : Math.max(0, cyclicAge(simClock.now, t.t_offset_s)));
+  const elapsed = (t: TxRow): number => (live.simSpeed === 0 ? (t.elapsed_s ?? 0) : keyAge(simClock.now, t.t_offset_s));
 
   const visible = $derived(rows.filter((t) => !(demoMs !== null && t === demoRow && demoMs < 0)));
 </script>

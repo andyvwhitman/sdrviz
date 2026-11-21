@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Glyph from "$lib/components/Glyph.svelte";
   /**
    * A route in the side panel: its timetable for a day (GET /transit/routes/{id}?date=), one grid per direction with
    * the stops down the side and the trips across, scrolling sideways when there are more trips than room.
@@ -43,9 +44,9 @@
 <Panel title={route?.name ?? "ROUTE"} kind="{route?.agency ?? ''} · TIMETABLE" label="Route {route?.name ?? routeId}" {...controls}>
   <div class="rp-day">
     {#if route?.color}<span class="rp-swatch" style:background="#{route.color}" aria-hidden="true"></span>{/if}
-    <Chip text="‹" button kind="filter" title="Previous day" onclick={() => ondate(shiftDate(day, -1))} />
+    <Chip button kind="filter" title="Previous day" onclick={() => ondate(shiftDate(day, -1))}><Glyph name="chevron-left" /></Chip>
     <span class="rp-date">{day}{date === null || date === today() ? " · TODAY" : ""}</span>
-    <Chip text="›" button kind="filter" title="Next day" onclick={() => ondate(shiftDate(day, 1))} />
+    <Chip button kind="filter" title="Next day" onclick={() => ondate(shiftDate(day, 1))}><Glyph name="chevron-right" /></Chip>
     {#if day !== today()}<Chip text="TODAY" button kind="filter" onclick={() => ondate(today())} />{/if}
   </div>
   {#if timetable}

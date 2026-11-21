@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Glyph from "$lib/components/Glyph.svelte";
   /**
    * FREQUENCY: a logbook for one radio channel. Identity and the live datum on top, the log of every saved
    * transmission below, each with a transcript and a play control. A responsive page (layout: "page").
@@ -332,7 +333,7 @@
   {#if unknown}
     <section class="fq__plate">
       <p class="fq__plate-k">UNKNOWN FREQUENCY · {frequencyId}</p>
-      <a href="/live" onclick={followLink}>LIVE OPS →</a>
+      <a href="/live" onclick={followLink}>LIVE OPS <Glyph name="arrow-right" /></a>
     </section>
   {:else if info}
     <div class="fq__top" bind:clientHeight={topHeight}>
@@ -389,7 +390,7 @@
             <p class="fq__meta">{[info.railroad, info.use, info.confidence ? `CONF ${info.confidence}` : ""].filter(Boolean).join(" · ")}</p>
             {#if info.notes}<p class="fq__notes">{info.notes}</p>{/if}
             {#each info.sources ?? [] as source (source)}
-              <a class="fq__src" href={source} target="_blank" rel="noreferrer noopener">{host(source)} ↗</a>
+              <a class="fq__src" href={source} target="_blank" rel="noreferrer noopener">{host(source)} <Glyph name="arrow-up-right" /></a>
             {/each}
           </section>
         {/if}

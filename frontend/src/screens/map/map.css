@@ -37,18 +37,8 @@
 .mp-readout__row { display: flex; align-items: center; gap: 16px; }
 .mp-readout .hero__stack .b { color: var(--ink-2); }
 
-.mp-onair { position: absolute; left: 24px; bottom: 36px; display: grid; gap: 2px; z-index: 3; pointer-events: none; }
 .mp-readout { max-width: calc(100% - 520px - var(--pn-w, 0px)); }
 .mp-readout .tl { pointer-events: auto; }
-.mp-onair__head { font: 500 var(--fs-11)/16px var(--font-label); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--ink-3); }
-.mp-onair__row {
-  display: grid; grid-template-columns: 18px 44px 112px 104px auto; align-items: center; column-gap: 8px;
-  height: 22px; font: 400 var(--fs-12)/1 var(--font-data); color: var(--ink); white-space: nowrap;
-}
-.mp-onair__row .via { color: var(--ink-2); }
-.mp-onair__row .tm  { color: var(--state-tx); font-weight: 500; text-align: right; min-width: 56px; }
-.mp-onair__row .who { overflow: hidden; text-overflow: ellipsis; }
-.mp-onair__row .ch  { font-weight: 500; }
 
 .mp-ctl { position: absolute; right: calc(24px + var(--pn-w, 0px)); top: 16px; display: flex; align-items: center; gap: 8px; z-index: 3; }
 .mp-ctl .mp-zoom { font: 400 var(--fs-12)/1 var(--font-data); color: var(--ink-2); padding: 0 0 0 8px; }
@@ -83,7 +73,7 @@
 .hud.mp-svg text { paint-order: stroke fill; stroke: var(--bg-void); stroke-width: 3px; stroke-linejoin: round; }
 
 /* overlays carry the data-block knockout: a bg-void plate 4 px past their content (box-shadow, so nothing moves) */
-.mp-readout, .mp-ctl, .mp-attrib, .mp-cursor, .mp-onair:not(:empty) { background: var(--bg-void); box-shadow: 0 0 0 4px var(--bg-void); }
+.mp-readout, .mp-ctl, .mp-attrib, .mp-cursor { background: var(--bg-void); box-shadow: 0 0 0 4px var(--bg-void); }
 
 /* terminal buttons: right edge, under the mode buttons; one per terminal with track detail in view */
 .mp-terms { position: absolute; right: calc(24px + var(--pn-w, 0px)); top: 56px; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; z-index: 3;
@@ -127,7 +117,7 @@
 .is-phone .mp-origin { display: none; }
 .is-phone .mp-readout { left: 12px; top: 12px; max-width: calc(100% - 24px); gap: 8px; }
 .is-phone .mp-readout .hero__big { font-size: var(--fs-32); line-height: 36px; }
-.is-phone .mp-onair, .is-phone .mp-cursor, .is-phone .mp-zoom { display: none; }
+.is-phone .mp-cursor, .is-phone .mp-zoom { display: none; }
 /* the mode chips sit along the foot, wrapping, clear of the readout */
 .is-phone .mp-ctl { left: 12px; right: 12px; top: auto; bottom: 36px; flex-wrap: wrap; gap: 8px; }
 .is-phone .mp-terms { right: 12px; top: auto; bottom: 120px; }

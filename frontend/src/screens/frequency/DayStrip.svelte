@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Glyph from "$lib/components/Glyph.svelte";
   /**
    * The day strip (M26, size L): one column per 15 minutes, height = airtime on a fixed ladder (FS 1M ... 15M),
    * a ruler in the corridor's local time, the now line, the busiest bucket and long silences annotated. Hover,
@@ -139,8 +140,8 @@
   <div class="ds__read">
     {#if range && onrange}<RangeSwitch {range} {dayLabel} {onrange} />{:else}<span class="ds__day">{heading}</span>{/if}
     <span class="ds__steps">
-      <button type="button" aria-label="Previous day" disabled={!canBack} onclick={() => onstep(-1)}>‹</button>
-      <button type="button" aria-label="Next day" disabled={!canForward} onclick={() => onstep(1)}>›</button>
+      <button type="button" aria-label="Previous day" disabled={!canBack} onclick={() => onstep(-1)}><Glyph name="chevron-left" size={14} /></button>
+      <button type="button" aria-label="Next day" disabled={!canForward} onclick={() => onstep(1)}><Glyph name="chevron-right" size={14} /></button>
     </span>
     {#if phone && day}<span class="ds__fs">FS {scale}M</span>{/if}
     <span class="ds__totals" aria-live="off">{reading}</span>

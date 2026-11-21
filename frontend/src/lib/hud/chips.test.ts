@@ -11,26 +11,15 @@ const stateWith = (...active: ReturnType<typeof row>[]) =>
     active_transmissions: active,
   }) as unknown as Parameters<typeof headerChips>[0];
 
-const keyed = (...active: ReturnType<typeof row>[]) => headerChips(stateWith(...active), { txChip: true }).find((c) => c.kind === "tx")?.text;
-
-describe("KEYED chip", () => {
-  it("lists every keyed channel", () => {
-    expect(keyed(row("CH54"), row("CH08"), row("CH66"))).toBe("KEYED · CH54 · CH08 · CH66");
+describe("no KEYED chip", () => {
+  it("never adds a chip for what is on the air (the footer's key-up strip shows it)", () => {
+    const state = stateWith(row("CH54"), row("CH08"));
+    expect(headerChips(state).some((c) => c.kind === "tx" || c.text.startsWith("KEYED"))).toBe(false);
   });
 });
 
 describe("compactChips", () => {
-  const chips = (...active: ReturnType<typeof row>[]) => headerChips(stateWith(...active), { txChip: true });
-
-  it("shows a KEYED count and keeps the full list in the tooltip", () => {
-    const keyed = compactChips(chips(row("CH22"), row("CH12"))).find((c) => c.id === "keyed");
-    expect(keyed?.text).toBe("KEYED · 2");
-    expect(keyed?.title).toBe("KEYED · CH22 · CH12");
-  });
-
-  it("counts an off-bank key-up as one", () => {
-    expect(compactChips(chips(row("CH22"), row("CH66"))).find((c) => c.id === "keyed")?.text).toBe("KEYED · 2");
-  });
+  const chips = (...active: ReturnType<typeof row>[]) => headerChips(stateWith(...active));
 
   it("joins FEEDS and ASR into one chip", () => {
     const out = compactChips(chips());

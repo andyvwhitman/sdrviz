@@ -1,5 +1,6 @@
 <script lang="ts">
   /** The log of one frequency: every transmission, newest first, with day dividers, paging and empty states. */
+  import Glyph from "$lib/components/Glyph.svelte";
   import PositionGlyph from "$lib/components/PositionGlyph.svelte";
   import * as fmt from "$lib/hud/fmt";
   import { followLink } from "$lib/router.svelte";
@@ -91,7 +92,7 @@
   <span class="lg__top" use:top></span>
 
   {#if store.incoming.length && !attop}
-    <button class="lg__new" type="button" onclick={() => (store.showIncoming(), root?.scrollIntoView({ block: "start" }))}>▲ {store.incoming.length} NEW</button>
+    <button class="lg__new" type="button" onclick={() => (store.showIncoming(), root?.scrollIntoView({ block: "start" }))}><Glyph name="caret-up" size={10} /> {store.incoming.length} NEW</button>
   {/if}
 
   <ul class="lg__list">

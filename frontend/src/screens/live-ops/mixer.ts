@@ -6,17 +6,12 @@
 
 import type { Prefs } from "$lib/types/api";
 
-/**
- * The wire calls the per-channel volumes `volume` (backend `PrefsModel`); `lib/types/api.ts` still
- * says `volumes`. Both helpers go through one cast until the shared type is fixed (docs/requests/live-ops.md).
- */
-type WirePrefs = Prefs & { volume?: Record<string, number> };
-
-export const volumesOf = (prefs: Prefs | null): Record<string, number> => (prefs as WirePrefs | null)?.volume ?? {};
+export const volumesOf = (prefs: Prefs | null): Record<string, number> => prefs?.volume ?? {};
 
 /** The `prefs.update` patch that sets one channel's volume. */
-export const volumePatch = (prefs: Prefs, channelId: string, volume: number): Partial<Prefs> =>
-  ({ volume: { ...volumesOf(prefs), [channelId]: volume } }) as unknown as Partial<Prefs>;
+export const volumePatch = (prefs: Prefs, channelId: string, volume: number): Partial<Prefs> => ({
+  volume: { ...volumesOf(prefs), [channelId]: volume },
+});
 
 export interface Mix {
   muted: ReadonlySet<string>;

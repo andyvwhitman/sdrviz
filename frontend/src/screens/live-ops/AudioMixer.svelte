@@ -29,12 +29,12 @@
   const gain = $derived(Math.round(gainOf(mix, channelId) * 100));
 
   function commit(): void {
-    if (draft == null || !prefs.value) return;
+    if (draft == null) return;
     const patch = volumePatch(prefs.value, channelId, draft / 100);
     draft = null;
-    prefs.update(patch).catch((error) => console.warn("volume not saved", error));
+    prefs.update(patch);
   }
-  const press = (key: LeverKey) => prefs.toggle(LEVER_LIST[key], channelId).catch((error) => console.warn("lever not saved", error));
+  const press = (key: LeverKey) => prefs.toggle(LEVER_LIST[key], channelId);
 
   /** What the line under the row says, or nothing when it is only the plain gain. */
   const note = $derived.by((): string | null => {

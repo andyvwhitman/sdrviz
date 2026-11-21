@@ -16,6 +16,14 @@ agent per lane in its own worktree; clean-worktree tests, push, deploy, verify o
   (`frontend/src/lib/time.ts` `cyclicAge`). When `then` is ahead of the client's idea of now by more than the 120 s skew
   allowance, the age wraps to almost a day: 1436 min is a key-up stamped about 4 min "in the future". Root-cause the
   clock the key-up time comes from (real node key-ups against the sim clock) and make the server the one clock.
+  **Root cause (lane A):** the key-up stamp was never the problem: the server stamps every key-up, node or replay, with
+  its own clock and ignores the node's `t`. The client's clock was: a server with `SDRVIZ_SIM=false` (nodes only)
+  sent no `tick` at all (only the replay engine and the rtl_tcp radio did), so the page's clock was anchored on a
+  snapshot and then ran on `performance.now()`, which stops while a laptop sleeps or a phone is locked. After a 4 minute
+  pause the page was 4 minutes behind, a new key-up was stamped "ahead" of it, and `cyclicAge` wrapped it to 1436 min.
+  Fix: the runtime sends `tick` every second in every mode, `keyup` carries the server's `now`, the page re-anchors on
+  both, and `keyAge` can never turn a future stamp into almost a day. Tests: `backend/tests/test_server_clock.py`,
+  `frontend/src/lib/time.test.ts`. Protocol notes: docs/sprint-6/api-changes.md.
 
 ## Lanes
 

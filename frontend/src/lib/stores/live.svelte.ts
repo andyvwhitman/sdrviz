@@ -17,6 +17,7 @@ class LiveStore {
   /** Apply one server message, then tell subscribers (live-ops listens for keyup, lofar_row, ...). */
   apply(message: ServerMessage): void {
     if (message.type === "hello") this.simSpeed = message.sim.speed;
+    else if (message.type === "tick" && message.speed !== undefined) this.simSpeed = message.speed;
     else if (message.type === "snapshot") this.state = snapshotOf(message);
     else if (this.state) applyMessage(this.state, message);
     this.handlers.get(message.type)?.forEach((handler) => handler(message));

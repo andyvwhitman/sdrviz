@@ -8,20 +8,17 @@
   import * as fmt from "$lib/hud/fmt";
   import { live } from "$lib/stores/live.svelte";
   import { simClock } from "$lib/stores/simClock.svelte";
-  import { cyclicAge } from "$lib/time";
+  import { keyAge } from "$lib/time";
   import type { TxRow } from "$lib/types/live";
 
   const MAX_ROWS = 2;
 
   onMount(() => simClock.start());
-  $effect(() => {
-    if (live.state) simClock.sync(live.state.t_offset_s);
-  });
 
   const rows = $derived(live.state?.active_transmissions ?? []);
   const shown = $derived(rows.slice(0, MAX_ROWS));
   const more = $derived(rows.length - shown.length);
-  const elapsed = (t: TxRow): number => (live.simSpeed === 0 ? (t.elapsed_s ?? 0) : Math.max(0, cyclicAge(simClock.now, t.t_offset_s)));
+  const elapsed = (t: TxRow): number => (live.simSpeed === 0 ? (t.elapsed_s ?? 0) : keyAge(simClock.now, t.t_offset_s));
 </script>
 
 {#if shown.length}

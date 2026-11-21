@@ -61,15 +61,14 @@ def create_schema(engine: Engine) -> None:
     if first_assignments:
         _assign_from_hears(engine)
     _add_recording_node_id(engine)
-    _move_prefs_to_listen_feed(engine)
+    _drop_old_prefs_columns(engine)
 
 
-def _move_prefs_to_listen_feed(engine: Engine) -> None:
-    """Preferences from before banks went: `listen_feed` is added, `active_bank` and `displayed_feed` dropped."""
+def _drop_old_prefs_columns(engine: Engine) -> None:
+    """Preferences from before banks went lose `active_bank` and `displayed_feed`. `listen_feed` (the node listened to
+    is each client's own now) stays in old databases as a nullable column nothing reads or writes."""
     with engine.begin() as conn:
         columns = {row[1] for row in conn.execute(text("PRAGMA table_info(prefs)"))}
-        if "listen_feed" not in columns:
-            conn.execute(text("ALTER TABLE prefs ADD COLUMN listen_feed VARCHAR"))
         for old in ("active_bank", "displayed_feed"):
             if old in columns:
                 conn.execute(text(f"ALTER TABLE prefs DROP COLUMN {old}"))

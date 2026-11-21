@@ -13,7 +13,7 @@ from .audio.synth import missing_tools
 from .config import Settings
 from .db import create_schema, make_engine, open_session, seed_if_empty
 from .live import protocol
-from .live.hub import Hub
+from .live.hub import Client, Hub
 from .live.listen import Listening
 from .models import FeedAck, Prefs, Receiver
 from .nodes.schemas import ChannelsIn
@@ -31,7 +31,7 @@ from .sim.engine import ReplayEngine
 from .sim.health import Health
 from .sim.live_state import SimInputs
 from .sim.scenarios import SCENARIOS, ScenarioSpec
-from .sim.timefmt import parse_clock
+from .sim.timefmt import hms, parse_clock
 from .sim.world import World, load_world
 from .transit import TransitService
 from .transit.service import load_places
@@ -59,6 +59,7 @@ class Runtime:
         self._tasks: set[asyncio.Task] = set()
         self._retention: asyncio.Task | None = None
         self._sweeper: asyncio.Task | None = None
+        self._ticker: asyncio.Task | None = None
         self.data: SimData = load_sim_data(self.db, settings)
         self.receiver: Receiver = load_receiver(self.db, settings)
         self.world: World = load_world(self.db, settings, self.receiver, self.nodes)
@@ -111,6 +112,8 @@ class Runtime:
         self.transcription.start()
         self._retention = asyncio.create_task(retention.run_forever(self), name="retention")
         self._sweeper = asyncio.create_task(self._sweep_holds(), name="listen-holds")
+        if not self.settings.sim:  # the replay engine sends the ticks otherwise
+            self._ticker = asyncio.create_task(self._tick_loop(), name="clock-tick")
         if self.transit:
             self.transit.start()
         if missing := missing_tools():
@@ -124,7 +127,23 @@ class Runtime:
             await asyncio.sleep(1.0)
             self.listening.sweep()
 
+    async def _tick_loop(self) -> None:
+        while True:
+            self.send_tick()
+            await asyncio.sleep(1.0)
+
+    def send_tick(self) -> None:
+        """The server clock, once a second: clients re-anchor their key-up timers on it (see docs/sprint-6)."""
+        t = self.clock.now()
+        self.hub.broadcast(
+            protocol.message("tick", t=t, clock=hms(t), clock_tenths=hms(t, tenths=True), speed=self.clock.speed)
+        )
+
     async def stop(self) -> None:
+        if self._ticker:
+            self._ticker.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await self._ticker
         if self._sweeper:
             self._sweeper.cancel()
             with contextlib.suppress(asyncio.CancelledError):
@@ -150,27 +169,34 @@ class Runtime:
     def inputs(self) -> SimInputs:
         return SimInputs(self.world, self.data, self.health, self.nodes)
 
-    @property
-    def listen_feed(self) -> str | None:
-        """The node Live Ops listens to: the chosen one, else the first online node, else the first feed."""
+    def resolve_listen(self, wanted: str | None) -> str | None:
+        """The node a client listens to: the one it chose, else the first online node, else the first feed."""
         feeds = self.world.feeds
-        if self.prefs.listen_feed in feeds:
-            return self.prefs.listen_feed
+        if wanted in feeds:
+            return wanted
         online = [feed_id for feed_id in self.nodes.online_feed_ids() if feed_id in feeds]
         return (online or list(feeds) or [None])[0]
 
-    def live_state(self) -> dict:
+    def live_state(self, listen_feed: str | None = None) -> dict:
+        """The LiveState for a client that chose `listen_feed` (None: the default)."""
         return live_state.build(
             self.inputs,
             self.clock.now(),
-            self.listen_feed,
+            self.resolve_listen(listen_feed),
             live=self.radio.events,
             scenario=self.scenario,
             speed=self.clock.speed,
         )
 
     def publish_snapshot(self) -> None:
-        self.hub.broadcast(protocol.message("snapshot", state=self.live_state()))
+        """A fresh snapshot to every client, built once per node being listened to (each client has its own)."""
+        by_feed: dict[str | None, list[Client]] = {}
+        for client in list(self.hub.clients):
+            by_feed.setdefault(self.resolve_listen(client.listen_feed), []).append(client)
+        for feed_id, clients in by_feed.items():
+            text = protocol.message("snapshot", state=self.live_state(feed_id))
+            for client in clients:
+                self.hub.send_to(client, text)
 
     # --- changes -----------------------------------------------------------------
 
@@ -251,7 +277,7 @@ class Runtime:
         return self.prefs
 
     def jump(self, scenario: str | None = None, clock: str | None = None, speed: float | None = None) -> None:
-        """Move the sim clock. A scenario also selects its node and clears user acknowledgements."""
+        """Move the sim clock. A scenario clears user acknowledgements (its node is the caller's to listen to)."""
         if scenario:
             spec = SCENARIOS[scenario]
             self.scenario = spec
@@ -259,7 +285,6 @@ class Runtime:
                 session.exec(delete(FeedAck).where(col(FeedAck.source) == "user"))
                 session.commit()
             self.reload_health()
-            self.save_prefs(self.prefs.model_copy(update={"listen_feed": spec.feed}))
             self.clock.jump(spec.t, self._speed_or_default(speed))
         elif clock:
             self.scenario = None

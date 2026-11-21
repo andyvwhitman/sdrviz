@@ -8,7 +8,7 @@ import type { LiveState } from "$lib/types/live";
 import type { Approaching, ApproachingQuery, Board, Line, RouteTimetable, Stop, StationBoard, TransitSourceStatus, Trip, Vehicle } from "$lib/types/transit";
 import type { SourceConfig, TransitSource } from "$lib/types/sources";
 import type { BackendStats } from "../../screens/settings/types";
-import type { Prefs, SessionInfo, SimJump, SimStatus } from "$lib/types/api";
+import type { SessionInfo, SimJump, SimStatus } from "$lib/types/api";
 import type { DayActivity, FrequencyInfo, Recording, WeekActivity } from "$lib/types/recordings";
 import type { Frequency, FrequencyBody } from "$lib/types/frequencies";
 
@@ -84,12 +84,6 @@ export const api = {
   system: () => get<LiveState["system"] & { version: string; sim: boolean }>("/system"),
   backend: () => get<BackendStats>("/system/backend"),
   liveState: () => get<LiveState>("/live/state"),
-  prefs: {
-    get: () => get<Prefs>("/prefs"),
-    put: (prefs: Prefs) => put<Prefs>("/prefs", prefs),
-    /** Only the fields sent change on the server (a stale copy cannot undo another tab's settings). */
-    patch: (fields: Partial<Prefs>) => patch<Prefs>("/prefs", fields),
-  },
   sim: {
     get: () => get<SimStatus>("/sim"),
     jump: (jump: SimJump) => post<SimStatus>("/sim/jump", jump),

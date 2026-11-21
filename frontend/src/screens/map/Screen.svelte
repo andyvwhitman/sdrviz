@@ -201,9 +201,6 @@
 
   // ---- the ON AIR timers count tenths on the sim clock
   onMount(() => simClock.start());
-  $effect(() => {
-    if (snap) simClock.sync(snap.t_offset_s);
-  });
 
   // ---- corner readout
   const counts = $derived(data && snap ? { feeds: snap.feeds.length, stations: data.places.stations.length, detectors: data.places.detectors.length, trains: snap.trains.tracked_count + transit.vehicles.length, live: transit.vehicles.length, sim: snap.trains.tracked_count } : null);

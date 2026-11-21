@@ -616,7 +616,8 @@ def test_node_health_fills_the_feed_telemetry_and_state(client):
 
 
 def node_channels(client) -> list[dict]:
-    return [c for c in client.get("/api/live/state").json()["channels"] if "node-1" in c["heard_by"]]
+    state = client.get("/api/live/state", params={"listen_feed": "node-1"}).json()
+    return [c for c in state["channels"] if "node-1" in c["heard_by"]]
 
 
 def test_tiles_follow_the_node_state_not_the_replay(client):
@@ -624,7 +625,6 @@ def test_tiles_follow_the_node_state_not_the_replay(client):
     try:
         node.send(node_health())
         wait_for(lambda: node_feed(client)["state"] == "ok")
-        client.patch("/api/prefs", json={"listen_feed": "node-1"})
         channels = node_channels(client)
         assert channels and all(c["coverage"]["state"] == "ok" for c in channels)
 

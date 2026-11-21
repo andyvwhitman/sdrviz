@@ -68,9 +68,9 @@ def backend(rt: RT) -> dict[str, Any]:
 
 
 @router.get("/live/state")
-def live_state(rt: RT) -> dict[str, Any]:
-    """The current LiveState: the same object the WebSocket sends as `snapshot`."""
-    return rt.live_state()
+def live_state(rt: RT, listen_feed: str | None = None) -> dict[str, Any]:
+    """The current LiveState for a client listening to `listen_feed`: what the WebSocket sends as `snapshot`."""
+    return rt.live_state(listen_feed)
 
 
 # --- process readings (stdlib only) -----------------------------------------------------

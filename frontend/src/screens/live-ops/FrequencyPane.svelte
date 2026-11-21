@@ -13,7 +13,7 @@
   import { session } from "$lib/stores/session.svelte";
   import { simClock } from "$lib/stores/simClock.svelte";
   import { ui } from "$lib/stores/ui.svelte";
-  import { cyclicAge } from "$lib/time";
+  import { keyAge } from "$lib/time";
   import type { FrequencyInfo, Recording } from "$lib/types/recordings";
   import { ActivityStore } from "../frequency/activityStore.svelte";
   import { clockOf, DEFAULT_TZ, dayHeading, dayKey, dayName, nextNewer } from "../frequency/frequency";
@@ -231,7 +231,7 @@
   /** seconds keyed so far, or null; whole seconds, so the strip's current bucket grows once a second */
   const keyedElapsed = $derived.by(() => {
     if (!activeTx && !channel?.tx) return null;
-    return activeTx ? Math.max(0, cyclicAge(simClock.now, activeTx.t_offset_s)) : (channel?.tx?.elapsed_s ?? 0);
+    return activeTx ? keyAge(simClock.now, activeTx.t_offset_s) : (channel?.tx?.elapsed_s ?? 0);
   });
   const keyed = $derived(keyedElapsed !== null);
   const onAir = $derived(keyedElapsed !== null && store?.fromHead && !jumped ? { startedAt: nowMs - keyedElapsed * 1000, elapsed: keyedElapsed } : null);

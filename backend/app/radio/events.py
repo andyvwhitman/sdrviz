@@ -81,6 +81,7 @@ class LiveEvents:
                 train_id=None,
                 place_id=None,
                 t=t,
+                now=t,  # the server clock when sent: the one clock key-up timers count against
                 clock_tenths=hms(t, tenths=True),
                 row=row,
             )
@@ -112,9 +113,8 @@ class LiveEvents:
             self.hub.broadcast(protocol.message("level", t=self._now(), levels=levels))
 
     def each_second(self) -> None:
-        """Clock tick, plus the timers and LAST readouts of channels that moved recently."""
+        """The timers and LAST readouts of channels that moved recently (the clock tick is the runtime's)."""
         t = self._now()
-        self.hub.broadcast(protocol.message("tick", t=t, clock=hms(t), clock_tenths=hms(t, tenths=True), speed=1.0))
         recent = [cid for cid in self.last_end if self._since_end(cid, t) < CHANNEL_RANGES["recent-dim"] + 1]
         for cid in {*self.on_air, *recent}:
             self._send_channel(cid)

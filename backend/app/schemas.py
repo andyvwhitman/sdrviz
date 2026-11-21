@@ -24,10 +24,11 @@ class SimOut(BaseModel):
     scenario: str | None
     clock: str
     speed: float
+    scenario_feed: str | None = None  # the node a scenario is about; the caller may choose to listen to it
 
 
 class JumpIn(BaseModel):
-    """Move the replay clock. A scenario also selects the node Live Ops listens to; `speed: 0` freezes the clock."""
+    """Move the replay clock. A scenario names the node it is about (`scenario_feed` in the answer); `speed: 0` freezes the clock."""
 
     scenario: ScenarioName | None = None
     clock: str | None = None
@@ -46,7 +47,6 @@ class AckIn(BaseModel):
 
 
 class PrefsModel(BaseModel):
-    listen_feed: str | None = None  # the node Live Ops listens to; null: the default (first online node)
     muted: list[str] = []
     solo: list[str] = []
     record: list[str] = []

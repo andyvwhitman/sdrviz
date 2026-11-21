@@ -24,6 +24,8 @@ export interface TickMessage {
   t: number;
   clock: string;
   clock_tenths: string;
+  /** sim clock speed (1 live, 0 frozen) */
+  speed?: number;
 }
 export interface ChannelMessage extends Pick<Channel, "id" | "state" | "tx" | "last_heard" | "coverage" | "channel_fault" | "status_readout"> {
   type: "channel";
@@ -41,6 +43,8 @@ export interface KeyupMessage {
   train_id: string | null;
   place_id: string | null;
   t: number;
+  /** the server clock when this was sent (the key-up's elapsed time counts against it) */
+  now?: number;
   /** the new transcript row, state "decoding" */
   row: TxRow;
 }
@@ -120,6 +124,8 @@ export type MessageOf<T extends ServerMessageType> = Extract<ServerMessage, { ty
 export type ClientOp =
   | { op: "audio"; channels: string[] }
   | { op: "watch"; feed_id: string | null }
+  /** the node this connection shows: the server answers with a snapshot for it, to this connection only */
+  | { op: "listen"; feed_id: string }
   /** hold to listen: send on press and again every 5 s; the server drops it after 15 s without one */
   | { op: "listen_hold"; feed_id: string; aar_channel: number }
   /** stop listening; both fields optional (none: every hold of this connection) */

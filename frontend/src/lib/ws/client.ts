@@ -14,9 +14,11 @@ export interface LiveSocketHandlers {
   onBinary(frame: BinaryFrame): void;
 }
 
-export function liveSocketUrl(): string {
+/** The socket URL; `listenFeed` is the node this browser chose (none: the server's default). */
+export function liveSocketUrl(listenFeed: string | null = null): string {
   const scheme = location.protocol === "https:" ? "wss" : "ws";
-  return `${scheme}://${location.host}/ws/live`;
+  const query = listenFeed ? `?listen=${encodeURIComponent(listenFeed)}` : "";
+  return `${scheme}://${location.host}/ws/live${query}`;
 }
 
 export class LiveSocket {
@@ -27,7 +29,7 @@ export class LiveSocket {
 
   constructor(
     private readonly handlers: LiveSocketHandlers,
-    private readonly url: () => string = liveSocketUrl,
+    private readonly url: () => string = () => liveSocketUrl(),
   ) {}
 
   start(): void {

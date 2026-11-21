@@ -4,7 +4,7 @@
  */
 
 import { feedName } from "$lib/hud/roles";
-import { cyclicAge } from "$lib/time";
+import { cyclicAge, keyAge } from "$lib/time";
 import type { Channel, TxRow } from "$lib/types/live";
 
 export type Hero =
@@ -47,7 +47,7 @@ export function heroFor({ channels, active, channelIds, now }: HeroInput): Hero 
       aar4: first.aar4,
       label: first.label,
       via: channel?.tx?.via ?? feedName(first.feed_id),
-      elapsedS: Math.max(0, cyclicAge(now, first.t_offset_s)),
+      elapsedS: keyAge(now, first.t_offset_s),
       others: others.map((row) => ({ id: row.frequency_id, aar4: row.aar4 })),
       othersLabel: others.length ? `+${others.length} · ${others.map((row) => row.aar4).join(" · ")}` : null,
     };

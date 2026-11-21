@@ -68,6 +68,8 @@
     /** motion study: ms since the squelch crossing, or null */
     demoMs: number | null;
     onselect: (key: string) => void;
+    /** a click on empty map (not a pan): the page closes what it has open */
+    onempty?: () => void;
     onpointer: (lonLat: LonLat | null) => void;
     onview: (zoom: number, moved: boolean) => void;
     /** the terminals with track detail inside the current view (for the terminal buttons) */
@@ -94,7 +96,7 @@
     /** width of the side panel docked on the right while one is open, else 0 */
     panelWidth?: number;
   }
-  let { data, measure, mode, width, height, selection, inspectorWidth, overlays, pings, demoMs, onselect, onpointer, onview, onareas, focus, locate = null, onstation, onpingdone, vehicleId = null, stopId = null, onvehicle, onstop, onwindow, centre = null, reveal = null, panelWidth = 0, national = null }: Props = $props();
+  let { data, measure, mode, width, height, selection, inspectorWidth, overlays, pings, demoMs, onselect, onempty, onpointer, onview, onareas, focus, locate = null, onstation, onpingdone, vehicleId = null, stopId = null, onvehicle, onstop, onwindow, centre = null, reveal = null, panelWidth = 0, national = null }: Props = $props();
 
   const snap = $derived(live.state!);
   /** the canvas the side panel leaves uncovered */
@@ -121,6 +123,8 @@
   let pending = $state({ s: 1, tx: 0, ty: 0 });
   let commitTimer: ReturnType<typeof setTimeout> | undefined;
   let panning = $state(false);
+  /** the click that ends a drag is not a click on the map */
+  let dragEnded = false;
 
   // selecting pans the view (zoom unchanged) to centre the object in the canvas the inspector leaves uncovered
   let lastSelected = untrack(() => selection?.id);
@@ -211,6 +215,7 @@
 
   function pointerdown(e: PointerEvent): void {
     if (mode !== "geo" || (e.pointerType === "mouse" && e.button !== 0)) return;
+    dragEnded = false;
     pointers.set(e.pointerId, local(e));
     // a second finger turns the pan into a pinch
     drag = pointers.size === 1 ? { from: local(e), moved: false } : null;
@@ -249,7 +254,10 @@
     // the finger left behind carries on as a pan
     const [rest] = pointers.values();
     drag = rest ? { from: rest, moved: true } : null;
-    if (!rest) panning = false;
+    if (!rest) {
+      dragEnded = panning;
+      panning = false;
+    }
     if (!tapped) {
       lastTap = null;
       return;
@@ -274,7 +282,9 @@
   }
   // a click on empty map clears the selection; objects stop the event
   const background = (): void => {
-    if (!panning && selection) onselect("");
+    if (panning || dragEnded) return;
+    if (selection) onselect("");
+    onempty?.();
   };
 
   // ---- live inputs

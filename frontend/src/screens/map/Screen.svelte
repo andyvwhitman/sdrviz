@@ -129,6 +129,11 @@
     openPanel("trip", v?.trip_id ?? id);
     if (v && andCentre) centre = { lon: v.lon, lat: v.lat, n: (centre?.n ?? 0) + 1 };
   }
+  /** a click on the train already open closes its panel */
+  function toggleTrain(id: string): void {
+    if (current?.kind === "trip" && trainId === id) panel.close();
+    else openTrain(id);
+  }
   const openStop = (id: string): void => openPanel("station", id);
   const openTrip = (id: string): void => openPanel("trip", id);
   const openRoute = (id: string): void => openPanel("route", id);
@@ -291,7 +296,8 @@
         onpingdone={pingDone}
         vehicleId={trainId}
         {stopId}
-        onvehicle={openTrain}
+        onvehicle={toggleTrain}
+        onempty={() => current && panel.close()}
         onstop={openStop}
         onwindow={(v) => (inView = v)}
         {centre}

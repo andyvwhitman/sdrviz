@@ -8,6 +8,7 @@ from app import auth
 from app.auth import LoginLimiter
 from app.config import Settings
 from app.main import create_app
+from app.routers.system import VERSION
 
 from .conftest import PASSWORD
 
@@ -42,7 +43,10 @@ def admin(two_roles):
 
 
 def test_each_password_gets_its_role(viewer, admin):
-    assert viewer.get("/api/auth/session").json() == {"authenticated": True, "sim": True, "role": "viewer"}
+    info = viewer.get("/api/auth/session").json()
+    assert info | {"commit": None} == {
+        "authenticated": True, "sim": True, "role": "viewer", "version": VERSION, "commit": None,
+    }  # fmt: skip
     assert admin.get("/api/auth/session").json()["role"] == "admin"
 
 

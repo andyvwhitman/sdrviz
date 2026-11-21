@@ -79,7 +79,7 @@
 
   <h4 class="st-h">TRANSIT TIMINGS</h4>
   {#if sources.length}
-    <table class="st-table">
+    <table class="st-table st-table--timings">
       <thead><tr><th>SOURCE</th><th>STATE</th><th>STATIC AGE</th><th>REALTIME AGE</th></tr></thead>
       <tbody>
         {#each sources as s (s.id)}

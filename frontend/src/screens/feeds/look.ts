@@ -38,3 +38,7 @@ export const channelNumber = (channel: Pick<Channel, "aar">): number => parseInt
 
 /** Measured values exist only while samples flow. */
 export const isMeasured = (feed: Pick<Feed, "state">): boolean => feed.state === "ok";
+
+/** The feed a URL names: by its full id (`node-1`) or without the sim prefix (`bay` for `feed-bay`). */
+export const findFeed = <T extends Pick<Feed, "id">>(feeds: readonly T[], name: string | null | undefined): T | undefined =>
+  name ? feeds.find((f) => f.id === name || f.id === `feed-${name}`) : undefined;

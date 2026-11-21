@@ -601,6 +601,8 @@ def test_node_health_fills_the_feed_telemetry_and_state(client):
     assert feed["telemetry"] == {"host_cpu_pct": 37.4, "host_temp_c": 51.5, "device_drops": 3}
     assert "device_temp_c" not in feed["telemetry"]  # the node does not report the dongle's temperature
     assert feed["state"] == "ok" and feed["sim"] is False
+    # the node reports no rate, SNR or floor yet: they are null, never a replay feed's numbers
+    assert feed["sample_rate_measured_msps"] is None and feed["snr_db"] is None and feed["noise_floor_dbfs"] is None
 
     node.send(node_health(rtl_tcp="down", temp_c=None))
     wait_for(lambda: node_feed(client)["state"] == "stale")

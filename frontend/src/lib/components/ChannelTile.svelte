@@ -118,7 +118,7 @@
   {#if variant === "standard"}
     <span class="tile__spark">{#if !blanked}<Sparkline values={s.spark ?? []} live={!!s.tx} />{/if}</span>
   {/if}
-  <span class="tile__timer">{fmt.dur(s.elapsed ?? 0)}</span>
+  <span class="tile__timer">{fmt.timer(s.elapsed ?? 0)}</span>
   {#if variant !== "strip"}
     <span class="tile__meter"><LevelMeter {...meter} /></span>
     <span class="tile__levers">

@@ -25,6 +25,7 @@
   import FeedsSplit from "./FeedsSplit.svelte";
   import ReceiverForm from "./ReceiverForm.svelte";
   import { LIVE_FEED_ID } from "./receiverForm";
+  import { findFeed } from "./look";
   import SourceCard from "./SourceCard.svelte";
   import SourceDetail from "./SourceDetail.svelte";
   import SourceForm from "./SourceForm.svelte";
@@ -89,8 +90,11 @@
   }
 
   // -- SDR feeds: the first feed is selected when the URL names none --
-  const feedFromUrl = $derived(router.query("feed") ? `feed-${router.query("feed")}` : null);
-  const selectedFeed = $derived(snapshot ? (snapshot.feeds.find((f) => f.id === feedFromUrl) ?? snapshot.feeds[0]) : undefined);
+  /** the URL names a feed by its full id (`node-1`) or without the sim prefix (`bay` for `feed-bay`) */
+  const feedFromUrl = $derived(router.query("feed"));
+  const selectedFeed = $derived(
+    snapshot ? (findFeed(snapshot.feeds, feedFromUrl) ?? snapshot.feeds[0]) : undefined,
+  );
   const shortId = (id: string): string => id.replace(/^feed-/, "");
 
   $effect(() => {
@@ -244,7 +248,7 @@
 
     {#if tab === "sdr"}
       <div class="fe-panel" role="tabpanel" aria-label="SDR feeds">
-        <FeedsSplit title="SDR FEEDS" {layerOpen} onback={back}>
+        <FeedsSplit title="SDR FEEDS" {layerOpen} detailEmpty={!newOpen && !receiverForm && !feedForm && !selectedFeed} onback={back}>
           {#snippet toolbar()}
             {#if admin}<Button sm onclick={() => ((feedForm = null), (receiverForm = false), show({ new: "1" }))}>+ NEW FEED</Button>{/if}
           {/snippet}
@@ -274,7 +278,7 @@
       </div>
     {:else}
       <div class="fe-panel" role="tabpanel" aria-label="Transit feeds">
-        <FeedsSplit title="TRANSIT FEEDS" {layerOpen} onback={back}>
+        <FeedsSplit title="TRANSIT FEEDS" {layerOpen} detailEmpty={!admin || (!newOpen && !selectedSource)} onback={back}>
           {#snippet toolbar()}
             {#if admin}<Button sm onclick={() => ((editing = null), show({ new: "1" }))}>+ NEW FEED</Button>{/if}
           {/snippet}

@@ -31,6 +31,8 @@ describe("fmt", () => {
 
   it("formats durations and totals", () => {
     expect(fmt.dur(7.4)).toBe("00:07.4");
+    expect(fmt.timer(3.7)).toBe("0:03.7");
+    expect(fmt.timer(754.5)).toBe("12:34.5");
     expect(fmt.total(6760)).toBe("01:52:40");
   });
 

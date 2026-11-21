@@ -2,6 +2,7 @@
 import { flushSync, mount, unmount } from "svelte";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Feed, ListenableFeed } from "$lib/types/live";
+import { router } from "$lib/router.svelte";
 import NodePicker from "./NodePicker.svelte";
 
 const choose = vi.fn();
@@ -114,5 +115,17 @@ describe("the node picker", () => {
     trigger.click();
     flushSync();
     expect(items().map((el) => el.textContent?.trim())).not.toContain("SDR-01 DETAILS");
+  });
+
+  it("on the phone, one DETAILS link opens the Feeds detail layer and ALL FEEDS is gone", () => {
+    const go = vi.spyOn(router, "go").mockImplementation(() => {});
+    const { trigger, items } = setup({ variant: "row" });
+    trigger.click();
+    flushSync();
+    const links = items().filter((el) => el.getAttribute("role") === "menuitem");
+    expect(links.map((el) => el.textContent?.trim())).toEqual(["SDR-01 DETAILS"]);
+    links[0].click();
+    expect(go).toHaveBeenCalledWith("/feeds?feed=a&open=1");
+    go.mockRestore();
   });
 });

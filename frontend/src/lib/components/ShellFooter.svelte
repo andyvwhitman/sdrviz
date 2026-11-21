@@ -57,7 +57,7 @@
 <footer class="hud-status" class:hud-status--sticky={sticky} class:has-strip={keyed}>
   <KeyupStrip bind:active={keyed} />
   <StatusLine {status} />
-  <TitleBlock screen={route.name} {scope} sim={snapshot?.sim ?? session.sim} osm={route.id === "map"} compact={viewport.width <= COMPACT_TITLE_PX} />
+  <TitleBlock screen={route.name} {scope} build={session.build} sim={snapshot?.sim ?? session.sim} osm={route.id === "map"} compact={viewport.width <= COMPACT_TITLE_PX} />
   <AudioToggle />
 </footer>
 

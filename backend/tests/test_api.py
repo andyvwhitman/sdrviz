@@ -7,7 +7,9 @@ class TestAuth:
     def test_everything_but_login_and_session_needs_a_cookie(self, anonymous):
         for path in ("/api/system", "/api/live/state", "/api/frequencies", "/api/trains"):
             assert anonymous.get(path).status_code == 401
-        assert anonymous.get("/api/auth/session").json() == {"authenticated": False, "sim": True, "role": None}
+        info = anonymous.get("/api/auth/session").json()
+        assert info["authenticated"] is False and info["sim"] is True and info["role"] is None
+        assert info["version"]  # the footer names the build
 
     def test_login_sets_a_cookie_and_logout_clears_it(self, anonymous):
         assert anonymous.post("/api/auth/login", json={"password": "nope"}).status_code == 401

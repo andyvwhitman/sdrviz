@@ -285,6 +285,7 @@ def feed_view(inputs: SimInputs, fid: str, t: float) -> dict:
         st = feed_state(inputs, fid, t)
         age = st.pop("age_s")
         telemetry = node.telemetry
+        series = {}  # a node does not report rate, SNR or floor yet: never borrow a replay feed's numbers
     elif feed.driver == "sdrviz-agent" and series:
         telemetry = {k: at(k) for k in ("device_temp_c", "host_cpu_pct", "device_drops")}
     degraded = st["state"] != "ok"

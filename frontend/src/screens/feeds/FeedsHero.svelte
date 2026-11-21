@@ -62,7 +62,7 @@
   {/each}
   <span class="hero__aside">
     {#if live.length}
-      <span class="hero__stack"><span class="a">{receptionCount} RECEPTIONS</span><span class="b">ON {receivingFeeds} FEEDS</span></span>
+      <span class="hero__stack"><span class="a">{receptionCount} RECEPTIONS</span><span class="b">ON {receivingFeeds} {receivingFeeds === 1 ? "FEED" : "FEEDS"}</span></span>
       <span class="fb-rule"></span>
     {/if}
     <a class="hero__stack fb-link" href="/frequencies" onclick={followLink}>

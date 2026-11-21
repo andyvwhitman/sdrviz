@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Feed } from "$lib/types/live";
-import { feedLook, fix, roundDp, siteName } from "./look";
+import { feedLook, findFeed, fix, roundDp, siteName } from "./look";
 
 const feed = (over: Partial<Feed>) => ({ enabled: true, state: "ok", acked: false, ...over }) as Feed;
 
@@ -20,5 +20,18 @@ describe("formatting", () => {
   });
   it("derives names", () => {
     expect(siteName({ name: "LND-02 New Carrollton", short: "LND-02" })).toBe("NEW CARROLLTON");
+  });
+});
+
+describe("findFeed", () => {
+  const feeds = [{ id: "feed-bay" }, { id: "node-1" }];
+  it("finds node ids and sim ids in both forms", () => {
+    expect(findFeed(feeds, "node-1")).toBe(feeds[1]);
+    expect(findFeed(feeds, "feed-bay")).toBe(feeds[0]);
+    expect(findFeed(feeds, "bay")).toBe(feeds[0]);
+  });
+  it("is undefined for no name or an unknown one", () => {
+    expect(findFeed(feeds, null)).toBeUndefined();
+    expect(findFeed(feeds, "nope")).toBeUndefined();
   });
 });

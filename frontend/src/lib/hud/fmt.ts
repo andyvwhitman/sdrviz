@@ -75,6 +75,13 @@ export function dur(s: Maybe<number>): string {
   return `${pad(tenths / 600)}:${pad((tenths % 600) / 10)}.${tenths % 10}`;
 }
 
+/** A running key-up on the tile, in the footer strip's m:ss grammar plus tenths: 3.7 -> "0:03.7", 754.5 -> "12:34.5" */
+export function timer(s: Maybe<number>): string {
+  if (s == null) return BLANK;
+  const tenths = Math.floor(s * 10 + 1e-6);
+  return `${Math.floor(tenths / 600)}:${pad((tenths % 600) / 10)}.${tenths % 10}`;
+}
+
 /** Totals: 6760 -> "01:52:40" */
 export function total(s: Maybe<number>): string {
   if (s == null) return BLANK;

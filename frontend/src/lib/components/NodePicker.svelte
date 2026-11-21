@@ -164,10 +164,15 @@
         {/each}
       </div>
       <div class="np__rule"></div>
-      {#if oninspect}
-        <button class="np__link" type="button" role="menuitem" tabindex="-1" onclick={() => (hide(), oninspect(active))}>{activeShort} DETAILS<Glyph name="chevron-right" size={12} /></button>
+      {#if variant === "row"}
+        <!-- the phone has no inspector: DETAILS is the Feeds page's detail layer, which ALL FEEDS would lead to as well -->
+        <button class="np__link" type="button" role="menuitem" tabindex="-1" onclick={() => (hide(), router.go(`/feeds?feed=${encodeURIComponent(active)}&open=1`))}>{activeShort} DETAILS<Glyph name="chevron-right" size={12} /></button>
+      {:else}
+        {#if oninspect}
+          <button class="np__link" type="button" role="menuitem" tabindex="-1" onclick={() => (hide(), oninspect(active))}>{activeShort} DETAILS<Glyph name="chevron-right" size={12} /></button>
+        {/if}
+        <button class="np__link" type="button" role="menuitem" tabindex="-1" onclick={() => (hide(), router.go(`/feeds?feed=${encodeURIComponent(active)}`))}>ALL FEEDS<Glyph name="chevron-right" size={12} /></button>
       {/if}
-      <button class="np__link" type="button" role="menuitem" tabindex="-1" onclick={() => (hide(), router.go(`/feeds?feed=${encodeURIComponent(active)}`))}>ALL FEEDS<Glyph name="chevron-right" size={12} /></button>
     </div>
   {/if}
 </div>

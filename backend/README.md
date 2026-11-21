@@ -12,7 +12,7 @@ cd backend
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
 
-.venv/bin/uvicorn app.main:app --port 8100 --reload     # the app, http://127.0.0.1:8100/docs for OpenAPI
+.venv/bin/uvicorn app.main:app --port 8100 --reload     # the app, http://127.0.0.1:8100/api/docs for OpenAPI
 .venv/bin/pytest                                          # tests (about 12 s)
 .venv/bin/ruff check . && .venv/bin/ruff format .         # lint + format
 .venv/bin/python -m app.db reset                          # drop and re-seed the database
@@ -58,7 +58,7 @@ tests/                 golden test against data/sim/scenarios/*.json, clock, rep
 ## Contract notes (where the plan left room)
 
 All REST is under `/api` and needs the `sdrviz_session` cookie except `POST /auth/login` and `GET /auth/session`.
-Interactive docs: `/docs`.
+Interactive docs: `/api/docs` (OpenAPI at `/api/openapi.json`). `/docs` is the app's own Docs page.
 
 * **LiveState** (`GET /api/live/state`, and `snapshot.state` on the socket) is the scenario JSON shape minus
   `summary`, `generator`, `history`, `stats`, `map`. The port reproduces `data/sim/scenarios/*.json` exactly

@@ -33,6 +33,8 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    // the Docs page bundles the repo's docs/api/*.md, which sit above frontend/
+    fs: { allow: [fileURLToPath(new URL("..", import.meta.url))] },
     proxy: PROXY,
   },
   // Package preview servers (5174-5178) use the same proxy.

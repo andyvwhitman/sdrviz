@@ -9,6 +9,7 @@
   import { shell } from "$lib/stores/shell.svelte";
   import type { TransitSource } from "$lib/types/sources";
   import BackendPanel from "./BackendPanel.svelte";
+  import DocsCard from "./DocsCard.svelte";
   import NodesSection from "./NodesSection.svelte";
   import type { BackendStats, RadioStatus } from "./types";
   import "./settings.css";
@@ -50,6 +51,7 @@
   </section>
 
   <section class="st-col st-col--backend">
+    <DocsCard />
     <BackendPanel {stats} {radio} {sources} {now} failed={statsFailed} />
   </section>
 </div>

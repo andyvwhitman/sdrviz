@@ -46,6 +46,23 @@ describe("routeFor", () => {
   });
 });
 
+describe("docs route", () => {
+  it("answers /docs and every page below it as a page-layout route, on a phone too", () => {
+    for (const path of ["/docs", "/docs/readme", "/docs/live-websocket"]) {
+      expect(routeFor(path)?.id).toBe("docs");
+      expect(layoutFor(route(path), false)).toBe("page");
+      expect(layoutFor(route(path), true)).toBe("page");
+    }
+    expect(routeFor("/documents")).toBeUndefined();
+  });
+
+  it("is open to viewers and not in the top menu or its hotkeys", () => {
+    expect(route("/docs").adminOnly).toBeFalsy();
+    expect(navFor(true).map((r) => r.id)).not.toContain("docs");
+    expect(navFor(false).map((r) => r.id)).not.toContain("docs");
+  });
+});
+
 describe("navFor", () => {
   it("shows an admin every tab and a viewer all but Settings", () => {
     expect(navFor(true).map((r) => r.id)).toContain("settings");

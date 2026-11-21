@@ -6,7 +6,7 @@
 import type { Component } from "svelte";
 import StubScreen from "$lib/components/StubScreen.svelte";
 
-export type ScreenId = "live-ops" | "frequencies" | "feeds" | "map" | "settings" | "spot" | "frequency" | "login" | "kit";
+export type ScreenId = "live-ops" | "frequencies" | "feeds" | "map" | "settings" | "spot" | "frequency" | "docs" | "login" | "kit";
 
 export interface Route {
   id: ScreenId;
@@ -55,6 +55,8 @@ export const ROUTES: Route[] = [
   { id: "settings", path: "/settings", name: "SETTINGS", dir: "settings", shell: true, phone: "plate", adminOnly: true },
   { id: "spot", path: "/spot", name: "SPOT", dir: "spot", shell: true, layout: "page" },
   { id: "frequency", path: "/frequency", name: "FREQUENCY", dir: "frequency", shell: true, layout: "page", prefix: true },
+  // reference, not an instrument: reached from a Settings card and absent from NAV (decision 79, D15)
+  { id: "docs", path: "/docs", name: "DOCS", dir: "docs", shell: true, layout: "page", prefix: true },
   { id: "login", path: "/login", name: "LOGIN", dir: "system", shell: false, phone: "page" },
   ...(import.meta.env.DEV ? [{ id: "kit", path: "/kit", name: "KIT", dir: "kit", shell: true } as const] : []),
 ];

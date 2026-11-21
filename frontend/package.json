@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "check": "svelte-check --tsconfig ./tsconfig.json",
     "test": "vitest run",
-    "gen:api": "openapi-typescript http://127.0.0.1:8100/openapi.json -o src/lib/api/schema.gen.ts"
+    "gen:api": "openapi-typescript http://127.0.0.1:8100/api/openapi.json -o src/lib/api/schema.gen.ts"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^7.3.1",
@@ -30,6 +30,9 @@
     "@fontsource/barlow-semi-condensed": "^5.3.0",
     "@fontsource/jetbrains-mono": "^5.3.0",
     "@fontsource/rajdhani": "^5.3.0",
-    "d3-geo": "^3.1.2"
+    "d3-geo": "^3.1.2",
+    "dompurify": "3.4.18",
+    "marked": "18.2.1",
+    "mermaid": "12.3.0"
   }
 }

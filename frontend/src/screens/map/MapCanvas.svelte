@@ -172,8 +172,16 @@
     scheduleCommit();
   }
 
+  // a wheel event keeps the labels still for 250 ms (a drag or pinch is `panning`)
+  let wheeling = $state(false);
+  let wheelTimer: ReturnType<typeof setTimeout> | undefined;
+  const gesturing = $derived(panning || wheeling);
+
   function onwheel(e: WheelEvent): void {
     if (mode !== "geo") return;
+    wheeling = true;
+    clearTimeout(wheelTimer);
+    wheelTimer = setTimeout(() => (wheeling = false), 250);
     e.preventDefault();
     zoomAt(local(e), Math.exp(-e.deltaY * 0.0015));
   }
@@ -740,7 +748,7 @@
     <!-- real trains (GTFS-Realtime, Amtraker) -->
     <LiveTrains
       vehicles={transit.vehicles} routes={data.routes.routes} {project} {schLayout} {u} {width} {height}
-      k={view.k} fetchedAt={transit.fetchedAt} selectedId={vehicleId} onselect={onvehicle} ondrawn={onwindow}
+      k={view.k} fetchedAt={transit.fetchedAt} selectedId={vehicleId} onselect={onvehicle} {measure} frozen={gesturing || (u > 0 && u < 1)} ondrawn={onwindow}
     />
     <!-- blocks after every glyph, so text halos knock out any leader beneath -->
     {#if showBlocks}

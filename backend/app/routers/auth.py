@@ -37,4 +37,4 @@ def logout(request: Request) -> Response:
 @router.get("/session")
 def session(request: Request) -> SessionOut:
     role = current_role(request)
-    return SessionOut(authenticated=role is not None, role=role)
+    return SessionOut(authenticated=role is not None, sim=request.app.state.rt.settings.sim, role=role)

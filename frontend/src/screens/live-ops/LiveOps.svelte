@@ -40,7 +40,7 @@
   import { viewport } from "$lib/stores/viewport.svelte";
   import FrontWall from "./FrontWall.svelte";
   import { elsewhereLabel, heroFor } from "./hero";
-  import Divider from "./Divider.svelte";
+  import Divider from "$lib/components/Divider.svelte";
   import HeroStrip from "./HeroStrip.svelte";
   import { KeyupMotion } from "./keyup.svelte";
   import { LEVER_LIST, type LeverKey } from "./mixer";

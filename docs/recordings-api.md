@@ -1,6 +1,6 @@
 # Recordings API (D-4)
 
-Every transmission on a channel that is in a bank is saved as one Ogg Opus file and one `recording` row
+Every transmission on a frequency that is enabled on the feed that heard it is saved as one Ogg Opus file and one `recording` row
 (decision 57). This page is the HTTP side. All endpoints need a login and are **read-only for viewers**; nothing
 here needs the admin password. Times are UTC with a `Z`, to the millisecond. An unknown frequency is 404, a bad
 `date` or `limit` is 422.
@@ -98,7 +98,7 @@ daylight saving change). Same bucket shape, same `recording_since`.
 
 ## `GET /api/frequencies/activity?date=YYYY-MM-DD`
 
-The day buckets of **every frequency that is in a bank**, in one call, for the `/frequency` index. Same buckets and
+The day buckets of **every frequency**, in one call, for the `/frequency` index. Same buckets and
 `recording_since` per frequency (the whole response is about 96 small objects per frequency).
 
 ```json

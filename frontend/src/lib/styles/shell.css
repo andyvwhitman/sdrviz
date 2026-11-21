@@ -53,3 +53,7 @@
 /* fluid layout (Live Ops): the window is the stage, in real CSS pixels. The screen owns its margins and gaps. */
 .hud-stage--fluid { position: fixed; inset: 0; width: auto; height: auto; }
 .hud-stage--fluid .hud-content { top: var(--header-h); bottom: var(--status-h); }
+
+/* while a divider is dragged the cursor holds wherever the pointer goes, and nothing selects */
+body.lo-resizing-col, body.lo-resizing-col * { cursor: col-resize !important; user-select: none !important; }
+body.lo-resizing-row, body.lo-resizing-row * { cursor: row-resize !important; user-select: none !important; }

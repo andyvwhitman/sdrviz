@@ -9,11 +9,14 @@
   import type { Vehicle } from "$lib/types/transit";
   import { easeInOut } from "./lib/ease";
   import { lerp, type Pt } from "./lib/geom";
+  import { chooseQuadrant, type LeaderPoint, type Quadrant } from "./lib/leaders";
   import { snapVehicle } from "./lib/liveTrains";
+  import type { Measure } from "./lib/measure";
   import type { LonLat } from "./lib/project";
   import { schematicTrainPosition, type SchematicLayout } from "./lib/schematicLayout";
   import type { Route } from "./lib/types";
   import { ageNow, isStale, thinByGrid, trainTag } from "./lib/transitView";
+  import Leader from "./Leader.svelte";
   import VehicleMark from "./VehicleMark.svelte";
 
   interface Props {
@@ -31,10 +34,13 @@
     fetchedAt: number;
     selectedId: string | null;
     onselect: (id: string) => void;
+    measure: Measure;
+    /** a pan or zoom is under way: no label changes quadrant */
+    frozen?: boolean;
     /** the trains currently drawn: the ones in the window */
     ondrawn?: (vehicles: Vehicle[]) => void;
   }
-  let { vehicles, routes, project, schLayout, u, width, height, k, fetchedAt, selectedId, onselect, ondrawn }: Props = $props();
+  let { vehicles, routes, project, schLayout, u, width, height, k, fetchedAt, selectedId, onselect, measure, frozen = false, ondrawn }: Props = $props();
 
   const eased = $derived(easeInOut(u));
   const MARGIN = 12;
@@ -74,6 +80,33 @@
     ),
   );
 
+  // ---- leaders: each label hangs in the least crowded quadrant, and holds it (see lib/leaders.ts)
+  const FORGET_MS = 60_000;
+  const held = new Map<string, Quadrant>();
+  const lastDrawn = new Map<string, number>();
+  const scaleOf = $derived(k < CROWDED_ZOOM ? 0.7 : 1);
+
+  const labelWidth = (t: { v: Vehicle }): number => measure.tracked(trainTag(t.v), "lab11");
+  const wantsLabel = (id: string): boolean => named.has(id) || selectedId === id;
+
+  const quadrants = $derived.by(() => {
+    const now = Date.now();
+    for (const t of drawn) lastDrawn.set(t.v.id, now);
+    for (const [id, at] of lastDrawn) {
+      if (now - at <= FORGET_MS) continue;
+      lastDrawn.delete(id);
+      held.delete(id);
+    }
+    const points: LeaderPoint[] = drawn.map((t) => ({
+      id: t.v.id, pos: t.pos, scale: scaleOf, labelWidth: wantsLabel(t.v.id) ? labelWidth(t) : undefined,
+    }));
+    for (const [id, q] of chooseQuadrant(points, held, { width, height })) {
+      // while a gesture runs only a label with no quadrant yet is placed
+      if (!frozen || !held.has(id)) held.set(id, q);
+    }
+    return held;
+  });
+
   $effect(() => ondrawn?.(drawn.filter((t) => t.opacity > 0.5).map((t) => t.v)));
 </script>
 
@@ -85,8 +118,12 @@
         scale={k < CROWDED_ZOOM ? 0.7 : 1} estimated={t.v.position === "estimated"} stale={isStale(ageNow(t.v.age_s, fetchedAt, Date.now()), t.v.stale_after_s)}
         onselect={() => onselect(t.v.id)}
       />
-      {#if named.has(t.v.id) || selectedId === t.v.id}
-        <text class="mp-vlabel" x={(t.pos[0] + 16).toFixed(1)} y={(t.pos[1] + 4).toFixed(1)}>{trainTag(t.v)}</text>
+      {#if wantsLabel(t.v.id) && quadrants.get(t.v.id)}
+        <Leader
+          pos={t.pos} quadrant={quadrants.get(t.v.id)!} text={trainTag(t.v)} labelWidth={labelWidth(t)} scale={scaleOf}
+          selected={selectedId === t.v.id} stale={isStale(ageNow(t.v.age_s, fetchedAt, Date.now()), t.v.stale_after_s)}
+          onselect={() => onselect(t.v.id)}
+        />
       {/if}
     </g>
   {/each}

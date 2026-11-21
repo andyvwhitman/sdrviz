@@ -33,7 +33,7 @@
 </script>
 
 <svg
-  class="glyph"
+  class="ui-glyph"
   class:filled={shape.filled}
   width={size}
   height={size}
@@ -45,7 +45,7 @@
 </svg>
 
 <style>
-  .glyph {
+  .ui-glyph {
     display: inline-block;
     flex: none;
     vertical-align: -0.1em;
@@ -55,7 +55,7 @@
     stroke-linecap: square;
     stroke-linejoin: miter;
   }
-  .glyph.filled {
+  .ui-glyph.filled {
     fill: currentColor;
     stroke: none;
   }

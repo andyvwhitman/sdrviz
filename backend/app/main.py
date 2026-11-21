@@ -21,7 +21,6 @@ from .routers import (
     lofar,
     node_ws,
     nodes,
-    prefs,
     radio,
     recordings,
     sim,
@@ -34,7 +33,7 @@ from .runtime import Runtime
 log = logging.getLogger("sdrviz")
 
 # recordings comes first: GET /frequencies/activity must be matched before GET /frequencies/{id}
-PROTECTED = (recordings, system, radio, sim, prefs, frequencies, feeds, trains, transit, geo, lofar)
+PROTECTED = (recordings, system, radio, sim, frequencies, feeds, trains, transit, geo, lofar)
 FRONTEND_DIST = REPO_ROOT / "frontend" / "dist"
 
 

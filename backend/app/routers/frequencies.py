@@ -95,7 +95,7 @@ def from_channel(body: FromChannelIn, session: DB, rt: RT) -> FromChannelOut:
     """Right-click on the waterfall: the frequency on this AAR channel (made, labelled with the number twice, if the
     table has none), assigned to the feed and enabled there."""
     if body.feed_id not in rt.world.feeds:
-        raise HTTPException(status_code=422, detail=f"Unknown feed {body.feed_id!r}")
+        raise HTTPException(status_code=404, detail=f"Unknown feed {body.feed_id!r}")
     freq = session.exec(
         select(Frequency).where(Frequency.aar_channel == body.aar_channel).order_by(literal_column("rowid"))
     ).first()

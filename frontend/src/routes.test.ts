@@ -5,9 +5,9 @@ import { isPhoneFor, layoutFor, navFor, routeFor, type Route } from "./routes";
 const route = (path: string): Route => routeFor(path)!;
 
 describe("layoutFor", () => {
-  it("keeps most routes on the stage in a wide window; Live Ops is fluid and SPOT is a page", () => {
+  it("keeps most routes on the stage in a wide window; Live Ops and Feeds are fluid and SPOT is a page", () => {
     expect(layoutFor(route("/live"), false)).toBe("fluid");
-    expect(layoutFor(route("/feeds"), false)).toBe("stage");
+    expect(layoutFor(route("/feeds"), false)).toBe("fluid");
     expect(layoutFor(route("/map"), false)).toBe("stage");
     expect(layoutFor(route("/spot"), false)).toBe("page");
   });
@@ -16,15 +16,17 @@ describe("layoutFor", () => {
     for (const path of ["/login", "/map", "/spot"]) expect(layoutFor(route(path), true)).toBe("page");
   });
 
-  it("gives a phone the wider-screen plate for Feeds and Settings, and a page for Live Ops", () => {
-    for (const path of ["/feeds", "/settings"]) expect(layoutFor(route(path), true)).toBe("plate");
+  it("gives a phone the wider-screen plate for Settings, and a page for Live Ops and Feeds", () => {
+    expect(layoutFor(route("/settings"), true)).toBe("plate");
+    expect(layoutFor(route("/feeds"), true)).toBe("page");
     expect(layoutFor(route("/live"), true)).toBe("page");
   });
 
-  it("tests Live Ops for a handset by width or height, and every other route by width", () => {
+  it("tests Live Ops and Feeds for a handset by width or height, and every other route by width", () => {
     const landscape = { phone: false, handset: true };
     expect(isPhoneFor(route("/live"), landscape)).toBe(true);
-    expect(isPhoneFor(route("/feeds"), landscape)).toBe(false);
+    expect(isPhoneFor(route("/feeds"), landscape)).toBe(true);
+    expect(isPhoneFor(route("/map"), landscape)).toBe(false);
     expect(isPhoneFor(route("/live"), { phone: false, handset: false })).toBe(false);
   });
 });

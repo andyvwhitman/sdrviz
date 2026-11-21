@@ -125,3 +125,16 @@ def test_an_ack_is_echoed_as_feed_and_faults_messages(client):
         assert feed["feed_id"] == "feed-lnd" and feed["state"] == "fault"
         faults = receive_until(ws, is_type("faults"))
         assert faults["header"]["feeds_chip"] == "FEEDS 2/4 · 1 ACK'D" and faults["faults"][0]["acked"] is True
+
+
+@pytest.mark.parametrize(
+    ("frame", "op"),
+    [("not json", None), ("[1]", None), ('{"no_op": 1}', None), ('{"op": "dance"}', "dance"), ('{"op": 5}', None)],
+)
+def test_a_bad_client_op_gets_one_error_and_the_socket_stays_open(client, frame, op):
+    with client.websocket_connect("/ws/live") as ws:
+        ws.send_text(frame)
+        error = receive_until(ws, is_type("error"))
+        assert error["op"] == op and error["detail"]
+        ws.send_text(json.dumps({"op": "ping"}))
+        assert receive_until(ws, is_type("pong"))["type"] == "pong"

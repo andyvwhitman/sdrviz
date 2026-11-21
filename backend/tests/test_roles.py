@@ -120,7 +120,6 @@ ADMIN_ONLY = [
 VIEWER_OK = [
     "/api/system",
     "/api/live/state",
-    "/api/prefs",
     "/api/frequencies",
     "/api/feeds",
     "/api/radio",
@@ -148,10 +147,7 @@ def test_viewer_reads(viewer, path):
     assert viewer.get(path).status_code == 200
 
 
-def test_viewer_can_ack_and_keep_personal_prefs(viewer):
-    prefs = viewer.get("/api/prefs").json()
-    assert viewer.patch("/api/prefs", json={"muted": ["x"], "volume": {"x": 0.5}}).status_code == 200
-    assert viewer.put("/api/prefs", json={**prefs, "muted": ["y"]}).status_code == 200
+def test_viewer_can_ack(viewer):
     assert viewer.post("/api/feeds/feed-x/ack", json={"reason": "seen"}).status_code != 403
 
 
@@ -216,8 +212,9 @@ def test_cross_origin_writes_and_sockets_are_refused(client):
 
 
 def test_same_origin_and_no_origin_pass(client):
-    assert client.patch("/api/prefs", json={}, headers={"Origin": "http://testserver"}).status_code == 200
-    assert client.patch("/api/prefs", json={}).status_code == 200  # no Origin: curl, the node agent
+    login = {"password": PASSWORD}
+    assert client.post("/api/auth/login", json=login, headers={"Origin": "http://testserver"}).status_code == 204
+    assert client.post("/api/auth/login", json=login).status_code == 204  # no Origin: curl, the node agent
     with client.websocket_connect("/ws/live", headers={"Origin": "http://testserver"}) as live:
         assert live.receive_json()["type"] == "hello"
 
@@ -226,5 +223,16 @@ def test_public_url_host_counts_as_the_same_origin(settings):
     behind_proxy = settings.model_copy(update={"public_url": "http://dispatch.example"})
     with TestClient(create_app(behind_proxy)) as test_client:
         test_client.post("/api/auth/login", json={"password": PASSWORD})
-        ok = test_client.patch("/api/prefs", json={}, headers={"Origin": "http://dispatch.example"})
-        assert ok.status_code == 200
+        ok = test_client.post("/api/auth/login", json={"password": PASSWORD}, headers={"Origin": "http://dispatch.example"})
+        assert ok.status_code == 204
+
+
+def test_session_reports_the_server_mode(settings):
+    for sim in (True, False):
+        with logged_in(settings.model_copy(update={"sim": sim}), PASSWORD) as test_client:
+            assert test_client.get("/api/auth/session").json()["sim"] is sim
+
+
+def test_prefs_routes_are_gone(viewer):
+    assert viewer.get("/api/prefs").status_code == 404
+    assert viewer.put("/api/prefs", json={"muted": ["x"]}).status_code in (404, 405)

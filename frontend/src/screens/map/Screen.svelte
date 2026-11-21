@@ -182,8 +182,9 @@
   let cursorEl = $state<HTMLElement>();
   let overlays = $state.raw<Rect[] | null>(null);
   $effect(() => {
-    const els = [readoutEl, ctlEl, attribEl, cursorEl];
+    const els = [readoutEl, ctlEl, cursorEl];
     if (els.some((el) => !el)) return;
+    if (attribEl) els.push(attribEl); // only on a phone: the footer carries the credit from 900 px
     if (termsEl) els.push(termsEl); // the open TERMINALS list is an obstacle too
     const measureAll = (): void => {
       overlays = els.map((el) => ({ x0: el!.offsetLeft, y0: el!.offsetTop, x1: el!.offsetLeft + el!.offsetWidth, y1: el!.offsetTop + el!.offsetHeight }));
@@ -347,7 +348,9 @@
       </div>
     {/if}
 
-    <div class="mp-attrib" bind:this={attribEl}><a href="https://www.openstreetmap.org/copyright">© OpenStreetMap contributors</a></div>
+    {#if phone}
+      <div class="mp-attrib" bind:this={attribEl}><a href="https://www.openstreetmap.org/copyright">© OpenStreetMap contributors</a></div>
+    {/if}
     <div class="mp-cursor" bind:this={cursorEl}><span class="k">POINTER</span>{pointerText}</div>
 
     {#if demo}

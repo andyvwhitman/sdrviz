@@ -7,11 +7,11 @@
    */
   import { fade } from "svelte/transition";
   import type { Pt } from "./lib/geom";
-  import { leaderShape, type Quadrant } from "./lib/leaders";
+  import { leaderShape, type Placement } from "./lib/leaders";
 
   interface Props {
     pos: Pt;
-    quadrant: Quadrant;
+    placement: Placement;
     text: string;
     labelWidth: number;
     scale: number;
@@ -19,9 +19,9 @@
     stale: boolean;
     onselect: () => void;
   }
-  let { pos, quadrant, text, labelWidth, scale, selected, stale, onselect }: Props = $props();
+  let { pos, placement, text, labelWidth, scale, selected, stale, onselect }: Props = $props();
 
-  const shape = $derived(leaderShape(quadrant, labelWidth, scale));
+  const shape = $derived(leaderShape(placement.q, labelWidth, scale, placement.tier));
   const at = $derived(`translate(${pos[0].toFixed(1)} ${pos[1].toFixed(1)})`);
   const point = ([x, y]: Pt): string => `${x.toFixed(1)} ${y.toFixed(1)}`;
   const reduced = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -29,11 +29,13 @@
   const FADE_MS = reduced ? 0 : 120;
 </script>
 
-{#key quadrant}
+{#key placement.q + placement.tier}
   <g class="mp-hit mp-leader" class:is-selected={selected} class:is-stale={stale} transform={at} out:fade={{ duration: FADE_MS }}
     role="button" tabindex="-1" onclick={(e) => (e.stopPropagation(), onselect())} onkeydown={(e) => e.key === "Enter" && onselect()}>
+    <path class="mp-leader-halo" d="M{point(shape.from)}L{point(shape.elbow)}" />
     <path class="mp-leader-diag s-hair" pathLength="1" d="M{point(shape.from)}L{point(shape.elbow)}" />
     <g class="mp-leader-shelf">
+      <path class="mp-leader-halo" d="M{point(shape.elbow)}L{point(shape.end)}" />
       <path class="s-hair" d="M{point(shape.elbow)}L{point(shape.end)}" />
       <text class="mp-vlabel" x={shape.text[0].toFixed(1)} y={shape.text[1].toFixed(1)} text-anchor={shape.anchor}>{text}</text>
     </g>

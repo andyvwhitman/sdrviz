@@ -8,8 +8,8 @@
    */
   import type { Vehicle } from "$lib/types/transit";
   import { easeInOut } from "./lib/ease";
-  import { lerp, type Pt } from "./lib/geom";
-  import { chooseQuadrant, type LeaderPoint, type Quadrant } from "./lib/leaders";
+  import { lerp, type Pt, type Rect } from "./lib/geom";
+  import { chooseQuadrant, type LeaderPoint, type Placement } from "./lib/leaders";
   import { snapVehicle } from "./lib/liveTrains";
   import type { Measure } from "./lib/measure";
   import type { LonLat } from "./lib/project";
@@ -37,10 +37,12 @@
     measure: Measure;
     /** a pan or zoom is under way: no label changes quadrant */
     frozen?: boolean;
+    /** station names and terminal blocks (screen space) the labels keep clear of */
+    avoid?: Rect[];
     /** the trains currently drawn: the ones in the window */
     ondrawn?: (vehicles: Vehicle[]) => void;
   }
-  let { vehicles, routes, project, schLayout, u, width, height, k, fetchedAt, selectedId, onselect, measure, frozen = false, ondrawn }: Props = $props();
+  let { vehicles, routes, project, schLayout, u, width, height, k, fetchedAt, selectedId, onselect, measure, frozen = false, avoid = [], ondrawn }: Props = $props();
 
   const eased = $derived(easeInOut(u));
   const MARGIN = 12;
@@ -82,7 +84,7 @@
 
   // ---- leaders: each label hangs in the least crowded quadrant, and holds it (see lib/leaders.ts)
   const FORGET_MS = 60_000;
-  const held = new Map<string, Quadrant>();
+  const held = new Map<string, Placement>();
   const lastDrawn = new Map<string, number>();
   const scaleOf = $derived(k < CROWDED_ZOOM ? 0.7 : 1);
 
@@ -100,9 +102,9 @@
     const points: LeaderPoint[] = drawn.map((t) => ({
       id: t.v.id, pos: t.pos, scale: scaleOf, labelWidth: wantsLabel(t.v.id) ? labelWidth(t) : undefined,
     }));
-    for (const [id, q] of chooseQuadrant(points, held, { width, height })) {
+    for (const [id, placement] of chooseQuadrant(points, held, { width, height }, avoid)) {
       // while a gesture runs only a label with no quadrant yet is placed
-      if (!frozen || !held.has(id)) held.set(id, q);
+      if (!frozen || !held.has(id)) held.set(id, placement);
     }
     return held;
   });
@@ -120,7 +122,7 @@
       />
       {#if wantsLabel(t.v.id) && quadrants.get(t.v.id)}
         <Leader
-          pos={t.pos} quadrant={quadrants.get(t.v.id)!} text={trainTag(t.v)} labelWidth={labelWidth(t)} scale={scaleOf}
+          pos={t.pos} placement={quadrants.get(t.v.id)!} text={trainTag(t.v)} labelWidth={labelWidth(t)} scale={scaleOf}
           selected={selectedId === t.v.id} stale={isStale(ageNow(t.v.age_s, fetchedAt, Date.now()), t.v.stale_after_s)}
           onselect={() => onselect(t.v.id)}
         />

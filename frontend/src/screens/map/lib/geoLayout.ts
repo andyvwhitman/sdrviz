@@ -131,6 +131,8 @@ export interface GeoLayout {
   ringLabels: Record<string, RingLabel[]>;
   stationPos: Record<string, StationPos>;
   detectorPos: Record<string, Pt>;
+  /** station names and terminal blocks, padded, for labels drawn over the map to keep clear of */
+  nameRects: Rect[];
   stationNames: TextLabel[];
   terminals: TerminalLabel[];
   lineLabels: TextLabel[];
@@ -434,6 +436,7 @@ export function layoutGeo(input: GeoInput): GeoLayout {
     ringLabels,
     stationPos,
     detectorPos,
+    nameRects: labeler.glyphs.filter((g) => g && g.kind !== "line" && g.rect).map((g) => g!.rect!),
     stationNames: labeler.stationNames.filter((n): n is TextLabel => n !== null),
     terminals: labeler.terminals,
     lineLabels: labeler.lineLabels,

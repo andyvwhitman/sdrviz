@@ -748,7 +748,7 @@
     <!-- real trains (GTFS-Realtime, Amtraker) -->
     <LiveTrains
       vehicles={transit.vehicles} routes={data.routes.routes} {project} {schLayout} {u} {width} {height}
-      k={view.k} fetchedAt={transit.fetchedAt} selectedId={vehicleId} onselect={onvehicle} {measure} frozen={gesturing || (u > 0 && u < 1)} ondrawn={onwindow}
+      k={view.k} fetchedAt={transit.fetchedAt} selectedId={vehicleId} onselect={onvehicle} {measure} frozen={gesturing || (u > 0 && u < 1)} avoid={u < 0.5 ? (geoLayout?.nameRects ?? []) : []} ondrawn={onwindow}
     />
     <!-- blocks after every glyph, so text halos knock out any leader beneath -->
     {#if showBlocks}

@@ -97,7 +97,8 @@
 .hud .mp-vlabel      { font: 500 var(--fs-12) var(--font-label); letter-spacing: 0.08em; text-transform: uppercase; fill: var(--ink); }
 
 /* real-train leaders (decision 78) */
-.hud .mp-leader .s-hair { stroke: var(--ink-3); }
+.hud .mp-leader .s-hair { stroke: var(--ink-2); }
+.hud .mp-leader-halo { stroke: var(--bg-void); stroke-width: 3px; vector-effect: non-scaling-stroke; fill: none; }
 .hud .mp-leader .mp-vlabel { paint-order: stroke; stroke: var(--bg-void); stroke-width: 3px; stroke-linejoin: round; }
 .hud .mp-leader.is-stale .mp-vlabel { fill: var(--ink-3); }
 .hud .mp-leader.is-selected .s-hair { stroke: var(--state-select); }

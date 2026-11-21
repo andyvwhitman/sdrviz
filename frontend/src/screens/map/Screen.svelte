@@ -308,7 +308,7 @@
         <span class="hero__big">{counts?.trains ?? fmt.BLANK}</span>
         <span class="hero__stack">
           <span class="a">TRAIN{counts?.trains === 1 ? "" : "S"} TRACKED {#if counts?.sim}<SimTag />{/if}{#if counts?.live && !heroCountOnly}<span class="mp-live-n"> · {counts.live} LIVE</span>{/if}</span>
-          <span class="b" class:is-hidden={heroCountOnly}>{counts?.feeds ?? 0} FEEDS · {counts?.stations ?? 0} STATIONS · {counts?.detectors ?? 0} DETECTORS</span>
+          <span class="b" class:is-hidden={heroCountOnly}>{fmt.plural(counts?.feeds ?? 0, "FEED")} · {fmt.plural(counts?.stations ?? 0, "STATION")} · {fmt.plural(counts?.detectors ?? 0, "DETECTOR")}</span>
         </span>
       </div>
       <TrainList fetchedAt={transit.fetchedAt} vehicles={inView} selectedId={trainId} onselect={(id) => openTrain(id, true)} compact={phone || width - (current ? PANEL_W : 0) < 1500} folded={listFolded} />

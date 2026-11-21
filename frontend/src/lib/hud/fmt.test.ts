@@ -55,3 +55,11 @@ describe("fmt", () => {
     expect(fmt.trainId(" Amtrak   53 ")).toBe("AMTRAK 53");
   });
 });
+
+describe("plural", () => {
+  it("adds S except for one", () => {
+    expect(fmt.plural(1, "FEED")).toBe("1 FEED");
+    expect(fmt.plural(0, "FEED")).toBe("0 FEEDS");
+    expect(fmt.plural(13, "DETECTOR")).toBe("13 DETECTORS");
+  });
+});

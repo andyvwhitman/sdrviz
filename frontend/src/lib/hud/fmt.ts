@@ -112,3 +112,6 @@ export const trainId = (id: Maybe<string>): string => (id == null ? "" : id.trim
 
 /** "CH54" -> 54 (channel number from a scenario `aar` string). */
 export const channelNumber = (aarText: string): number => Number(aarText.replace(/\D/g, ""));
+
+/** 1 -> "1 FEED", 3 -> "3 FEEDS" */
+export const plural = (n: number, word: string): string => `${n} ${word}${n === 1 ? "" : "S"}`;

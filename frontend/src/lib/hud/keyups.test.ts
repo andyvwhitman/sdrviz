@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { frameLabel, keyedFor, keyFrames, keyedWords, reconcile, without, type StripEntry } from "./keyups";
+import { aarMhz, frameLabel, keyedFor, keyFrames, keyedWords, reconcile, without, type StripEntry } from "./keyups";
 import type { TxRow } from "$lib/types/live";
 
 const row = (frequency_id: string, t_offset_s: number, feed_label = "SDR-01"): TxRow =>
@@ -68,6 +68,14 @@ describe("reconcile", () => {
   it("closes up: removing a frame from the middle leaves the others in order", () => {
     const all = reconcile([], [frame("a", 900), frame("b", 920), frame("c", 940)], NOW);
     expect(ids(without(all, "b"))).toEqual(["a", "c"]);
+  });
+});
+
+describe("aarMhz", () => {
+  it("reads the AAR table", () => {
+    expect(aarMhz("CH54")?.toFixed(3)).toBe("160.920");
+    expect(aarMhz("CH96")?.toFixed(3)).toBe("161.550");
+    expect(aarMhz("")).toBeNull();
   });
 });
 

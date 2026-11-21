@@ -76,6 +76,12 @@ export function reconcile(entries: readonly StripEntry[], frames: readonly KeyFr
 /** Drop a frame once its leave has finished. The frames to its right close up to the left. */
 export const without = (entries: readonly StripEntry[], id: string): StripEntry[] => entries.filter((entry) => entry.frame.id !== id);
 
+/** The AAR table: channel 7 is 160.215 MHz, 15 kHz apart. null when the text has no channel number. */
+export function aarMhz(aar: string): number | null {
+  const channel = Number(aar.replace(/\D/g, ""));
+  return aar.match(/\d/) ? 160.215 + (channel - 7) * 0.015 : null;
+}
+
 /** Whole seconds, "0:12" (a row of ticking tenths would be exhausting to read). */
 export function keyedFor(seconds: number): string {
   const whole = Math.max(0, Math.floor(seconds));

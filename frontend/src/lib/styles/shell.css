@@ -36,11 +36,10 @@
 .hud-sheet { position: fixed; top: var(--header-h); left: 0; right: 0; z-index: 19; display: grid; background: var(--bg-raised); border-bottom: 1px solid var(--line-faint); }
 
 .hud-content {
-  position: absolute; left: 0; right: 0; top: var(--header-h); bottom: var(--status-h);
+  position: absolute; left: var(--margin-x); right: var(--margin-x); top: var(--header-h); bottom: var(--status-h);
 }
 /* a stage route: the scaled content box keeps the old margins and chrome gaps */
 .hud-content--staged {
-  left: var(--margin-x); right: var(--margin-x);
   top: calc(var(--header-h) + var(--gap-chrome)); bottom: calc(var(--status-h) + var(--gap-chrome));
 }
 .hud-content.cols12 { display: grid; grid-template-columns: repeat(12, 1fr); column-gap: var(--gutter); }

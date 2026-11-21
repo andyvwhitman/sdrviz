@@ -6,7 +6,7 @@
    */
   import { onMount, tick, untrack } from "svelte";
   import * as fmt from "$lib/hud/fmt";
-  import { frameLabel, keyedFor, keyFrames, reconcile, without, type KeyFrame, type StripEntry } from "$lib/hud/keyups";
+  import { aarMhz, frameLabel, keyedFor, keyFrames, reconcile, without, type KeyFrame, type StripEntry } from "$lib/hud/keyups";
   import { router } from "$lib/router.svelte";
   import { frequencies } from "$lib/stores/frequencies.svelte";
   import { live } from "$lib/stores/live.svelte";
@@ -83,7 +83,7 @@
   }
   onMount(() => () => timers.forEach((timer) => clearTimeout(timer)));
 
-  const mhzOf = (frame: KeyFrame): string => fmt.freq(live.state?.channels.find((c) => c.id === frame.id)?.freq_mhz ?? frequencies.byId(frame.id)?.freq_mhz);
+  const mhzOf = (frame: KeyFrame): string => fmt.freq(live.state?.channels.find((c) => c.id === frame.id)?.freq_mhz ?? frequencies.byId(frame.id)?.freq_mhz ?? aarMhz(frame.aar));
   const secondsOf = (entry: StripEntry): number => entry.frozenS ?? keyAge(simClock.now, entry.frame.since);
 
   // ---- scrolling: a wheel moves it sideways, a new frame brings the right end into view, an edge with more fades

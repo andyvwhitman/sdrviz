@@ -106,6 +106,21 @@
 .hud .mp-stop-hit { fill: transparent; stroke: none; }
 .hud .mp-vlabel      { font: 500 var(--fs-12) var(--font-label); letter-spacing: 0.08em; text-transform: uppercase; fill: var(--ink); }
 
+/* real-train leaders (decision 78) */
+.hud .mp-leader .s-hair { stroke: var(--ink-3); }
+.hud .mp-leader .mp-vlabel { paint-order: stroke; stroke: var(--bg-void); stroke-width: 3px; stroke-linejoin: round; }
+.hud .mp-leader.is-stale .mp-vlabel { fill: var(--ink-3); }
+.hud .mp-leader.is-selected .s-hair { stroke: var(--state-select); }
+.hud .mp-leader.is-selected .mp-vlabel { fill: var(--state-select); }
+/* the diagonal draws outward from the mark, then the shelf and the name come in */
+.hud .mp-leader-diag { stroke-dasharray: 1; animation: mp-leader-draw var(--t-commit) var(--ease-instrument) backwards; }
+.hud .mp-leader-shelf { animation: mp-leader-in var(--t-micro) linear var(--t-commit) backwards; }
+@keyframes mp-leader-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes mp-leader-in { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .hud .mp-leader-diag, .hud .mp-leader-shelf { animation: none; }
+}
+
 /* ---------- phone (below 768 px): the map is a page; the canvas fills the window under the page header ---------- */
 .mp-frame.is-phone { position: relative; inset: auto; flex: 1; display: flex; min-height: 420px; }
 .mp-frame.is-phone .mp-canvas { position: relative; inset: auto; flex: 1; }

@@ -20,7 +20,7 @@
   import { channelNumber, driverName, feedLook, fix, isMeasured, pct, siteName } from "./look";
   import SampleRateChart from "./SampleRateChart.svelte";
   import SpectrumPlot from "./SpectrumPlot.svelte";
-  import { channelX, frameTrace, idleRipple, sampledRows, syntheticTrace, type Cells } from "./traces";
+  import { channelX, frameFloor, frameTrace, idleRipple, sampledRows, syntheticTrace, type Cells } from "./traces";
   import { offBankLabels } from "../system/ruler";
 
   interface Props {
@@ -91,12 +91,17 @@
   onDestroy(() => spectrum.watch(null));
 
   const ripple = $derived(idleRipple(feed.id, PLOT_W));
+  /** a frame that arrived for this feed is drawn whatever else the feed reports (a node sends spectrum, not a floor) */
+  const liveFrame = $derived(spectrum.watched === feed.id ? spectrum.latest : null);
   const trace = $derived.by(() => {
-    if (!measured || feed.noise_floor_dbfs == null) return null;
-    const frame = spectrum.latest;
-    if (frame && spectrum.watched === feed.id) return frameTrace(frame, PLOT_W);
-    return syntheticTrace(feed.noise_floor_dbfs, ripple, rxChannels);
+    if (liveFrame) return frameTrace(liveFrame, PLOT_W);
+    if (measured && feed.noise_floor_dbfs != null) return syntheticTrace(feed.noise_floor_dbfs, ripple, rxChannels);
+    return null;
   });
+  /** the reported floor, else the median of the live frame: a measurement, never an invented number */
+  const floor = $derived(feed.noise_floor_dbfs ?? (liveFrame ? frameFloor(liveFrame) : null));
+  const snr = $derived(feed.snr_db == null ? null : Math.round(feed.snr_db));
+  const notReported = $derived(measured && feed.sample_rate_measured_msps == null);
 
   // -- LOFAR waterfall ----------------------------------------------------------------------------
   const lofar = $derived(snapshot.lofar_60m);
@@ -155,9 +160,9 @@
 
   <div class="fb-insp__body" bind:clientWidth={innerW}>
   <div class="fb-sec">
-    <h4>SPECTRUM · {feed.short}<span class="r">{measured ? `FLOOR ${fix(feed.noise_floor_dbfs, 1)} dBFS · SNR ${Math.round(feed.snr_db ?? 0)} dB` : fmt.BLANK}</span></h4>
+    <h4>SPECTRUM · {feed.short}<span class="r">{measured || liveFrame ? `FLOOR ${fix(floor, 1)} dBFS · SNR ${snr ?? fmt.BLANK} dB` : fmt.BLANK}</span></h4>
     <div class="fb-plot">
-      <SpectrumPlot width={innerW} gutter={GUTTER} {trace} floorDbfs={feed.noise_floor_dbfs} receptions={rxChannels} noSamplesText="NO SAMPLES · LAST {sinceClock}" {heard} bank={heard} {extraLabels} />
+      <SpectrumPlot width={innerW} gutter={GUTTER} {trace} floorDbfs={floor} receptions={rxChannels} noSamplesText={measured ? "AWAITING SPECTRUM" : `NO SAMPLES · LAST ${sinceClock}`} {heard} bank={heard} {extraLabels} />
     </div>
   </div>
 
@@ -170,8 +175,8 @@
 
   <div class="fb-pair">
   <div class="fb-sec" style="width:{RATE_W}px">
-    <h4>SAMPLE RATE · 15 MIN<span class="r">{measured ? `${fix(feed.sample_rate_measured_msps, 4)} MS/s` : fmt.BLANK}</span></h4>
-    <div class="fb-plot"><SampleRateChart width={RATE_W} values={rates} /></div>
+    <h4>SAMPLE RATE · 15 MIN<span class="r">{measured && !notReported ? `${fix(feed.sample_rate_measured_msps, 4)} MS/s` : fmt.BLANK}</span></h4>
+    <div class="fb-plot"><SampleRateChart width={RATE_W} values={rates} notReported={measured && rates.every((v) => v == null)} /></div>
   </div>
   <div class="fb-sec" style="width:{HALF_W}px">
     <h4>COVERAGE<span class="r">R {feed.coverage_radius_km} KM · <span class="label">RINGS 5 KM</span></span></h4>
@@ -190,10 +195,15 @@
           {#if feed.state === "fault"}<span class="is-fault">{connection}</span>{:else}{connection}{/if}
         </KeyValue>
         {#if measured}
-          <KeyValue label="RATE MEASURED" value={fix(feed.sample_rate_measured_msps, 4)} unit="MS/s" />
-          <KeyValue label="RATE DEFICIT" value={fix(deficit, 2)} unit="%" />
-          <KeyValue label="NOISE FLOOR" value={fix(feed.noise_floor_dbfs, 1)} unit="dBFS" />
-          <KeyValue label="SNR" value={String(Math.round(feed.snr_db ?? 0))} unit="dB" />
+          {#if notReported}
+            <KeyValue label="RATE MEASURED"><span class="fb-nr is-solo">NOT REPORTED</span></KeyValue>
+            <KeyValue label="RATE DEFICIT"><span class="fb-nr is-solo">NOT REPORTED</span></KeyValue>
+          {:else}
+            <KeyValue label="RATE MEASURED" value={fix(feed.sample_rate_measured_msps, 4)} unit="MS/s" />
+            <KeyValue label="RATE DEFICIT" value={fix(deficit, 2)} unit="%" />
+          {/if}
+          <KeyValue label="NOISE FLOOR" value={fix(floor, 1)} unit="dBFS" />
+          <KeyValue label="SNR" value={snr == null ? fmt.BLANK : String(snr)} unit="dB" />
           <KeyValue label="LAST SAMPLE" value={fmt.age(sampleAge)} />
         {:else}
           {#each ["RATE MEASURED", "RATE DEFICIT", "NOISE FLOOR", "SNR"] as label}<KeyValue {label} children={blank} />{/each}

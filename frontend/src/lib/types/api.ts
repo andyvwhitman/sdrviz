@@ -5,6 +5,8 @@ export interface SessionInfo {
   sim: boolean;
   /** absent on a backend without roles: treated as admin */
   role?: "admin" | "viewer";
+  /** the server version, shown as BUILD <version> in the footer */
+  version: string;
 }
 
 export interface SimStatus {

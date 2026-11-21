@@ -18,6 +18,8 @@ class SessionOut(BaseModel):
     authenticated: bool
     sim: bool = True
     role: Literal["viewer", "admin"] | None = None  # null when not logged in
+    version: str
+    commit: str | None = None  # null when the server has no git checkout (the container)
 
 
 class SimOut(BaseModel):

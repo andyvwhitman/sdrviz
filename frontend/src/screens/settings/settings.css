@@ -46,3 +46,4 @@
 .nd-meta { margin-top: 10px; }
 .nd-high { color: var(--state-stale); }
 .nd-key { margin: 10px 0 0; }
+.st-table--timings :is(th, td):nth-child(n + 3) { text-align: right; padding-left: 16px; }

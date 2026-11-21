@@ -8,6 +8,8 @@ class SessionStore {
   /** null until GET /auth/session has answered */
   authenticated = $state<boolean | null>(null);
   sim = $state(true);
+  /** the server version, for the footer title block */
+  build = $state("—");
   role = $state<"admin" | "viewer">("admin");
   /** viewers read and listen; the controls that change things are for admins (the backend enforces it) */
   isAdmin = $derived(this.role === "admin");
@@ -20,6 +22,7 @@ class SessionStore {
       const info = await api.auth.session();
       this.authenticated = info.authenticated;
       this.sim = info.sim;
+      this.build = info.version;
       this.role = info.role ?? "admin";
       this.unreachable = false;
     } catch (error) {

@@ -53,6 +53,14 @@ export function frameTrace(frame: SpectrumFrame, width: number): number[] {
   });
 }
 
+/** The median bin of a live frame in dBFS, rounded to 0.1: the floor the node's own spectrum shows. */
+export function frameFloor(frame: SpectrumFrame): number {
+  const bins = Array.from(frame.bins).sort((a, b) => a - b);
+  const mid = bins.length >> 1;
+  const median = bins.length % 2 ? bins[mid] : (bins[mid - 1] + bins[mid]) / 2;
+  return Math.round(median * 10) / 10;
+}
+
 /** An SVG path through `values`, one point per pixel, snapped to the half pixel. */
 export const tracePath = (values: number[], height: number): string => values.map((db, x) => `${x ? "L" : "M"}${x} ${dbY(db, height) + 0.5}`).join("");
 

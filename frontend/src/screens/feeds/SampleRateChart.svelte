@@ -6,8 +6,10 @@
     width: number;
     /** MS/s per minute, oldest first; null or 0 means no samples */
     values: (number | null)[];
+    /** the feed is fine but reports no rate: say so instead of NO SAMPLES */
+    notReported?: boolean;
   }
-  let { width, values }: Props = $props();
+  let { width, values, notReported = false }: Props = $props();
 
   const HEIGHT = 70;
   const RATE_MIN = 2.39;
@@ -46,7 +48,9 @@
   {#each values as v, i}
     {#if v}<rect class="f-line" x={x(i) - 1} y={y(v) - 1} width="3" height="3" />{/if}
   {/each}
-  {#if gap}
+  {#if notReported}
+    <text class="lab" x={plotW / 2} y={HEIGHT / 2 + 4} text-anchor="middle" fill="var(--ink-3)">NOT REPORTED</text>
+  {:else if gap}
     <path class="s-hair k-stale d-offline" d="M{x(gap.from)} {HEIGHT - 0.5}H{x(gap.to)}" />
     <text class="lab" x={x(gap.to)} y={HEIGHT - 6} text-anchor="end">NO SAMPLES</text>
   {/if}

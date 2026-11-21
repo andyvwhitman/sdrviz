@@ -11,7 +11,7 @@
     /** a narrow window keeps only the build and the map credit */
     compact?: boolean;
   }
-  let { screen, scope = null, build = "SIM-S3", sim = true, osm = false, compact = false }: Props = $props();
+  let { screen, scope = null, build = "—", sim = true, osm = false, compact = false }: Props = $props();
 </script>
 
 <div class="title-block">

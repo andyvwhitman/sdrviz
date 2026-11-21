@@ -156,6 +156,7 @@
           stops={store.stops}
           recent={store.recent}
           locate={store.locate}
+          inline={!store.spot}
           {contrast}
           onlocate={() => store.useMyLocation()}
           onpick={pick}

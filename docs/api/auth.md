@@ -49,7 +49,7 @@ Clears the session cookie. Always `204`.
 Works with or without a session. Use it to find out who you are.
 
 ```json
-{"authenticated": true, "sim": true, "role": "viewer"}
+{"authenticated": true, "sim": true, "role": "viewer", "version": "0.1.0", "commit": "c36afb0"}
 ```
 
 | Field | Type | Meaning |
@@ -57,6 +57,8 @@ Works with or without a session. Use it to find out who you are.
 | `authenticated` | bool | A valid session cookie was sent |
 | `role` | `"viewer"`, `"admin"` or `null` | `null` when not logged in |
 | `sim` | bool | `true` when the server plays back a recorded day (replay mode), `false` when it serves live nodes. Same value as `sim` in `GET /api/system` |
+| `version` | string | The server version. The footer shows it as `BUILD <version>` |
+| `commit` | string or `null` | The short git hash, or `null` when the server has no git checkout (the container) |
 
 ## The cookie
 

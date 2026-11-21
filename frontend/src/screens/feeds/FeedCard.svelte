@@ -75,7 +75,7 @@
   </div>
 
   <div class="fb-mini is-row">
-    <div><span class="k">RATE<span class="u">MS/s</span></span><span class="v" class:is-blank={!measured}>{measured ? fix(feed.sample_rate_measured_msps, 3) : fmt.BLANK}</span></div>
+    <div><span class="k">RATE<span class="u">MS/s</span></span>{#if measured && feed.sample_rate_measured_msps == null}<span class="v is-nr">N/R</span>{:else}<span class="v" class:is-blank={!measured}>{measured ? fix(feed.sample_rate_measured_msps, 3) : fmt.BLANK}</span>{/if}</div>
     <div><span class="k">CENTRE<span class="u">MHz</span></span><span class="v is-set">{fmt.freq(feed.center_mhz)}</span></div>
     <div><span class="k">GAIN<span class="u">dB</span></span><span class="v is-set">{fix(feed.gain_db, 1)}</span></div>
     <div><span class="k">PPM</span><span class="v is-set">{fix(feed.ppm, 0)}</span></div>

@@ -16,7 +16,7 @@
 .fb-hero .hero__stack .b.is-fault { color: var(--state-fault); }
 
 /* ---------- feed list: HOST card + one card per feed ------------------- */
-.fb-card { position: relative; padding: 12px 16px 12px; background: var(--bg-panel); }
+.fb-card { container-type: inline-size; position: relative; padding: 12px 16px 12px; background: var(--bg-panel); }
 .fb-card.has-wash { background: var(--bg-panel); }
 .fb-card > .frame { z-index: 0; }
 .fb-card > *:not(.frame):not(.sel) { position: relative; z-index: 1; }
@@ -39,6 +39,7 @@
 .fb-mini .k { font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--ink-3); }
 .fb-mini .v { font: 400 var(--fs-13)/1 var(--font-data); color: var(--ink); white-space: nowrap; }
 .fb-mini .v .u { font-size: var(--fs-12); color: var(--ink-2); margin-left: 4px; }
+.fb-mini .v.is-nr { font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink-3); }
 .fb-mini .v.is-blank { color: var(--ink-3); }
 .fb-mini .v.is-stale { color: var(--state-stale); }
 .fb-mini .v.is-set { color: var(--ink-2); }
@@ -112,6 +113,7 @@
 .fb-insp .kv .v .is-stale { color: var(--state-stale); }
 .fb-kv2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); column-gap: 24px; margin-top: 4px; }
 .fb-kv2 .colhead { font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--ink-3); padding: 6px 0 2px; }
+.fb-insp .fb-nr.is-solo { margin-left: 0; }
 .fb-insp .fb-nr { font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink-3); margin-left: 8px; text-transform: uppercase; }
 .fb-disc { display: flex; align-items: center; gap: 16px; height: 24px; }
 .fb-disc .t-micro { color: var(--ink-3); }
@@ -241,3 +243,9 @@
 .fb-source__url { display: grid; gap: 4px; margin-top: 12px; min-width: 0; }
 .fb-source__url .k { font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--ink-3); }
 .fb-source__url .mono { font-size: var(--fs-12); color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* a narrow card (a phone, or the list dragged to its minimum): the six readouts make 2 rows of 3, the telemetry wraps */
+@container (max-width: 480px) {
+  .fb-mini.is-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 16px; row-gap: 8px; }
+  .fb-tel { flex-wrap: wrap; height: auto; row-gap: 6px; }
+}

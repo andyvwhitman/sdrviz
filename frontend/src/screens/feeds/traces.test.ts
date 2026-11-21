@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { channelX, idleRipple, runsOf, sampledRows } from "./traces";
+import { channelX, frameFloor, idleRipple, runsOf, sampledRows } from "./traces";
 
 describe("traces", () => {
   it("places the first and last channel on the plot edges", () => {
@@ -26,5 +26,13 @@ describe("traces", () => {
     const rows = sampledRows({ rows: 6, rowS: 30, measured: true, lastSampleAgeS: 0, cellRows: new Set(), minuteStates: ["ok", "stale", "ok", "ok"], nowS: 1200 });
     expect(rows[3]).toBe(false);
     expect(rows[0]).toBe(true);
+  });
+});
+
+describe("frameFloor", () => {
+  const frame = (bins: number[]) => ({ centerMhz: 160.8, spanMhz: 2, bins }) as unknown as Parameters<typeof frameFloor>[0];
+  it("is the median bin, to 0.1 dB", () => {
+    expect(frameFloor(frame([-60, -90, -70, -20, -75]))).toBe(-70);
+    expect(frameFloor(frame([-61, -60, -30, -80]))).toBe(-60.5);
   });
 });

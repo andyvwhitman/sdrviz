@@ -14,12 +14,14 @@
     recent: Spot[];
     locate: LocateStatus;
     contrast: boolean;
+    /** part of the page flow instead of a floating sheet (the first run, with no spot yet) */
+    inline?: boolean;
     onlocate: () => void;
     onpick: (spot: Spot) => void;
     oncontrast: (on: boolean) => void;
     onclose: () => void;
   }
-  let { stops, recent, locate, contrast, onlocate, onpick, oncontrast, onclose }: Props = $props();
+  let { stops, recent, locate, contrast, inline = false, onlocate, onpick, oncontrast, onclose }: Props = $props();
 
   let text = $state("");
   let input: HTMLInputElement | undefined;
@@ -43,7 +45,7 @@
 
 <svelte:window onkeydown={(e) => e.key === "Escape" && onclose()} />
 
-<div class="pk br br--line" role="dialog" aria-label="Choose a spot">
+<div class="pk br br--line" class:pk--inline={inline} role="dialog" aria-label="Choose a spot">
   <button class="pk__btn pk__btn--primary" type="button" onclick={onlocate}>
     {locate === "locating" ? "LOCATING…" : "USE MY LOCATION"}
   </button>
@@ -124,4 +126,6 @@
   .pk__switch input:checked { box-shadow: inset 0 0 0 1px var(--line); }
   .pk__switch input:checked::after { content: ""; width: 10px; height: 10px; background: var(--ink); }
   @media (min-width: 900px) { .pk { left: auto; right: var(--margin-x); width: 420px; } }
+  /* the first run: the sheet is part of the page and pushes the rest down */
+  .pk.pk--inline { position: static; width: auto; max-height: none; box-shadow: none; }
 </style>

@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Request, Response
 
 from ..auth import current_role, role_for_password
 from ..schemas import LoginIn, SessionOut
+from .system import VERSION, _git_commit
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -37,4 +38,10 @@ def logout(request: Request) -> Response:
 @router.get("/session")
 def session(request: Request) -> SessionOut:
     role = current_role(request)
-    return SessionOut(authenticated=role is not None, sim=request.app.state.rt.settings.sim, role=role)
+    return SessionOut(
+        authenticated=role is not None,
+        sim=request.app.state.rt.settings.sim,
+        role=role,
+        version=VERSION,
+        commit=_git_commit(),
+    )

@@ -16,12 +16,14 @@
     title: string;
     /** the layer is open (only drawn when narrow) */
     layerOpen: boolean;
+    /** nothing to show in the detail: the pane draws its own frame (content brings its own bracketed panel) */
+    detailEmpty?: boolean;
     onback: () => void;
     toolbar?: Snippet;
     list: Snippet;
     detail: Snippet;
   }
-  let { title, layerOpen, onback, toolbar, list, detail }: Props = $props();
+  let { title, layerOpen, detailEmpty = false, onback, toolbar, list, detail }: Props = $props();
 
   const narrow = $derived(viewport.width < NARROW_PX);
   let width = $state(viewport.width);
@@ -65,7 +67,7 @@
       oncommit={() => feedsPrefs.save()}
       onreset={() => ((feedsPrefs.split = null), feedsPrefs.save())}
     />
-    <div class="fe-detail br">
+    <div class="fe-detail" class:br={detailEmpty}>
       <div class="fe-detail__scroll"><div class="fe-detail__in">{@render detail()}</div></div>
     </div>
   {:else if layerOpen}

@@ -10,6 +10,7 @@
   import { api, ApiError } from "$lib/api/client";
   import Button from "$lib/components/Button.svelte";
   import Field from "$lib/components/Field.svelte";
+  import Glyph from "$lib/components/Glyph.svelte";
   import PositionGlyph from "$lib/components/PositionGlyph.svelte";
   import SelectField from "$lib/components/SelectField.svelte";
   import { aar as aarPair } from "$lib/hud/fmt";
@@ -240,15 +241,15 @@
 <div class="fe fe--{variant}" role="group" aria-label={freq ? titleOf(freq) : "New frequency"}>
   <header class="fe__bar">
     {#if variant === "layer"}
-      <button class="fe__back" type="button" onclick={() => requestClose()}>‹ BACK</button>
+      <button class="fe__back" type="button" onclick={() => requestClose()}><Glyph name="chevron-left" /> BACK</button>
     {/if}
     <span class="fe__title" id="fe-title-{uid}">
       {#if freq}<span class="fe__mono">{aarPair(freq.aar_channel)}</span> · <b>{freq.label}</b>{:else if isAdd}NEW FREQUENCY{:else}<span class="fe__mono">— — —</span>{/if}
       {#if notOnListened}<span class="fe__note">NOT ON {listenedShort}</span>{/if}
     </span>
     <span class="fe__grow"></span>
-    {#if freq && openPage}<a class="fe__open" href="/frequency/{encodeURIComponent(freq.id)}" onclick={followLink}>OPEN PAGE ›</a>{/if}
-    {#if variant !== "layer"}<button class="fe__x" type="button" aria-label="Close" onclick={() => requestClose()}>×</button>{/if}
+    {#if freq && openPage}<a class="fe__open" href="/frequency/{encodeURIComponent(freq.id)}" onclick={followLink}>OPEN PAGE <Glyph name="chevron-right" /></a>{/if}
+    {#if variant !== "layer"}<button class="fe__x" type="button" aria-label="Close" onclick={() => requestClose()}><Glyph name="close" size={16} /></button>{/if}
   </header>
 
   <div class="fe__body">
@@ -258,7 +259,7 @@
         {#if target.ok}
           <p class="fe__resolve">{targetReadout(target)}</p>
           {#each sameMhz as other (other.id)}
-            <p class="fe__same">ON THIS MHz: {other.label}{#if onopen} <button type="button" class="fe__link" onclick={() => onopen?.(other.id)}>›</button>{/if}</p>
+            <p class="fe__same">ON THIS MHz: {other.label}{#if onopen} <button type="button" class="fe__link" onclick={() => onopen?.(other.id)} aria-label="Open {other.label}"><Glyph name="chevron-right" /></button>{/if}</p>
           {/each}
         {/if}
       </section>
@@ -352,7 +353,8 @@
   .fe__grow { flex: 1; }
   .fe__open, .fe__back, .fe__link { font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink-2); border: 0; background: none; padding: 0; cursor: pointer; white-space: nowrap; text-transform: uppercase; }
   .fe__open:hover, .fe__back:hover, .fe__link:hover { color: var(--ink); }
-  .fe__x { width: 32px; height: 32px; margin-right: -8px; border: 0; background: none; color: var(--ink-2); font: 400 var(--fs-18)/1 var(--font-data); cursor: pointer; }
+  .fe__open, .fe__back { display: inline-flex; align-items: center; gap: 6px; }
+  .fe__x { display: inline-grid; place-items: center; width: 32px; height: 32px; margin-right: -8px; border: 0; background: none; color: var(--ink-2); font: 400 var(--fs-18)/1 var(--font-data); cursor: pointer; }
   .fe__x:hover { color: var(--ink); }
   .fe__back { font-size: var(--fs-13); min-height: 44px; padding-right: 8px; }
 

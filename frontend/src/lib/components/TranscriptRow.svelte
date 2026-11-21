@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Glyph from "$lib/components/Glyph.svelte";
   /**
    * Transcript row (spec 5.12). Takes the scenario row shape (`transcript.rows[]`) and a column set:
    * "log" is Live Ops (time, channel, feed, role, speaker, text); "history" adds AAR, channel name and duration.
@@ -109,7 +110,7 @@
     {#if row.state === "not_recorded"}
       {" "}<span class="not-rec">NOT RECORDED</span>
     {:else if play}
-      {" "}<span class="play">▶ {fmt.dur(row.duration_s)}</span>
+      {" "}<span class="play"><Glyph name="play" size={10} /> {fmt.dur(row.duration_s)}</span>
     {/if}
   </span>
 </div>

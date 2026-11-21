@@ -29,7 +29,7 @@
   }
   let { route, sticky = false }: Props = $props();
 
-  const state = $derived(live.state);
+  const snapshot = $derived(live.state);
   const linkDown = $derived(link.shownStatus === "reconnecting" || link.shownStatus === "no-link");
   /** `?force=loading|connecting`: the shell shows dashes, as before the first data (spec 8.4) */
   const blank = $derived(params.force === "loading" || params.force === "connecting");
@@ -37,16 +37,16 @@
 
   const chips = $derived.by((): ChipSpec[] => {
     if (blank) return [{ text: `FEEDS ${fmt.BLANK}`, kind: "nominal" }, { text: `ASR ${fmt.BLANK}`, kind: "nominal" }];
-    if (!state) return [];
-    const all = headerChips(state);
+    if (!snapshot) return [];
+    const all = headerChips(snapshot);
     // the transit feeds' own chips, while the map is polling them
     if (transit.active) all.push(...transitChips({ sources: transit.sources, fetchedAt: transit.fetchedAt, failed: transit.failed, now: transit.now }));
     return narrow ? compactChips(all) : all;
   });
 
-  const zone = $derived(state?.tz.name ?? "EST");
-  const utcShift = $derived(state ? -parseUtcOffset(state.tz.utc_offset) : 5 * 3600);
-  const clock = $derived(state ? fmt.clock(state.clock, ui.utc ? "UTC" : zone, utcShift) : fmt.BLANK);
+  const zone = $derived(snapshot?.tz.name ?? "EST");
+  const utcShift = $derived(snapshot ? -parseUtcOffset(snapshot.tz.utc_offset) : 5 * 3600);
+  const clock = $derived(snapshot ? fmt.clock(snapshot.clock, ui.utc ? "UTC" : zone, utcShift) : fmt.BLANK);
 
   // the menu leads with what works on a phone; the screens that show a plate follow under their own label
   const tabs = $derived(navFor(session.isAdmin));

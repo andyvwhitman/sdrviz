@@ -204,9 +204,6 @@ body.lo-resizing-row, body.lo-resizing-row * { cursor: row-resize !important; us
 /* keyed channels scrolled out of the tile area: an edge chip says so, and a click brings the tile into view */
 .lo__tilebox { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .lo__tilebox > .lo__tiles { flex: 1; }
-.lo-edge { position: absolute; left: 50%; transform: translateX(-50%); z-index: 3; display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 12px; background: var(--bg-void); box-shadow: inset 0 0 0 1px var(--state-tx); color: var(--state-tx); font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); white-space: nowrap; cursor: pointer; }
-.lo-edge--above { top: 6px; }
-.lo-edge--below { bottom: 6px; }
 
 /* a node tab is one line, whatever its name: the row scrolls sideways instead (the same as on the phone) */
 .lo-tabs > .tabs { min-width: 0; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }

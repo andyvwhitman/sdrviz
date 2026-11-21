@@ -7,6 +7,8 @@
   --sp-faint: var(--line-faint);
   max-width: 100%;
 }
+/* a desktop reads from one left edge: a content column of at most 1216 px, the window to its right stays empty */
+@media (min-width: 900px) { .sp { max-width: calc(1216px + 2 * var(--margin-x)); } }
 
 /* HIGH CONTRAST (direction 8.1): ink-2 becomes ink, ink-3 becomes ink-2, hairlines thicken, dashes lengthen.
    The palette, hue rules and layout do not change. */
@@ -30,7 +32,7 @@
   display: flex; align-items: center; gap: 8px; padding: 6px 16px; min-height: 40px;
   border-bottom: 1px solid var(--grid);
 }
-.sp__count { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink-2); }
+.sp__count { flex: none; min-width: 0; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink-2); }
 .sp__opr { display: flex; align-items: center; gap: 8px; }
 .sp__opr-k { display: none; font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink-2); }
 .sp__opr select {
@@ -52,10 +54,11 @@
 
 @media (min-width: 900px) {
   .sp__opr-k { display: inline; }
-  .sp__top { display: grid; grid-template-columns: minmax(0, 1fr) 460px; grid-template-areas: "hero bar" "timeline timeline"; align-items: start; }
+  .sp__opr { margin-left: 16px; }
+  .sp__top { display: grid; grid-template-columns: 460px minmax(0, 756px); grid-template-areas: "bar hero" "timeline timeline"; justify-content: start; align-items: start; }
   .sp__hero { grid-area: hero; }
-  .sp__bar { grid-area: bar; border-left: 1px solid var(--grid); height: 100%; display: flex; flex-direction: column; justify-content: center; }
-  .sp__bar :global(.sb__main) { padding-left: 24px; padding-right: var(--margin-x); }
+  .sp__bar { grid-area: bar; border-right: 1px solid var(--grid); height: 100%; display: flex; flex-direction: column; justify-content: center; }
+  .sp__bar :global(.sb__main) { padding-left: var(--margin-x); padding-right: 24px; }
   .sp__timeline { grid-area: timeline; }
   .sp__filters { padding: 10px var(--margin-x); }
   .sp__note, .sp__empty { padding-left: var(--margin-x); padding-right: var(--margin-x); }

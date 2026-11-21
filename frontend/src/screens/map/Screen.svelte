@@ -32,7 +32,6 @@
   import { userLocation } from "$lib/stores/userLocation.svelte";
   import StationSchematic from "./StationSchematic.svelte";
   import { STATIONS, stationFor } from "./lib/stationSchematic";
-  import OnAirList from "./OnAirList.svelte";
   import RegMark from "./RegMark.svelte";
   import { feedLook } from "./lib/inputs";
   import type { Rect } from "./lib/geom";
@@ -56,7 +55,7 @@
   /** the foot of a phone's canvas is for the mode chips and the attribution, not for the map */
   const PHONE_FOOT_PX = 120;
   const height = $derived(phone ? Math.max(0, boxH - PHONE_FOOT_PX) : stageHeight);
-  const width = $derived(phone ? boxW : stage.width - 64);
+  const width = $derived(phone ? boxW : stage.width);
   const query = new URLSearchParams(location.search);
   const demo = query.get("motion") === "1";
   const frozenAt = query.get("t") ? Number(query.get("t")) : null;
@@ -171,7 +170,7 @@
   const locateText = $derived(userLocation.status === "denied" || userLocation.status === "unavailable" ? "LOCATE N/A" : userLocation.fix ? "LOCATE" : "LOCATING");
   $effect(() => {
     shell.scope = ["MODE", mode === "geo" ? "GEO" : "SCHEMATIC"];
-    shell.statusFallback = `MAP · ${mode === "geo" ? "GEO" : "SCHEMATIC"} · ${moved ? "CUSTOM VIEW" : "DEFAULT VIEW"} · ZOOM ${zoomText}×`;
+    shell.statusFallback = `MAP · ${mode === "geo" ? "GEO" : "SCHEMATIC"} · ${moved ? "CUSTOM VIEW" : "DEFAULT VIEW"} · ZOOM ${zoomText}X`;
   });
 
   // ---- overlays are label obstacles: measured (offset geometry, immune to the stage scale)
@@ -179,12 +178,11 @@
   let termsEl = $state<HTMLElement>();
   let readoutEl = $state<HTMLElement>();
   let ctlEl = $state<HTMLElement>();
-  let onairEl = $state<HTMLElement>();
   let attribEl = $state<HTMLElement>();
   let cursorEl = $state<HTMLElement>();
   let overlays = $state.raw<Rect[] | null>(null);
   $effect(() => {
-    const els = [readoutEl, ctlEl, onairEl, attribEl, cursorEl];
+    const els = [readoutEl, ctlEl, attribEl, cursorEl];
     if (els.some((el) => !el)) return;
     if (termsEl) els.push(termsEl); // the open TERMINALS list is an obstacle too
     const measureAll = (): void => {
@@ -315,7 +313,6 @@
       <TrainList fetchedAt={transit.fetchedAt} vehicles={inView} selectedId={trainId} onselect={(id) => openTrain(id, true)} compact={phone || width - (current ? PANEL_W : 0) < 1500} folded={listFolded} />
     </div>
 
-    <div class="mp-onair" bind:this={onairEl}><OnAirList rows={snap?.active_transmissions ?? []} {demoMs} {demoRow} /></div>
 
     <div class="mp-ctl" bind:this={ctlEl}>
       <Chip text="GEO" kind="filter" button pressed={mode === "geo"} onclick={() => setMode("geo")} />
@@ -332,7 +329,7 @@
       {#if station}
         <Chip text="BACK" kind="filter" button onclick={closeStation} />
       {:else}
-        <span class="mp-zoom" class:is-hidden={heroCountOnly}><span class="k">ZOOM</span>{zoomText}×</span>
+        <span class="mp-zoom" class:is-hidden={heroCountOnly}><span class="k">ZOOM</span>{zoomText}X</span>
       {/if}
     </div>
 

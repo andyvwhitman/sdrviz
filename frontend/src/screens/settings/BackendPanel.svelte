@@ -38,7 +38,7 @@
       <KeyValue label="PYTHON" value={stats.build.python} />
       <KeyValue label="PLATFORM" value={stats.build.platform} />
       <KeyValue label="UPTIME" value={uptime(stats.uptime_s)} />
-      <KeyValue label="SIMULATION" value={stats.sim.enabled ? `ON · ${stats.sim.speed}×` : "OFF"} />
+      <KeyValue label="SIMULATION" value={stats.sim.enabled ? `ON · ${stats.sim.speed}X` : "OFF"} />
     </div>
 
     <h4 class="st-h">PROCESS</h4>

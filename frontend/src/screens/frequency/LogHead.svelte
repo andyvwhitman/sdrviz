@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Glyph from "$lib/components/Glyph.svelte";
   /** The header bar of the log: title with today's count, the jumped-to bucket chip and the CONTINUOUS switch. */
   interface Props {
     /** transmissions today, once the day's activity is known */
@@ -16,7 +17,7 @@
 
 <div class="lg__head" class:lg__head--pane={variant === "pane"}>
   <h2 class="lg__title">TRANSMISSIONS{#if countToday != null}{" · "}<span class="lg__n">{countToday}</span> TODAY{/if}</h2>
-  {#if bucket}<button class="lg__chip" type="button" onclick={onclearbucket} aria-label="Return the log to newest">{bucket.label} ×</button>{/if}
+  {#if bucket}<button class="lg__chip" type="button" onclick={onclearbucket} aria-label="Return the log to newest">{bucket.label} <Glyph name="close" /></button>{/if}
   <span class="lg__grow"></span>
   <button class="lg__cont" type="button" aria-pressed={continuous} onclick={ontogglecontinuous} title="Play the next newer transmission when one ends (C)">CONTINUOUS</button>
 </div>

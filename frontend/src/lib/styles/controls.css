@@ -75,8 +75,13 @@ button.chip:hover { color: var(--ink); }
 .btn:active { color: var(--state-select); }
 
 .disclosure { display: inline-flex; gap: 6px; align-items: center; font: 500 var(--fs-12)/1 var(--font-label); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--ink-2); }
-.disclosure::before { content: "\25B8"; font-family: var(--font-data); color: var(--ink-3); }
-.disclosure[aria-expanded="true"]::before { content: "\25BE"; }
+/* the chevron is drawn, as Glyph.svelte draws it (chevron-right, and chevron-down when open) */
+.disclosure::before {
+  content: ""; width: 12px; height: 12px; background: var(--ink-3);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M6 3.5L10.5 8L6 12.5' fill='none' stroke='black' stroke-width='1.25'/%3E%3C/svg%3E") center / 12px 12px no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M6 3.5L10.5 8L6 12.5' fill='none' stroke='black' stroke-width='1.25'/%3E%3C/svg%3E") center / 12px 12px no-repeat;
+}
+.disclosure[aria-expanded="true"]::before { transform: rotate(90deg); }
 
 /* inputs: underline-only hairline, label above in 11 px uppercase */
 .field { display: grid; gap: 6px; min-width: 120px; }

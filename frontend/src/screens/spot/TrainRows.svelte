@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Glyph from "$lib/components/Glyph.svelte";
   /**
    * The honest table: every train in the horizon, soonest first. Trains that have just passed sit dimmed above
    * a NOW divider (a phone shows the latest two; the rest open on tap). A row opens in place with the train's next
@@ -41,9 +42,12 @@
   const tripHref = (row: Row): string => `/map?page=trip&id=${encodeURIComponent(tripId(row))}`;
   /** where lines run side by side (Halethorpe), each row says which line it is on */
   const mixed = $derived(new Set([...rows.passed, ...rows.coming].map((r) => r.train.line).filter(Boolean)).size > 1);
-  const route = (row: Row): string => (mixed && row.train.line ? `${row.train.line.toUpperCase()} · ` : "") + ([row.train.origin, row.train.destination].filter(Boolean).map((name) => cleanName(name!)).join(" → ") || BLANK);
-  /** the arrow points the way the train moves on the ladder */
-  const heading = (row: Row): string => (row.side === "left" ? `${directionText(row.train)} ▶` : `◀ ${directionText(row.train)}`);
+  const linePrefix = (row: Row): string => (mixed && row.train.line ? `${row.train.line.toUpperCase()} · ` : "");
+  /** FROM and TO, joined by an arrow in the markup */
+  const places = (row: Row): string[] => {
+    const names = [row.train.origin, row.train.destination].filter(Boolean).map((name) => cleanName(name!));
+    return names.length ? names : [BLANK];
+  };
   const at = (row: Row): string => (row.group === "overdue" ? BLANK : `${row.approx ? "~" : ""}${hhmm(row.train.eta)}`);
   const miles = (row: Row): string => (row.train.to_go_km == null ? BLANK : `${row.basis === "tracked" ? "" : "≈"}${(row.train.to_go_km * 0.621371).toFixed(1)} MI`);
   const late = (row: Row): boolean => delayCell(row.train.delay_s).tone === "late";
@@ -100,13 +104,13 @@
     </span>
     <span class="tr__id">
       <span class="tr__train">{row.tag}</span>
-      <span class="tr__dir">{heading(row)}</span>
+      <span class="tr__dir">{#if row.side === "left"}{directionText(row.train)} <Glyph name="arrow-right" size={14} />{:else}<Glyph name="arrow-left" size={14} /> {directionText(row.train)}{/if}</span>
       <span class="tr__stops">{stopWord(row.train)}</span>
     </span>
     <span class="tr__opr">{row.train.agency}</span>
     <span class="tr__route">
       {#if late(row)}<span class="tr__late"><Delay {...delayCell(row.train.delay_s)} /></span>{/if}
-      <span class="tr__path">{route(row)}</span>
+      <span class="tr__path">{linePrefix(row)}{#each places(row) as name, i}{#if i} <Glyph name="arrow-right" /> {/if}{name}{/each}</span>
       <span class="tr__bw">· {basisLine(row, false)}</span>
     </span>
     <span class="tr__dist">{miles(row)}</span>
@@ -129,14 +133,14 @@
           {/each}
         </ul>
       {/if}
-      <a class="tx__open" href={tripHref(row)} onclick={followLink}>OPEN TRIP ON MAP ›</a>
+      <a class="tx__open" href={tripHref(row)} onclick={followLink}>OPEN TRIP ON MAP <Glyph name="chevron-right" /></a>
     </div>
   {/if}
 {/snippet}
 
 <div class="tb">
   <div class="tb__cols" aria-hidden="true">
-    <span>ETA</span><span>AT</span><span>TRAIN</span><span>DIR</span><span>STOPS</span><span>OPERATOR</span><span>FROM → TO</span><span>DIST</span><span>DELAY</span><span>BASIS</span><span></span>
+    <span>ETA</span><span>AT</span><span>TRAIN</span><span>DIR</span><span>STOPS</span><span>OPERATOR</span><span>FROM <Glyph name="arrow-right" /> TO</span><span>DIST</span><span>DELAY</span><span>BASIS</span><span></span>
   </div>
   {#if hidden}
     <button type="button" class="tb__more" onclick={() => (allPassed = true)}>+{hidden} EARLIER</button>
@@ -190,14 +194,14 @@
   .tx__stops { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
   .tx__stops li { display: flex; justify-content: space-between; gap: 12px; font: 500 var(--fs-12)/1.3 var(--font-label); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--ink); }
   .tx__t { font: 400 var(--fs-12)/1.3 var(--font-data); color: var(--ink-2); }
-  .tx__open { display: inline-flex; align-items: center; min-height: 44px; font: 600 var(--fs-11) var(--font-label); letter-spacing: 0.12em; }
+  .tx__open { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; font: 600 var(--fs-11) var(--font-label); letter-spacing: 0.12em; }
 
   @media (min-width: 900px) {
     .tb__now, .tb__more { padding-left: var(--margin-x); padding-right: var(--margin-x); }
     .tx { padding-left: var(--margin-x); padding-right: var(--margin-x); }
     .tb__cols, .tr {
-      display: grid; align-items: center; column-gap: 16px; padding-left: var(--margin-x); padding-right: var(--margin-x);
-      grid-template-columns: 112px 72px 112px 72px 84px 88px minmax(0, 1fr) 80px 92px 190px 14px;
+      display: grid; align-items: center; column-gap: 14px; padding-left: var(--margin-x); padding-right: var(--margin-x);
+      grid-template-columns: 112px 72px 112px 72px 84px 88px minmax(160px, 1fr) 80px 92px 190px 14px;
       grid-template-areas: none;
     }
     .tb__cols { padding-top: 6px; padding-bottom: 6px; font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); color: var(--ink-3); border-bottom: 1px solid var(--grid); }

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Glyph from "$lib/components/Glyph.svelte";
   /**
    * The timeline: a tape of the next six hours (and the last one) that scrolls under a fixed window. Swipe it on a
    * phone, scroll or drag it on a desktop, or use the arrow keys; the table shows the trains inside the window.
@@ -136,9 +137,9 @@
   <div class="tl__head">
     <div class="tl__when" aria-live="polite">
       {#if win.live}
-        <span class="tl__now-k">NOW</span><span class="tl__to">→ {toClock}</span>
+        <span class="tl__now-k">NOW</span><span class="tl__to"><Glyph name="arrow-right" /> {toClock}</span>
       {:else}
-        <span class="tl__from">{fromClock}</span><span class="tl__to">→ {toClock}</span>
+        <span class="tl__from">{fromClock}</span><span class="tl__to"><Glyph name="arrow-right" /> {toClock}</span>
       {/if}
     </div>
     {#if !win.live}
@@ -207,8 +208,8 @@
 
     <!-- fixed over the tape: the window, and which way each lane runs -->
     <div class="tl__band" style:left="{headX}px" style:width="{bandW}px" aria-hidden="true"></div>
-    <div class="tl__lane tl__lane--up" aria-hidden="true">{leftArm.tag || "→"} ▶</div>
-    <div class="tl__lane tl__lane--down" aria-hidden="true">◀ {rightArm.tag || "←"}</div>
+    <div class="tl__lane tl__lane--up" aria-hidden="true">{#if leftArm.tag}{leftArm.tag}{/if}<Glyph name="arrow-right" size={14} /></div>
+    <div class="tl__lane tl__lane--down" aria-hidden="true"><Glyph name="arrow-left" size={14} />{#if rightArm.tag}{rightArm.tag}{/if}</div>
   </div>
 </section>
 
@@ -260,7 +261,7 @@
     box-shadow: inset 1px 0 0 var(--ink-2), inset -1px 0 0 var(--line-faint);
   }
   .tl__lane {
-    position: absolute; left: 8px; pointer-events: none; font: 500 var(--fs-11)/1 var(--font-label);
+    position: absolute; left: 8px; pointer-events: none; display: flex; align-items: center; gap: 4px; font: 500 var(--fs-11)/1 var(--font-label);
     letter-spacing: var(--track-label); color: var(--ink-3); background: var(--bg-void); padding: 1px 2px;
   }
   .tl__lane--up { top: 24px; }

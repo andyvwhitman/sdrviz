@@ -8,42 +8,59 @@
   position: relative; width: var(--stage-w); height: var(--stage-h);
   overflow: hidden; background: var(--bg-void); isolation: isolate;
 }
+/* THE BAR (sprint 6, B.3): 36 px at 1:1 CSS pixels on every route, 44 px with a menu under 900. Never scaled. */
 .hud-header {
-  position: absolute; left: 0; right: 0; top: 0; height: var(--header-h);
+  position: absolute; left: 0; right: 0; top: 0; z-index: 20; height: var(--header-h); box-sizing: border-box;
   padding: 0 var(--margin-x); display: grid; grid-template-columns: var(--nav-x) auto minmax(0, 1fr);
-  align-items: center; gap: 24px; border-bottom: 1px solid var(--grid);
+  align-items: center; gap: 24px; background: var(--bg-void); border-bottom: 1px solid var(--grid);
 }
+.hud-header--sticky { position: sticky; top: 0; }
 .hud-header__left  { display: flex; align-items: baseline; gap: 16px; min-width: 0; }
 .hud-header__right { grid-column: 3; display: flex; align-items: center; justify-content: flex-end; gap: 8px; min-width: 0; }
-.hud-mark { font: 600 var(--fs-18)/1 var(--font-display); letter-spacing: 0.16em; color: var(--ink); }
-.hud-screen-name { font: 500 var(--fs-12)/1 var(--font-label); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--ink-2); }
-.hud-clock { font: 400 var(--fs-13)/1 var(--font-data); color: var(--ink); padding: 0 8px; white-space: nowrap; }
+.hud-mark { font: 600 17px/1 var(--font-display); letter-spacing: 0.16em; color: var(--ink); }
+.hud-screen-name { font: 500 12px/1 var(--font-label); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--ink-2); }
+.hud-clock { font: 400 13px/1 var(--font-data); color: var(--ink); padding: 0 8px; white-space: nowrap; }
 
 /* the nav starts at the same x on every screen (--nav-x is the width of the mark + screen name column);
    the chips take the rest of the row, and the grid gap keeps the two apart */
-:root { --nav-x: 289px; }
+:root { --nav-x: 232px; }
 .hud-header--narrow { grid-template-columns: auto auto minmax(0, 1fr); }
 .hud-header--narrow .hud-screen-name { display: none; } /* the selected tab already says it */
 .hud-nav { display: flex; gap: 4px; align-items: flex-end; height: var(--header-h); }
-:root[data-size="1440"] .hud-nav .tab { padding: 0 16px 0 10px; letter-spacing: 0.08em; }
-.hud-nav .tab { height: 32px; margin-bottom: 0; }
+.hud-nav .tab { height: 26px; margin-bottom: 0; padding: 0 16px 0 12px; --chamfer: 6px; font-size: 12px; letter-spacing: 0.12em; }
+.hud-header .chip { height: 24px; padding: 0 8px; font-size: 12px; --arm: 3px; }
+.hud-header .chip .glyph { width: 12px; height: 12px; -webkit-mask-size: 12px 12px; mask-size: 12px 12px; }
+.hud-header .chip--icon { width: 24px; padding: 0; }
+
+/* the menu of the narrow bar sits under it, fixed, so one markup serves the stage and the page shells */
+.hud-sheet { position: fixed; top: var(--header-h); left: 0; right: 0; z-index: 19; display: grid; background: var(--bg-raised); border-bottom: 1px solid var(--line-faint); }
 
 .hud-content {
-  position: absolute; left: var(--margin-x); right: var(--margin-x);
-  top: calc(var(--header-h) + var(--gap-chrome));
-  bottom: calc(var(--status-h) + var(--gap-chrome));
+  position: absolute; left: 0; right: 0; top: var(--header-h); bottom: var(--status-h);
+}
+/* a stage route: the scaled content box keeps the old margins and chrome gaps */
+.hud-content--staged {
+  left: var(--margin-x); right: var(--margin-x);
+  top: calc(var(--header-h) + var(--gap-chrome)); bottom: calc(var(--status-h) + var(--gap-chrome));
 }
 .hud-content.cols12 { display: grid; grid-template-columns: repeat(12, 1fr); column-gap: var(--gutter); }
 
+/* THE FOOTER (B.4): 32 px, 44 px and pinned under 900 */
 .hud-status {
-  position: absolute; left: 0; right: 0; bottom: 0; height: var(--status-h);
-  padding: 0 0 0 var(--margin-x); display: flex; align-items: center; gap: 16px;
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 14; height: var(--status-h); box-sizing: border-box;
+  padding: 0 0 0 var(--margin-x); display: flex; align-items: center; background: var(--bg-void);
   border-top: 1px solid var(--grid);
 }
-.hud-status__msg { flex: 1; min-width: 0; font: 400 var(--fs-12)/1 var(--font-data); color: var(--ink-2); white-space: nowrap; overflow: hidden; }
-.hud-status__msg .label { font-size: var(--fs-11); }
+.hud-status--sticky { position: sticky; bottom: 0; }
+.hud-status__msg { flex: 1; min-width: 0; font: 400 12px/1 var(--font-data); color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 16px; }
+.hud-status__msg .label { font-size: 12px; }
 .hud-status__msg.is-fault { color: var(--state-fault); }
-.hud-status__ack { font: 400 var(--fs-12)/1 var(--font-data); color: var(--ink-2); white-space: nowrap; }
+.hud-status__ack { font: 400 12px/1 var(--font-data); color: var(--ink-2); white-space: nowrap; padding-right: 16px; }
+
+@media (max-width: 899px) {
+  .hud-header { display: flex; gap: 12px; padding: 0 16px; }
+  .hud-status { padding-left: 16px; }
+}
 
 /* Live Ops layout helpers (brief §9.1.3 arithmetic; spec §4.3) */
 .span-tiles { grid-column: 1 / span 7; }
@@ -52,4 +69,3 @@
 
 /* fluid layout (Live Ops): the window is the stage, in real CSS pixels. The screen owns its margins and gaps. */
 .hud-stage--fluid { position: fixed; inset: 0; width: auto; height: auto; }
-.hud-stage--fluid .hud-content { top: var(--header-h); bottom: var(--status-h); }

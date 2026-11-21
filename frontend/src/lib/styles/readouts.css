@@ -29,13 +29,13 @@
 .mp-inline.is-derived { color: var(--ink-3); }
 
 /* M10 title block: lives at the status line's right end, 24 px tall */
-.title-block { display: flex; height: var(--status-h); align-items: stretch; border-left: 1px solid var(--line-faint); flex: none; }
+.title-block { display: flex; align-self: stretch; align-items: stretch; border-left: 1px solid var(--line-faint); flex: none; }
 .title-block > div { display: flex; align-items: center; gap: 6px; padding: 0 10px; border-right: 1px solid var(--line-faint); white-space: nowrap; }
-.title-block > div:last-child { border-right: 0; padding-right: var(--margin-x); }
-.title-block .k { font: 500 var(--fs-11)/1 var(--font-label); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--ink-3); }
-.title-block .v { font: 400 var(--fs-11)/1 var(--font-data); color: var(--ink-2); }
+.title-block > div:last-child { border-right: 0; }
+.title-block .k { font: 500 12px/1 var(--font-label); letter-spacing: var(--track-label); text-transform: uppercase; color: var(--ink-3); }
+.title-block .v { font: 400 12px/1 var(--font-data); color: var(--ink-2); }
 .title-block .v.is-sheet { color: var(--ink); font-weight: 500; }
-.title-block a { border: 0; color: var(--ink-3); font: 400 var(--fs-11)/1 var(--font-label); letter-spacing: 0.04em; }
+.title-block a { border: 0; color: var(--ink-3); font: 400 12px/1 var(--font-label); letter-spacing: 0.04em; }
 
 /* N/A · RTL_TCP field (brief §9.4) */
 .kv { display: grid; grid-template-columns: 1fr auto; align-items: baseline; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--grid); }

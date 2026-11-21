@@ -9,7 +9,7 @@ export interface ChipSpec {
   text: string;
   kind: ChipKind;
   /** which header chip this is, for the narrow-header collapse */
-  id?: "feeds" | "asr" | "keyed" | "transit";
+  id?: "feeds" | "asr" | "transit";
   /** tooltip; the narrow-header collapse puts the full text here */
   title?: string;
   glyph?: GlyphState;
@@ -17,13 +17,13 @@ export interface ChipSpec {
   onset?: boolean;
 }
 
-type ChipState = Pick<LiveState, "header" | "faults" | "degraded" | "system" | "active_transmissions">;
+type ChipState = Pick<LiveState, "header" | "faults" | "degraded" | "system">;
 
 /**
- * FEEDS (fault + glyph + onset | acked + glyph | degraded + stale glyph | nominal), ASR, DISK, HOST,
- * and the orange KEYED chip (`txChip`).
+ * FEEDS (fault + glyph + onset | acked + glyph | degraded + stale glyph | nominal), ASR, DISK, HOST.
+ * What is keyed is not a chip: the footer's key-up strip shows it.
  */
-export function headerChips(state: ChipState, { txChip = false } = {}): ChipSpec[] {
+export function headerChips(state: ChipState): ChipSpec[] {
   const { header, faults, degraded } = state;
   const chips: ChipSpec[] = [];
 
@@ -39,19 +39,13 @@ export function headerChips(state: ChipState, { txChip = false } = {}): ChipSpec
 
   if (header.disk_chip) chips.push({ text: header.disk_chip, kind: "degraded" });
   if (header.host_chip) chips.push({ text: header.host_chip, kind: "degraded" });
-
-  const keyed = state.active_transmissions ?? [];
-  if (txChip && keyed.length) {
-    chips.push({ id: "keyed", text: `KEYED · ${keyed.map((a) => a.aar).join(" · ")}`, kind: "tx", glyph: "tx" });
-  }
   return chips;
 }
 
 const SEVERITY: ChipKind[] = ["nominal", "degraded", "acked", "fault"];
 
 /**
- * The header on a narrow stage: KEYED shows a count (the channel list moves to the tooltip) and FEEDS and ASR
- * share one chip that takes the worse of their two states.
+ * The header on a narrow window: FEEDS and ASR share one chip that takes the worse of their two states.
  */
 export function compactChips(chips: ChipSpec[]): ChipSpec[] {
   const feeds = chips.find((c) => c.id === "feeds");
@@ -60,10 +54,7 @@ export function compactChips(chips: ChipSpec[]): ChipSpec[] {
   const out: ChipSpec[] = [];
   for (const chip of chips) {
     if (transit.includes(chip)) continue; // folded into the FEEDS chip below
-    if (chip.id === "keyed") {
-      const channels = chip.text.split(" · ").length - 1;
-      out.push({ ...chip, text: `KEYED · ${channels}`, title: chip.text });
-    } else if (chip === asr && feeds) {
+    if (chip === asr && feeds) {
       continue;
     } else if (chip === feeds && asr) {
       const worst = [feeds, asr, ...transit].reduce((a, b) => (SEVERITY.indexOf(b.kind) > SEVERITY.indexOf(a.kind) ? b : a));

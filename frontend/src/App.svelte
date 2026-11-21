@@ -101,15 +101,16 @@
         {#if Screen}<Screen />{/if}
       </AppShell>
     </div>
+  {:else if route.shell}
+    <!-- the shell is never scaled; only the content box of a stage route is -->
+    <div class="hud-stage hud-stage--fluid">
+      <AppShell {route} staged>
+        {#if Screen}<Screen />{/if}
+      </AppShell>
+    </div>
   {:else}
-    <Stage>
-      {#if route.shell}
-        <AppShell {route}>
-          {#if Screen}<Screen />{/if}
-        </AppShell>
-      {:else if Screen}
-        <Screen />
-      {/if}
+    <Stage fit="window">
+      {#if Screen}<Screen />{/if}
     </Stage>
   {/if}
 {/if}

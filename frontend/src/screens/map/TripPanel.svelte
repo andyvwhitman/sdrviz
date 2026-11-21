@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Glyph from "$lib/components/Glyph.svelte";
   import { viewport } from "$lib/stores/viewport.svelte";
   /**
    * A trip in the side panel: who and where (service, operator, next stop with its ETA, delay, speed), how fresh the
@@ -123,7 +124,7 @@
         </KeyValue>
       {/if}
       <KeyValue label="OPERATOR"><span class="tw-nm">{agency}</span></KeyValue>
-      <KeyValue label="ROUTE"><span class="tw-nm">{vehicle?.origin ? cleanName(vehicle.origin) : BLANK} → {cleanName(vehicle?.destination ?? vehicle?.headsign ?? trip?.headsign ?? BLANK)}</span></KeyValue>
+      <KeyValue label="ROUTE"><span class="tw-nm">{vehicle?.origin ? cleanName(vehicle.origin) : BLANK} <Glyph name="arrow-right" /> {cleanName(vehicle?.destination ?? vehicle?.headsign ?? trip?.headsign ?? BLANK)}</span></KeyValue>
       {#if vehicle}
         <KeyValue label="NEXT STOP">
           {#if vehicle.next_stop}<span class="tw-nm">{cleanName(vehicle.next_stop.name)}</span> · <span class="tw-num">{hhmm(vehicle.next_stop.eta ?? vehicle.next_stop.scheduled)}</span>{:else}{BLANK}{/if}

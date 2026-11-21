@@ -5,14 +5,17 @@ import { carryGlobals } from "./params";
 class Router {
   path = $state(location.pathname);
   search = $state(location.search);
+  hash = $state(location.hash);
 
   constructor() {
     addEventListener("popstate", () => this.sync());
+    addEventListener("hashchange", () => this.sync());
   }
 
   private sync(): void {
     this.path = location.pathname;
     this.search = location.search;
+    this.hash = location.hash;
   }
 
   /** Go to `to` ("/history" or "/history?train=MARC%20410"). The global parameters follow along. */
@@ -22,8 +25,8 @@ class Router {
       const carried = new URLSearchParams(carryGlobals(this.search));
       carried.forEach((value, key) => url.searchParams.has(key) || url.searchParams.set(key, value));
     }
-    const target = url.pathname + url.search;
-    if (target === location.pathname + location.search) return;
+    const target = url.pathname + url.search + url.hash;
+    if (target === location.pathname + location.search + location.hash) return;
     history[replace ? "replaceState" : "pushState"](null, "", target);
     this.sync();
   }

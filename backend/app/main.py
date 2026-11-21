@@ -56,7 +56,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         yield
         await rt.stop()
 
-    app = FastAPI(title="sdrviz", version="0.1.0", lifespan=lifespan)
+    app = FastAPI(
+        title="sdrviz",
+        version="0.1.0",
+        lifespan=lifespan,
+        # /docs belongs to the app's own Docs page, so FastAPI's interactive docs live under /api
+        docs_url="/api/docs",
+        redoc_url="/api/redoc",
+        openapi_url="/api/openapi.json",
+    )
     app.state.limiter = LoginLimiter()
     app.add_middleware(
         SessionMiddleware,

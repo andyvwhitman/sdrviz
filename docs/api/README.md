@@ -42,6 +42,9 @@ Nodes decode the AAR channels assigned to them and send key-ups and audio. The s
 a live event, saves it as an Ogg Opus recording, and transcribes it. Your application reads the results over REST
 and listens live over `/ws/live`.
 
+FastAPI's interactive OpenAPI pages are at `/api/docs` and `/api/redoc`, and the schema is `/api/openapi.json`. (`/docs`
+is this documentation, shown inside the app.)
+
 ## Conventions
 
 **Format.** Requests and responses are JSON (`Content-Type: application/json`) unless a page says otherwise (audio

@@ -12,7 +12,7 @@ npm run dev            # http://localhost:5173, proxies /api and /ws to the back
 npm run check          # svelte-check, TS strict
 npm test               # vitest (includes parity tests against design/mockups/_shared/hud.js)
 npm run build          # dist/ (the backend mounts it as static files)
-npm run gen:api        # regenerate src/lib/api/schema.gen.ts from the running backend's /openapi.json
+npm run gen:api        # regenerate src/lib/api/schema.gen.ts from the running backend's /api/openapi.json
 ```
 
 Package preview servers use ports 5174 to 5178 (`npx vite --port 5174`); they share the same proxy.

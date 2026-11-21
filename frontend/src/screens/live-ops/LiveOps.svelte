@@ -338,32 +338,7 @@
     if (!pane?.escape()) clearSelection();
   }
 
-  /* ---- keyed channels out of view get an edge chip; the tile area never scrolls by itself on a key-up */
-  let keyedAbove = $state<string[]>([]);
-  let keyedBelow = $state<string[]>([]);
   const tileEl = (id: string): HTMLElement | undefined => tilesBox?.querySelectorAll<HTMLElement>(".tile")[tiles.findIndex((c) => c.id === id)];
-  function measureEdges(): void {
-    if (!tilesBox || viewport.handset) return;
-    const box = tilesBox.getBoundingClientRect();
-    const above: string[] = [];
-    const below: string[] = [];
-    for (const c of tiles.filter((t) => t.tx)) {
-      const rect = tileEl(c.id)?.getBoundingClientRect();
-      if (!rect) continue;
-      if (rect.bottom <= box.top + 4) above.push(c.id);
-      else if (rect.top >= box.bottom - 4) below.push(c.id);
-    }
-    keyedAbove = above;
-    keyedBelow = below;
-  }
-  const keyedKey = $derived(tiles.filter((c) => c.tx).map((c) => c.id).join());
-  $effect(() => {
-    void keyedKey;
-    void tiles.length;
-    void frameW;
-    measureEdges();
-  });
-  const showTile = (id: string): void => tileEl(id)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
 
   // the selected tile scrolls into view (a digit, [ ], the hero); a node switch starts the area at the top
   let lastNode = "";
@@ -532,14 +507,8 @@
       <div class="lo__lower">
         <div class="lo__bank">
           <div class="lo__tilebox">
-          {#if keyedAbove.length}
-            <button class="lo-edge lo-edge--above" type="button" onclick={() => showTile(keyedAbove[0])}><PositionGlyph state="tx" />▲ {keyedAbove.length === 1 ? tiles.find((c) => c.id === keyedAbove[0])?.aar : `${keyedAbove.length}`} KEYED</button>
-          {/if}
-          {#if keyedBelow.length}
-            <button class="lo-edge lo-edge--below" type="button" onclick={() => showTile(keyedBelow[0])}><PositionGlyph state="tx" />▼ {keyedBelow.length === 1 ? tiles.find((c) => c.id === keyedBelow[0])?.aar : `${keyedBelow.length}`} KEYED</button>
-          {/if}
           <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-          <div bind:this={tilesBox} onscroll={measureEdges} class="lo__tiles" class:has-solo={prefs.solo.size > 0} role="group" aria-label="Channels" onkeydown={tileKeys} ondblclick={tileDoubleClick} onfocusout={(e) => !(e.relatedTarget as HTMLElement | null)?.closest(".tile") && (targetedId = null)}>
+          <div bind:this={tilesBox} class="lo__tiles" class:has-solo={prefs.solo.size > 0} role="group" aria-label="Channels" onkeydown={tileKeys} ondblclick={tileDoubleClick} onfocusout={(e) => !(e.relatedTarget as HTMLElement | null)?.closest(".tile") && (targetedId = null)}>
             {#if tiles.length === 0}
               <div class="lo-empty br">
                 {@render emptyTiles(true)}

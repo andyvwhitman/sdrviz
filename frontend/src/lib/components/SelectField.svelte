@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Glyph from "$lib/components/Glyph.svelte";
   /** Underline select in the field vocabulary (spec 5.22). */
   interface Props {
     label: string;
@@ -16,7 +17,7 @@
     <select class="field__input sf__select" bind:value>
       {#each options as option (option.value)}<option value={option.value}>{option.text}</option>{/each}
     </select>
-    <span class="sf__caret" aria-hidden="true">▾</span>
+    <span class="sf__caret" aria-hidden="true"><Glyph name="chevron-down" /></span>
   </span>
   {#if error}<span class="field__error">{error}</span>{/if}
 </label>

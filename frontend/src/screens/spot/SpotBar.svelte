@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Glyph from "$lib/components/Glyph.svelte";
   /** Where the page thinks you are standing, and how sure it is: a registration mark and a two-line readout. */
   import type { NearestLine } from "$lib/types/transit";
   import { distanceText } from "./spot";
@@ -44,7 +45,7 @@
       <span class="sb__title">{heading}</span>
       <span class="sb__sub">{sub}</span>
     </span>
-    <span class="sb__caret" aria-hidden="true">{open ? "▴" : "▾"}</span>
+    <span class="sb__caret" aria-hidden="true"><Glyph name={open ? "chevron-up" : "chevron-down"} /></span>
   </button>
   {#if far && line}
     <div class="sb__far">

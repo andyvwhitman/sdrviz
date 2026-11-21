@@ -16,5 +16,6 @@ data/transit
 build-screens
 design
 docs
+!docs/api
 receiver
 tools

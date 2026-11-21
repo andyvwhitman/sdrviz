@@ -109,13 +109,9 @@ describe("resolveTile matches hud.js", () => {
 describe.each(SCENARIOS)("scenario %s", (name) => {
   it("headerChips match", () => {
     const state = scenario(name);
-    for (const txChip of [false, true]) {
-      // `id` is ours (the narrow header collapse); the mockup has none
-      const normalise = ({ id: _id, ...c }: { id?: string; text: string; kind?: string; glyph?: string; onset?: boolean }) => ({ glyph: undefined, onset: undefined, ...c, kind: c.kind ?? "nominal" });
-      // the mockup's KEYED chip counts off-bank channels; banks are gone (chips.test.ts covers ours)
-      const rest = (chips: ReturnType<typeof normalise>[]) => chips.filter((c) => !c.text.startsWith("KEYED"));
-      expect(rest(headerChips(state, { txChip }).map(normalise))).toEqual(rest(HUD.headerChips(state, { txChip }).map(normalise)));
-    }
+    // `id` is ours (the narrow header collapse); the mockup has none
+    const normalise = ({ id: _id, ...c }: { id?: string; text: string; kind?: string; glyph?: string; onset?: boolean }) => ({ glyph: undefined, onset: undefined, ...c, kind: c.kind ?? "nominal" });
+    expect(headerChips(state).map(normalise)).toEqual(HUD.headerChips(state).map(normalise));
   });
 
   it("statusFrom matches", () => {

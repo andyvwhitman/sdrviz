@@ -282,7 +282,7 @@ class TestOther:
         assert values and all(len(row) == 20 for channels in body["cells"].values() for row in channels.values())
 
     def test_openapi_lists_the_contract(self, client):
-        paths = client.get("/openapi.json").json()["paths"]
+        paths = client.get("/api/openapi.json").json()["paths"]
         for path in (
             "/api/feeds/{feed_id}/ack",
             "/api/sim/jump",

@@ -98,8 +98,8 @@
   --gap-cell: 8px;         /* cells inside a panel (tiles) */
   --gutter: 24px;          /* 12-col gutter */
   --cols: 12;
-  --header-h: 44px;
-  --status-h: 28px;
+  --header-h: 36px;        /* the one bar, at 1:1 CSS px on every route (44 px under 900) */
+  --status-h: 32px;        /* the one footer (44 px under 900) */
   --hero-h: 64px;
   --tabs-h: 36px;
   --fq-line-h: 48px;       /* the pinned identity line of the frequency pane / phone page (44 px on a phone) */
@@ -133,4 +133,4 @@
 }
 :root[data-size="1440"] { --stage-w: 1440px; --stage-h: 900px; }
 
-@media (max-width: 899px) { :root { --fq-line-h: 44px; } }
+@media (max-width: 899px) { :root { --fq-line-h: 44px; --header-h: 44px; --status-h: 44px; } }

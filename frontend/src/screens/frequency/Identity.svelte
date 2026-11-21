@@ -8,11 +8,11 @@
    * is the scroll box, so the line sticks to its top (docs/sprint-4/liveops-direction.md 5.8). Widths come from
    * container queries on the nearest `pane` container.
    */
-  import Glyph from "$lib/components/Glyph.svelte";
   import CoveragePips from "$lib/components/CoveragePips.svelte";
   import type { Outcome } from "$lib/components/frequency-editor/editorForm";
   import FrequencyLayer from "$lib/components/frequency-editor/FrequencyLayer.svelte";
   import FrequencyWindow from "$lib/components/frequency-editor/FrequencyWindow.svelte";
+  import Glyph from "$lib/components/Glyph.svelte";
   import PositionGlyph from "$lib/components/PositionGlyph.svelte";
   import * as fmt from "$lib/hud/fmt";
   import { followLink, router } from "$lib/router.svelte";
@@ -101,7 +101,7 @@
 {#if variant !== "page"}
   {#if variant === "phone"}
     <nav class="id__crumb idp__crumb" aria-label="Breadcrumb">
-      <a href="/live?select={encodeURIComponent(info.id)}" onclick={followLink}>‹ LIVE OPS</a>
+      <a href="/live?select={encodeURIComponent(info.id)}" onclick={followLink}><Glyph name="chevron-left" /> LIVE OPS</a>
     </nav>
   {/if}
   <div class="idp__line" class:idp__line--page={variant === "phone"} aria-label="{info.label} frequency">
@@ -124,7 +124,7 @@
     {/if}
   </div>
   {#if variant === "phone"}
-    <button class="id__lid idp__lid" type="button" aria-expanded={lidOpen} onclick={ontogglelid}>{lidOpen ? "▾" : "▸"} ABOUT THIS FREQUENCY</button>
+    <button class="id__lid idp__lid" type="button" aria-expanded={lidOpen} onclick={ontogglelid}><Glyph name={lidOpen ? "chevron-down" : "chevron-right"} /> ABOUT THIS FREQUENCY</button>
     {#if lidOpen}
       <div class="id__lidbody idp__lidbody">
         {#if info.notes}<p class="id__notes">{info.notes}</p>{/if}
@@ -134,7 +134,7 @@
 {:else}
 <section class="id" aria-label="{info.label} frequency">
   <nav class="id__crumb" aria-label="Breadcrumb">
-    <a href="/live?select={encodeURIComponent(info.id)}" onclick={followLink}><span class="id__crumb-short">‹ </span>LIVE OPS</a><span class="id__crumb-tail">{" / "}{info.label}</span>
+    <a href="/live?select={encodeURIComponent(info.id)}" onclick={followLink}><span class="id__crumb-short"><Glyph name="chevron-left" /> </span>LIVE OPS</a><span class="id__crumb-tail">{" / "}{info.label}</span>
   </nav>
 
   <div class="id__row">
@@ -169,7 +169,7 @@
     {@render editDoor()}
   </div>
 
-  <button class="id__lid" type="button" aria-expanded={lidOpen} onclick={ontogglelid}>{lidOpen ? "▾" : "▸"} ABOUT THIS FREQUENCY</button>
+  <button class="id__lid" type="button" aria-expanded={lidOpen} onclick={ontogglelid}><Glyph name={lidOpen ? "chevron-down" : "chevron-right"} /> ABOUT THIS FREQUENCY</button>
   {#if lidOpen}
     <div class="id__lidbody">
       {#if feeds.length}<p>HEARD BY <b>{feeds.join(" · ")}</b></p>{/if}

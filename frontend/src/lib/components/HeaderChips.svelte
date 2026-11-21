@@ -40,7 +40,7 @@
   aria-keyshortcuts="F"
   onclick={() => ui.toggleFullscreen()}
 >
-  <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.25" aria-hidden="true">
+  <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.25" aria-hidden="true">
     {#if ui.fullscreen}
       <path d="M1 6h5V1M10 1v5h5M15 10h-5v5M6 15v-5H1" />
     {:else}

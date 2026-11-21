@@ -11,9 +11,6 @@ const BANNED = /[←-⇿⌀-⏿■-◿☀-➿⬀-⯿\u{1F000}-\u{1FFFF}️‹›
 
 const SRC = join(__dirname, "..");
 
-// lane E sweeps Feeds; remove after merge
-const OTHER_LANES = ["screens/feeds/"];
-
 function sourceFiles(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const path = join(dir, entry.name);
@@ -41,12 +38,7 @@ describe("no OS glyphs in the source", () => {
     for (const char of ["·", "—", "≈", "~", "−", "±", "©", "+", "%"]) expect(BANNED.test(char)).toBe(false);
   });
 
-  it("every .svelte and .ts file outside the lanes still to sweep is clean", () => {
-    expect(offenders(sourceFiles(SRC), OTHER_LANES)).toEqual([]);
-  });
-
-  // lanes C/E sweep these; remove after merge: this is the full check
-  it.skip("every .svelte and .ts file is clean", () => {
+  it("every .svelte and .ts file is clean", () => {
     expect(offenders(sourceFiles(SRC))).toEqual([]);
   });
 });

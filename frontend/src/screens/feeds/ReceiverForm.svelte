@@ -82,58 +82,56 @@
   const tuned = $derived(status.center_hz ? `${(status.center_hz / 1e6).toFixed(4)} MHz at ${((status.rate ?? 0) / 1e6).toFixed(3)} MS/s` : "— —");
 </script>
 
-<div class="fb-col fb-col--insp">
   <section class="fb-insp br fb-form fb-recv" aria-label="Edit receiver">
-    <header class="fb-insp__head">
-      <span class="t-panel">EDIT RECEIVER</span>
-      <Chip kind={STATUS_KIND[status.state]} text={describeStatus(status)} />
-      <span class="grow"></span>
-      <Button sm onclick={ondone}>CANCEL</Button>
-      <Button sm primary disabled={busy || !draft} onclick={save}>SAVE</Button>
-    </header>
-    {#if failure}<p class="fb-form__fail" role="alert">{failure}</p>{/if}
+  <header class="fb-insp__head">
+    <span class="t-panel">EDIT RECEIVER</span>
+    <Chip kind={STATUS_KIND[status.state]} text={describeStatus(status)} />
+    <span class="grow"></span>
+    <Button sm onclick={ondone}>CANCEL</Button>
+    <Button sm primary disabled={busy || !draft} onclick={save}>SAVE</Button>
+  </header>
+  {#if failure}<p class="fb-form__fail" role="alert">{failure}</p>{/if}
 
-    <div class="fb-recv__status">
-      <KeyValue label="CONNECTION" value={status.host ?? "— —"} />
-      <KeyValue label="TUNED" value={tuned} />
-      <KeyValue label="TUNER" value={status.tuner ?? "— —"} />
-      <KeyValue label="THROUGHPUT" value={throughput} />
-      {#if status.error}<p class="fb-form__fail">{status.error}</p>{/if}
+  <div class="fb-recv__status">
+    <KeyValue label="CONNECTION" value={status.host ?? "— —"} />
+    <KeyValue label="TUNED" value={tuned} />
+    <KeyValue label="TUNER" value={status.tuner ?? "— —"} />
+    <KeyValue label="THROUGHPUT" value={throughput} />
+    {#if status.error}<p class="fb-form__fail">{status.error}</p>{/if}
+  </div>
+
+  {#if draft}
+    <h4 class="fb-form__h">CONNECTION</h4>
+    <div class="fb-form__grid">
+      <Field label="NAME" bind:value={draft.name} text error={errors.name} hint="Shown on Feeds and the map" />
+      <Field label="HOST" bind:value={draft.host} text error={errors.host} hint="rtl_tcp server, e.g. sdr.local" />
+      <Field label="PORT" bind:value={draft.port} error={errors.port} />
     </div>
 
-    {#if draft}
-      <h4 class="fb-form__h">CONNECTION</h4>
-      <div class="fb-form__grid">
-        <Field label="NAME" bind:value={draft.name} text error={errors.name} hint="Shown on Feeds and the map" />
-        <Field label="HOST" bind:value={draft.host} text error={errors.host} hint="rtl_tcp server, e.g. sdr.local" />
-        <Field label="PORT" bind:value={draft.port} error={errors.port} />
+    <h4 class="fb-form__h">TUNING</h4>
+    <div class="fb-form__grid">
+      <Field label="CENTRE FREQUENCY" bind:value={draft.freq_mhz} unit="MHz" error={errors.freq_mhz} hint="24 to 1766 MHz" />
+      <Field
+        label="SAMPLE RATE"
+        bind:value={draft.rate_msps}
+        unit="MS/s"
+        error={errors.rate_msps}
+        hint="A multiple of 0.048: each channel is filtered and decimated to 48 kS/s"
+      />
+      <Field label="GAIN" bind:value={draft.gain_db} unit="dB" error={errors.gain_db} disabled={draft.auto_gain} hint="0 to 50 dB" />
+      <div class="fb-form__flags">
+        <Toggle label="AUTO GAIN" bind:checked={draft.auto_gain} />
       </div>
+      <Field label="SQUELCH" bind:value={draft.squelch_db} unit="dB" error={errors.squelch_db} hint="Opens this far above a channel's noise" />
+    </div>
 
-      <h4 class="fb-form__h">TUNING</h4>
-      <div class="fb-form__grid">
-        <Field label="CENTRE FREQUENCY" bind:value={draft.freq_mhz} unit="MHz" error={errors.freq_mhz} hint="24 to 1766 MHz" />
-        <Field
-          label="SAMPLE RATE"
-          bind:value={draft.rate_msps}
-          unit="MS/s"
-          error={errors.rate_msps}
-          hint="A multiple of 0.048: each channel is filtered and decimated to 48 kS/s"
-        />
-        <Field label="GAIN" bind:value={draft.gain_db} unit="dB" error={errors.gain_db} disabled={draft.auto_gain} hint="0 to 50 dB" />
-        <div class="fb-form__flags">
-          <Toggle label="AUTO GAIN" bind:checked={draft.auto_gain} />
-        </div>
-        <Field label="SQUELCH" bind:value={draft.squelch_db} unit="dB" error={errors.squelch_db} hint="Opens this far above a channel's noise" />
+    <h4 class="fb-form__h">LOCATION</h4>
+    <div class="fb-form__grid">
+      <Field label="LATITUDE" bind:value={draft.lat} unit="°" error={errors.lat} />
+      <Field label="LONGITUDE" bind:value={draft.lon} unit="°" error={errors.lon} />
+      <div class="fb-form__flags">
+        <Toggle label="ENABLED" bind:checked={draft.enabled} />
       </div>
-
-      <h4 class="fb-form__h">LOCATION</h4>
-      <div class="fb-form__grid">
-        <Field label="LATITUDE" bind:value={draft.lat} unit="°" error={errors.lat} />
-        <Field label="LONGITUDE" bind:value={draft.lon} unit="°" error={errors.lon} />
-        <div class="fb-form__flags">
-          <Toggle label="ENABLED" bind:checked={draft.enabled} />
-        </div>
-      </div>
-    {/if}
-  </section>
-</div>
+    </div>
+  {/if}
+</section>

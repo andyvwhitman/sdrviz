@@ -5,7 +5,7 @@
    * End go to the limits, Enter resets. Double-click resets. Esc during a drag puts it back. It measures nothing:
    * its parent hands it the size in pixels and the limits, and takes back the size the user asks for.
    */
-  import { clamp, type Bounds } from "./layout";
+  import { clamp, type Bounds } from "$lib/hud/bounds";
 
   interface Props {
     /** "horizontal" is a row divider (it sets the wall's height); "vertical" is a column divider (the pane's width) */

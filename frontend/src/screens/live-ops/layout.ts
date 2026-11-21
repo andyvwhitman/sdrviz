@@ -26,12 +26,9 @@ const GUTTER_PX = 24;
 const TILES_MIN_PX = 216;
 const TILE_COLUMN_PX = 208;
 
-export interface Bounds {
-  min: number;
-  max: number;
-}
+import { clamp, type Bounds } from "$lib/hud/bounds";
 
-export const clamp = (value: number, { min, max }: Bounds): number => Math.max(min, Math.min(max, value));
+export { clamp, type Bounds };
 
 /** The wall's height limits for a content area `height` px tall under a hero `heroH` px tall. */
 export const wallBounds = (height: number, heroH: number): Bounds => {

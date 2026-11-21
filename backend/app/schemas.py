@@ -46,13 +46,6 @@ class AckIn(BaseModel):
     reason: str = ""
 
 
-class PrefsModel(BaseModel):
-    muted: list[str] = []
-    solo: list[str] = []
-    record: list[str] = []
-    volume: dict[str, float] = {}
-
-
 IF_RATE = 48_000  # every channel is decimated from the sample rate to this baseband rate (node/dsp.py)
 RTL_RATES = ((225_001, 300_000), (900_001, 3_200_000))  # what an RTL2832 can sample at
 

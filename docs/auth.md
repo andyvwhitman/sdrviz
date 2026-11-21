@@ -4,7 +4,7 @@
 
 | Role | Password | Can |
 |---|---|---|
-| viewer | `SDRVIZ_PASSWORD` | read everything except nodes, sources and receiver settings; listen; mute/solo/record/volume (`/api/prefs`); acknowledge a feed fault (`POST /api/feeds/{id}/ack`) |
+| viewer | `SDRVIZ_PASSWORD` | read everything except nodes, sources and receiver settings; listen; acknowledge a feed fault (`POST /api/feeds/{id}/ack`) |
 | admin | `SDRVIZ_ADMIN_PASSWORD` | everything |
 
 If `SDRVIZ_ADMIN_PASSWORD` is not set, `SDRVIZ_PASSWORD` logs in as admin (single-password mode, the old behaviour).
@@ -18,11 +18,9 @@ Sessions made before the roles existed hold `admin`.
 - all of `/api/nodes` (list, create, patch, rekey, revoke, commands), including GET: node keys and health are fleet management;
 - `/api/transit/sources` (GET too: URLs and keys), POST, PUT, DELETE, `POST .../refresh`;
 - `/api/radio/settings` (GET and PUT);
-- banks: create, update, delete, `POST /api/banks/{id}/activate`, `POST /api/banks/live/channels`, `DELETE /api/banks/live/channels/{n}`;
 - feeds: create, update, delete (not `ack`);
 - frequencies: create, update, delete;
 - `POST /api/sim/jump`;
-- `PUT`/`PATCH /api/prefs` when the body changes `active_bank` or `displayed_feed` (the shared selection). Changing `muted`, `solo`, `record`, `volume` is allowed to viewers.
 
 401 still means "not logged in". The UI can hide admin controls from `role`; the server enforces it regardless.
 

@@ -192,7 +192,7 @@ Ogg Opus; the retention limit is set by the server (default 90 days or 10 GB, wh
 | Entity | Notes |
 |---|---|
 | `feed_event`, `feed_ack` | Replay health timeline, and acknowledged faults (`source` is `sim` or `user`). Acknowledge through `POST /api/feeds/{id}/ack` |
-| `prefs` | One shared row: `muted`, `solo`, `record` (frequency id lists) and `volume` (id to number). See [rest.md](rest.md#prefs). Its old `listen_feed` column is unused |
+| `prefs` | Unused. A single row left over from when mute, solo, record and volume were shared; they now live in each browser, and no API reads or writes the table |
 | `receiver` | The single LAN `rtl_tcp` receiver settings ([rest.md](rest.md#receiver-settings)) |
 | `transit_source`, `transit_meta`, `station_groups`, `station_members` | Transit data sources and station merge groups ([rest.md](rest.md#trains-and-transit)). `api_key` is never returned |
 

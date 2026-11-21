@@ -56,7 +56,7 @@ Works with or without a session. Use it to find out who you are.
 |---|---|---|
 | `authenticated` | bool | A valid session cookie was sent |
 | `role` | `"viewer"`, `"admin"` or `null` | `null` when not logged in |
-| `sim` | bool | Always `true` in the current code, whatever the server mode. Do not rely on it; use `sim` in `GET /api/system` or in the live snapshot. |
+| `sim` | bool | `true` when the server plays back a recorded day (replay mode), `false` when it serves live nodes. Same value as `sim` in `GET /api/system` |
 
 ## The cookie
 
@@ -84,7 +84,6 @@ The role is decided by which password you send.
 - Every `GET` under `/api` except those listed below as admin only.
 - Open `/ws/live` and use all of its client ops, including `listen`, `audio`, `watch`, and hold-to-listen
   (`listen_hold`, `listen_release`). Choosing which node you listen to is per connection and changes nothing shared.
-- `PUT` and `PATCH /api/prefs`.
 - `POST /api/feeds/{id}/ack` (acknowledge a feed fault).
 
 ### What only an admin may do

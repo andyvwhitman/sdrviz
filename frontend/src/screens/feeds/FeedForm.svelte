@@ -60,43 +60,41 @@
   }
 </script>
 
-<div class="fb-col fb-col--insp">
   <section class="fb-insp br fb-form" aria-label={isNew ? "New feed" : "Edit feed"}>
-    <header class="fb-insp__head">
-      <span class="t-panel">{isNew ? "NEW FEED" : `EDIT FEED · ${initial?.short ?? draft.id}`}</span>
-      <span class="grow"></span>
-      <Button sm onclick={() => ondone(null)}>CANCEL</Button>
-      <Button sm primary disabled={busy} onclick={save}>SAVE</Button>
-    </header>
-    {#if failure}<p class="fb-form__fail" role="alert">{failure}</p>{/if}
+  <header class="fb-insp__head">
+    <span class="t-panel">{isNew ? "NEW FEED" : `EDIT FEED · ${initial?.short ?? draft.id}`}</span>
+    <span class="grow"></span>
+    <Button sm onclick={() => ondone(null)}>CANCEL</Button>
+    <Button sm primary disabled={busy} onclick={save}>SAVE</Button>
+  </header>
+  {#if failure}<p class="fb-form__fail" role="alert">{failure}</p>{/if}
 
-    <div class="fb-form__grid">
-      <Field label="FEED ID" bind:value={draft.id} text readonly={!isNew} error={errors.id} hint={isNew ? "Permanent. e.g. feed-ann" : undefined} />
-      <Field label="NAME" bind:value={draft.name} text error={errors.name} hint="Callsign first: ALX-01 Alexandria" />
-      <Field label="SHORT" bind:value={draft.short} text hint="Derived from the name when empty" />
-      <Field label="SITE" bind:value={draft.site} text />
-      <Field label="LATITUDE" bind:value={draft.lat} unit="°" error={errors.lat} />
-      <Field label="LONGITUDE" bind:value={draft.lon} unit="°" error={errors.lon} />
-      <Field label="COVERAGE RADIUS" bind:value={draft.coverage_radius_km} unit="km" error={errors.coverage_radius_km} />
-      <SelectField label="DRIVER" bind:value={draft.driver} options={driverOptions} />
-      <Field label="HOST" bind:value={draft.host} disabled={!networked} error={errors.host} />
-      <Field label="PORT" bind:value={draft.port} disabled={!networked} error={errors.port} />
-      <Field label="CENTRE" bind:value={draft.center_mhz} unit="MHz" error={errors.center_mhz} />
-      <Field label="SAMPLE RATE" bind:value={draft.sample_rate_msps} unit="MS/s" error={errors.sample_rate_msps} />
-      <Field label="GAIN" bind:value={draft.gain_db} unit="dB" error={errors.gain_db} disabled={!isNew} hint={isNew ? undefined : "Locked: the backend returns the measured value"} />
-      <Field label="PPM" bind:value={draft.ppm} error={errors.ppm} disabled={!isNew} />
-      <Field label="NOISE FLOOR" bind:value={draft.noise_floor_dbfs} unit="dBFS" error={errors.noise_floor_dbfs} disabled={!isNew} />
-      <div class="fb-form__flags">
-        <Toggle label="ENABLED" bind:checked={draft.enabled} />
-        <Checkbox label="SIMULATED" bind:checked={draft.sim} />
-      </div>
+  <div class="fb-form__grid">
+    <Field label="FEED ID" bind:value={draft.id} text readonly={!isNew} error={errors.id} hint={isNew ? "Permanent. e.g. feed-ann" : undefined} />
+    <Field label="NAME" bind:value={draft.name} text error={errors.name} hint="Callsign first: ALX-01 Alexandria" />
+    <Field label="SHORT" bind:value={draft.short} text hint="Derived from the name when empty" />
+    <Field label="SITE" bind:value={draft.site} text />
+    <Field label="LATITUDE" bind:value={draft.lat} unit="°" error={errors.lat} />
+    <Field label="LONGITUDE" bind:value={draft.lon} unit="°" error={errors.lon} />
+    <Field label="COVERAGE RADIUS" bind:value={draft.coverage_radius_km} unit="km" error={errors.coverage_radius_km} />
+    <SelectField label="DRIVER" bind:value={draft.driver} options={driverOptions} />
+    <Field label="HOST" bind:value={draft.host} disabled={!networked} error={errors.host} />
+    <Field label="PORT" bind:value={draft.port} disabled={!networked} error={errors.port} />
+    <Field label="CENTRE" bind:value={draft.center_mhz} unit="MHz" error={errors.center_mhz} />
+    <Field label="SAMPLE RATE" bind:value={draft.sample_rate_msps} unit="MS/s" error={errors.sample_rate_msps} />
+    <Field label="GAIN" bind:value={draft.gain_db} unit="dB" error={errors.gain_db} disabled={!isNew} hint={isNew ? undefined : "Locked: the backend returns the measured value"} />
+    <Field label="PPM" bind:value={draft.ppm} error={errors.ppm} disabled={!isNew} />
+    <Field label="NOISE FLOOR" bind:value={draft.noise_floor_dbfs} unit="dBFS" error={errors.noise_floor_dbfs} disabled={!isNew} />
+    <div class="fb-form__flags">
+      <Toggle label="ENABLED" bind:checked={draft.enabled} />
+      <Checkbox label="SIMULATED" bind:checked={draft.sim} />
     </div>
+  </div>
 
-    {#if !isNew}
-      <div class="fb-form__danger">
-        <Field label="TYPE THE FEED ID TO DELETE" bind:value={confirmText} text placeholder={draft.id} width={240} hint="Recorded transmissions keep their history." />
-        <Button disabled={busy || confirmText !== draft.id} onclick={remove}>DELETE FEED</Button>
-      </div>
-    {/if}
-  </section>
-</div>
+  {#if !isNew}
+    <div class="fb-form__danger">
+      <Field label="TYPE THE FEED ID TO DELETE" bind:value={confirmText} text placeholder={draft.id} width={240} hint="Recorded transmissions keep their history." />
+      <Button disabled={busy || confirmText !== draft.id} onclick={remove}>DELETE FEED</Button>
+    </div>
+  {/if}
+</section>

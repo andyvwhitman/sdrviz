@@ -1,76 +1,45 @@
 <script lang="ts">
-  /** One transit source: name, state, counts, last loads, and the actions on it. */
-  import Button from "$lib/components/Button.svelte";
+  /** One transit feed in the list: name, state and counts. Its details and actions are in the detail pane. */
   import Chip from "$lib/components/Chip.svelte";
   import Toggle from "$lib/components/Toggle.svelte";
-  import * as fmt from "$lib/hud/fmt";
-  import type { ChipKind } from "$lib/hud/chips";
-  import { KINDS } from "./sourceForm";
-  import type { SourceState, TransitSource } from "$lib/types/sources";
+  import { sourceCounts, sourceKindText, STATE_CHIP } from "./sourceView";
+  import type { TransitSource } from "$lib/types/sources";
 
   interface Props {
     source: TransitSource;
-    /** wall clock in ms, for the "N ago" readings */
-    now: number;
-    busy: boolean;
+    selected: boolean;
+    admin: boolean;
+    onselect: () => void;
     onenable: (enabled: boolean) => void;
-    onedit: () => void;
-    onrefresh: () => void;
-    ondelete: () => void;
   }
-  let { source, now, busy, onenable, onedit, onrefresh, ondelete }: Props = $props();
-
-  const CHIP: Record<SourceState, ChipKind> = { ok: "nominal", stale: "degraded", error: "fault", disabled: "offline", loading: "armed" };
+  let { source, selected, admin, onselect, onenable }: Props = $props();
 
   const status = $derived(source.status);
-  const kind = $derived(KINDS.find((k) => k.value === source.kind)?.text ?? source.kind);
-  const hasRealtime = $derived(source.kind !== "lines");
-  let confirming = $state(false);
-
-  const ago = (iso: string | null): string => (iso ? `${fmt.age((now - Date.parse(iso)) / 1000, "age")} AGO` : fmt.BLANK);
-  const counts = $derived(
-    source.kind === "lines"
-      ? [["ROUTES", status.counts.routes], ["STOPS", status.counts.stops]]
-      : [["ROUTES", status.counts.routes], ["STOPS", status.counts.stops], ["TRIPS", status.counts.trips], ["VEHICLES", status.counts.vehicles]],
-  );
 </script>
 
-<article class="src-card br" class:is-off={!source.enabled} aria-label={source.name}>
+<!-- svelte-ignore a11y_no_noninteractive_element_interactions, a11y_no_noninteractive_tabindex -->
+<article
+  class="src-card br"
+  class:is-off={!source.enabled}
+  class:is-selected={selected}
+  tabindex="0"
+  aria-label={source.name}
+  onclick={onselect}
+  onkeydown={(e) => e.key === "Enter" && e.target === e.currentTarget && onselect()}
+>
+  <span class="sel"></span>
   <header class="src-card__head">
     <span class="src-card__name">{source.name}</span>
-    <span class="src-card__agency">{source.agency}</span>
-    <span class="src-card__kind">{kind}</span>
     <span class="grow"></span>
-    <Toggle label="ENABLED" checked={source.enabled} onchange={onenable} />
+    {#if admin}<Toggle label="ENABLED" checked={source.enabled} onchange={onenable} />{/if}
   </header>
+  <div class="src-card__sub"><span class="src-card__agency">{source.agency}</span><span class="src-card__kind">{sourceKindText(source)}</span></div>
 
   <div class="src-card__state">
-    <Chip text={status.state.toUpperCase()} kind={CHIP[status.state]} />
-    {#each counts as [label, value]}
+    <Chip text={status.state.toUpperCase()} kind={STATE_CHIP[status.state]} />
+    {#each sourceCounts(source) as [label, value]}
       <span class="src-count"><span class="k">{label}</span> <span class="mono">{value}</span></span>
     {/each}
   </div>
-  {#if status.error}<p class="src-card__error" role="alert">{status.error}</p>{/if}
-
-  <dl class="src-card__meta">
-    <div><dt>STATIC LOADED</dt><dd class="mono">{ago(status.static_loaded_at)}</dd></div>
-    <div><dt>VERSION</dt><dd class="mono" title={status.static_version ?? ""}>{status.static_version ?? fmt.BLANK}</dd></div>
-    {#if hasRealtime}
-      <div><dt>REALTIME UPDATED</dt><dd class="mono">{ago(status.rt_updated_at)}</dd></div>
-    {/if}
-    <div><dt>REFRESH</dt><dd class="mono">{source.static_refresh_h} H{hasRealtime ? ` · POLL ${source.rt_poll_s} S` : ""}</dd></div>
-  </dl>
-
-  <footer class="src-card__actions">
-    {#if confirming}
-      <span class="t-micro">DELETE {source.name}?</span>
-      <Button sm disabled={busy} onclick={ondelete}>CONFIRM DELETE</Button>
-      <Button sm onclick={() => (confirming = false)}>CANCEL</Button>
-    {:else}
-      <Button sm onclick={onedit}>EDIT</Button>
-      <Button sm disabled={busy || !source.enabled} onclick={onrefresh}>{busy ? "REFRESHING…" : "REFRESH STATIC"}</Button>
-      <span class="grow"></span>
-      <Button sm onclick={() => (confirming = true)}>DELETE</Button>
-    {/if}
-  </footer>
+  {#if status.error}<p class="src-card__error">{status.error}</p>{/if}
 </article>
